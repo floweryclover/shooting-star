@@ -13,5 +13,7 @@ UCLASS()
 class ALobbyGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	ALobbyGameMode();
 };

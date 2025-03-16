@@ -6,16 +6,14 @@
 #include "Blueprint/UserWidget.h"
 
 AMainMenuPlayerController::AMainMenuPlayerController()
-	: MainMenuUI{nullptr},
-	  JoinOrHostGameComponent{nullptr}
+	: JoinOrHostGameComponent{nullptr},
+	  MainMenuUI{nullptr}
 {
-	static ConstructorHelpers::FClassFinder<UUserWidget> MainMenuUIBPClassFinder{
-		TEXT("/Game/Blueprints/UI/BP_MainMenuUI")
-	};
-	ensure(MainMenuUIBPClassFinder.Succeeded());
-	if (MainMenuUIBPClassFinder.Succeeded())
+	static ConstructorHelpers::FClassFinder<UUserWidget> MainMenuUIBPFinder{TEXT("/Game/Blueprints/UI/BP_MainMenuUI")};
+	ensure(MainMenuUIBPFinder.Succeeded());
+	if (MainMenuUIBPFinder.Succeeded())
 	{
-		MainMenuUIClass = MainMenuUIBPClassFinder.Class;
+		MainMenuUIClass = MainMenuUIBPFinder.Class;
 	}
 
 	JoinOrHostGameComponent = CreateDefaultSubobject<UJoinOrHostGameComponent>(TEXT("JoinOrHostGameComponent"));
@@ -33,4 +31,7 @@ void AMainMenuPlayerController::BeginPlay()
 			MainMenuUI->AddToViewport();
 		}
 	}
+
+	bShowMouseCursor = true;
+	SetInputMode(FInputModeUIOnly());
 }
