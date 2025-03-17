@@ -6,22 +6,17 @@
 #include "GameFramework/PlayerController.h"
 #include "MainMenuPlayerController.generated.h"
 
-class UJoinOrHostGameComponent;
 /**
  * 
  */
 UCLASS()
-class AMainMenuPlayerController : public APlayerController
+class AMainMenuPlayerController final : public APlayerController
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintReadOnly)
-	UJoinOrHostGameComponent* JoinOrHostGameComponent;
-	
 	AMainMenuPlayerController();
 	
-	UFUNCTION()
 	virtual void BeginPlay() override;
 
 private:
@@ -29,5 +24,5 @@ private:
 	TSubclassOf<UUserWidget> MainMenuUIClass;
 	
 	UPROPERTY()
-	UUserWidget* MainMenuUI;
+	TObjectPtr<UUserWidget> MainMenuUI;
 };

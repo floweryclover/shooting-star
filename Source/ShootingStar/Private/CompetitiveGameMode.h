@@ -7,11 +7,13 @@
 #include "CompetitiveGameMode.generated.h"
 
 /**
- * 
+ * 2대2 5판3선승 게임 모드입니다.
  */
 UCLASS()
-class ACompetitiveGameMode : public AGameModeBase
+class ACompetitiveGameMode final : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	ACompetitiveGameMode();
 };

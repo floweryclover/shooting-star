@@ -2,4 +2,9 @@
 
 
 #include "CompetitiveGameMode.h"
+#include "CompetitivePlayerController.h"
 
+ACompetitiveGameMode::ACompetitiveGameMode()
+{
+	PlayerControllerClass = ACompetitivePlayerController::StaticClass();
+}

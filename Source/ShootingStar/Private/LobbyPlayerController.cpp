@@ -15,7 +15,7 @@ ALobbyPlayerController::ALobbyPlayerController()
 		LobbyUIClass = LobbyUIBPFinder.Class;
 	}
 
-	LobbyNetworkComponent = CreateDefaultSubobject<ULobbyNetworkComponent>(TEXT("LobbyNetworkComponent"));
+	CreateDefaultSubobject<ULobbyNetworkComponent>(TEXT("LobbyNetworkComponent"));
 }
 
 void ALobbyPlayerController::BeginPlay()
