@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class AMainMenuGameMode : public AGameModeBase
+class AMainMenuGameMode final : public AGameModeBase
 {
 	GENERATED_BODY()
 

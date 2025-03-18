@@ -6,8 +6,7 @@
 #include "Blueprint/UserWidget.h"
 
 AMainMenuPlayerController::AMainMenuPlayerController()
-	: JoinOrHostGameComponent{nullptr},
-	  MainMenuUI{nullptr}
+	: MainMenuUI{nullptr}
 {
 	static ConstructorHelpers::FClassFinder<UUserWidget> MainMenuUIBPFinder{TEXT("/Game/Blueprints/UI/BP_MainMenuUI")};
 	ensure(MainMenuUIBPFinder.Succeeded());
@@ -16,7 +15,7 @@ AMainMenuPlayerController::AMainMenuPlayerController()
 		MainMenuUIClass = MainMenuUIBPFinder.Class;
 	}
 
-	JoinOrHostGameComponent = CreateDefaultSubobject<UJoinOrHostGameComponent>(TEXT("JoinOrHostGameComponent"));
+	CreateDefaultSubobject<UJoinOrHostGameComponent>(TEXT("JoinOrHostGameComponent"));
 }
 
 void AMainMenuPlayerController::BeginPlay()

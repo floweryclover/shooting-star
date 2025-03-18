@@ -6,19 +6,15 @@
 #include "GameFramework/PlayerController.h"
 #include "LobbyPlayerController.generated.h"
 
-class ULobbyNetworkComponent;
 /**
  * 
  */
 UCLASS()
-class ALobbyPlayerController : public APlayerController
+class ALobbyPlayerController final : public APlayerController
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintReadOnly)
-	ULobbyNetworkComponent* LobbyNetworkComponent;
-	
 	ALobbyPlayerController();
 
 	virtual void BeginPlay() override;
@@ -28,5 +24,5 @@ private:
 	TSubclassOf<UUserWidget> LobbyUIClass;
 
 	UPROPERTY()
-	UUserWidget* LobbyUI;
+	TObjectPtr<UUserWidget> LobbyUI;
 };
