@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ShootingStarPlayerController.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Pawn.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "NiagaraSystem.h"
@@ -8,7 +9,6 @@
 #include "ShootingStarCharacter.h"
 #include "Engine/World.h"
 #include "EnhancedInputComponent.h"
-#include "InputActionValue.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 
@@ -28,6 +28,12 @@ void AShootingStarPlayerController::BeginPlay()
 	Super::BeginPlay();
 }
 
+void AShootingStarPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	LookMouse();
+}
+
 void AShootingStarPlayerController::SetupInputComponent()
 {
 	// set up gameplay key bindings
@@ -42,17 +48,9 @@ void AShootingStarPlayerController::SetupInputComponent()
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 	{
-		// Setup mouse input events
-		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Started, this, &AShootingStarPlayerController::OnInputStarted);
-		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Triggered, this, &AShootingStarPlayerController::OnSetDestinationTriggered);
-		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Completed, this, &AShootingStarPlayerController::OnSetDestinationReleased);
-		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Canceled, this, &AShootingStarPlayerController::OnSetDestinationReleased);
+		// Setup Move input events
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AShootingStarPlayerController::Move);
 
-		// Setup touch input events
-		EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Started, this, &AShootingStarPlayerController::OnInputStarted);
-		EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Triggered, this, &AShootingStarPlayerController::OnTouchTriggered);
-		EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Completed, this, &AShootingStarPlayerController::OnTouchReleased);
-		EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Canceled, this, &AShootingStarPlayerController::OnTouchReleased);
 	}
 	else
 	{
@@ -60,66 +58,42 @@ void AShootingStarPlayerController::SetupInputComponent()
 	}
 }
 
-void AShootingStarPlayerController::OnInputStarted()
+void AShootingStarPlayerController::Move(const FInputActionValue& Value) 
 {
-	StopMovement();
+	UE_LOG(LogTemp, Warning, TEXT("Move action triggered!"));
+
+	// input is a Vector2D
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	// find out which way is forward
+	const FRotator Rotation = GetControlRotation();
+	const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+	// get forward vector
+	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+
+	// get right vector 
+	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+	// add movement 
+	GetCharacter()->AddMovementInput(ForwardDirection, MovementVector.Y);
+	GetCharacter()->AddMovementInput(RightDirection, MovementVector.X);
 }
 
-// Triggered every frame when the input is held down
-void AShootingStarPlayerController::OnSetDestinationTriggered()
+void AShootingStarPlayerController::LookMouse()
 {
-	// We flag that the input is being pressed
-	FollowTime += GetWorld()->GetDeltaSeconds();
-	
-	// We look for the location in the world where the player has pressed the input
 	FHitResult Hit;
-	bool bHitSuccessful = false;
-	if (bIsTouch)
-	{
-		bHitSuccessful = GetHitResultUnderFinger(ETouchIndex::Touch1, ECollisionChannel::ECC_Visibility, true, Hit);
-	}
-	else
-	{
-		bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
-	}
+	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
 
-	// If we hit a surface, cache the location
-	if (bHitSuccessful)
+	if (Hit.bBlockingHit)
 	{
-		CachedDestination = Hit.Location;
-	}
-	
-	// Move towards mouse pointer or touch
-	APawn* ControlledPawn = GetPawn();
-	if (ControlledPawn != nullptr)
-	{
-		FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation()).GetSafeNormal();
-		ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
-	}
-}
-
-void AShootingStarPlayerController::OnSetDestinationReleased()
-{
-	// If it was a short press
-	if (FollowTime <= ShortPressThreshold)
-	{
-		// We move there and spawn some particles
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, CachedDestination, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
+		APawn* const MyPawn = GetPawn();
+		if (MyPawn)
+		{
+			FRotator LookRotation = UKismetMathLibrary::FindLookAtRotation(MyPawn->GetActorLocation(),
+				FVector(Hit.Location.X, Hit.Location.Y, MyPawn->GetActorLocation().Z));
+			MyPawn->SetActorRotation(LookRotation);
+		}
 	}
 
-	FollowTime = 0.f;
-}
-
-// Triggered every frame when the input is held down
-void AShootingStarPlayerController::OnTouchTriggered()
-{
-	bIsTouch = true;
-	OnSetDestinationTriggered();
-}
-
-void AShootingStarPlayerController::OnTouchReleased()
-{
-	bIsTouch = false;
-	OnSetDestinationReleased();
 }

@@ -49,3 +49,4 @@ void AShootingStarCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
 }
+
