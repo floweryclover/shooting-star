@@ -16,14 +16,17 @@ enum class ETeam : uint8
 
 /**
  * 액터의 소속 팀을 정의하는 컴포넌트입니다.
- * 플레이어의 경우, 캐릭터와 컨트롤러에 모두 부착하여야 합니다.
+ * 플레이어 캐릭터나 기타 액터들의 공격 이벤트와 판정 등을 위해 정의하였습니다.
  */
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UTeamComponent final : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite, Replicated)
 	ETeam Team;
+
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
