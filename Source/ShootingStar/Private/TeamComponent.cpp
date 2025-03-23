@@ -5,6 +5,12 @@
 
 #include "Net/UnrealNetwork.h"
 
+UTeamComponent::UTeamComponent()
+{
+	SetIsReplicatedByDefault(true);
+}
+
+
 void UTeamComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

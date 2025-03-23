@@ -24,6 +24,8 @@ class UTeamComponent final : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	UTeamComponent();
+	
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	ETeam Team;
 
