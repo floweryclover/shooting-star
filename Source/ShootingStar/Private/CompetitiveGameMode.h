@@ -6,6 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "CompetitiveGameMode.generated.h"
 
+class UCompetitiveSystemComponent;
+
 /**
  * 2대2 5판3선승 게임 모드입니다.
  */
@@ -16,4 +18,14 @@ class ACompetitiveGameMode final : public AGameModeBase
 
 public:
 	ACompetitiveGameMode();
+
+	UFUNCTION(BlueprintCallable)
+	UCompetitiveSystemComponent* GetCompetitiveSystemComponent()
+	{
+		return CompetitiveSystemComponent;
+	}
+	
+private:
+	UPROPERTY(meta=(BlueprintGetter=GetCompetitiveSystemComponent))
+	UCompetitiveSystemComponent* CompetitiveSystemComponent;
 };
