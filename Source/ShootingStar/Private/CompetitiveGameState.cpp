@@ -14,14 +14,13 @@ void ACompetitiveGameState::Tick(float DeltaSeconds)
 		return;
 	}
 
-	const ACompetitiveGameMode* const GameMode = Cast<const ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+	ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
 	if (!GameMode)
 	{
 		return;
 	}
 
-	const UCompetitiveSystemComponent* const CompetitiveSystem = Cast<UCompetitiveSystemComponent>(
-		GameMode->GetComponentByClass(UCompetitiveSystemComponent::StaticClass()));
+	UCompetitiveSystemComponent* const CompetitiveSystem = GameMode->GetCompetitiveSystemComponent();
 	if (!CompetitiveSystem)
 	{
 		return;
