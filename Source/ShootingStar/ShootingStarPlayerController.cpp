@@ -50,6 +50,7 @@ void AShootingStarPlayerController::SetupInputComponent()
 	{
 		// Setup Move input events
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AShootingStarPlayerController::Move);
+		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AShootingStarPlayerController::Shoot);
 
 	}
 	else
@@ -60,7 +61,6 @@ void AShootingStarPlayerController::SetupInputComponent()
 
 void AShootingStarPlayerController::Move(const FInputActionValue& Value) 
 {
-	UE_LOG(LogTemp, Warning, TEXT("Move action triggered!"));
 
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -96,4 +96,13 @@ void AShootingStarPlayerController::LookMouse()
 		}
 	}
 
+}
+
+void AShootingStarPlayerController::Shoot()
+{
+	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
+	if (ControlledCharacter) 
+	{
+		ControlledCharacter->PullTrigger();
+	}
 }

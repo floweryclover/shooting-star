@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "ShootingStarCharacter.generated.h"
 
+class AGun;
+
 UCLASS(Blueprintable)
 class AShootingStarCharacter : public ACharacter
 {
@@ -22,6 +24,18 @@ public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
+	virtual float TakeDamage(float DamageAmount, 
+		struct FDamageEvent const& DamageEvent, 
+		class AController* EventInstigator, 
+		AActor* DamageCauser) override;
+
+	void PullTrigger();
+	bool IsDead() const;
+	float GetHealthPercent() const;
+
+protected:
+	virtual void BeginPlay() override;
+
 private:
 	/** Top down camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -32,5 +46,19 @@ private:
 	class USpringArmComponent* CameraBoom;
 	// 
 
+	FTimerHandle timer;
+
+	UPROPERTY(EditDefaultsOnly)
+	float MaxHealth = 100;
+
+	UPROPERTY(VisibleAnywhere)
+	float Health;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AGun> GunClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	AGun* Gun;
+	
 };
 

@@ -41,7 +41,8 @@ public:
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
-
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* ShootAction;
 
 
 protected:
@@ -57,6 +58,7 @@ protected:
 	void Move(const FInputActionValue& Value);
 	// Rotation Control
 	void LookMouse();
+	void Shoot();
 
 private:
 	FVector CachedDestination;
