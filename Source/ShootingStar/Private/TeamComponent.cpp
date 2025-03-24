@@ -17,3 +17,8 @@ void UTeamComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 	DOREPLIFETIME(UTeamComponent, Team);
 }
+
+void UTeamComponent::OnRep_Team()
+{
+	OnTeamChanged.Broadcast(Team);
+}

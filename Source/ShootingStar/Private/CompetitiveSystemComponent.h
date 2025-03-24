@@ -18,7 +18,7 @@ enum class ECompetitiveGamePhase : uint8
 };
 
 /**
-* 5판3선승 게임인 경쟁 모드의 동작과 상태를 정의하는 컴포넌트입니다.
+* 3선승 게임인 경쟁 모드의 동작과 상태를 정의하는 컴포넌트입니다.
 * @details RoundScore는 한 라운드에서 각 팀이 얻은 점수를, GameScore는 승리한 라운드 수를 의미합니다.
 */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -42,14 +42,14 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	bool IsPlayerRegistered(const APlayerController* Player) const;
-	/**
-	 * 언리얼 내장 Tick(), TickComponent() 대신 유연한 구현을 위한 별도 틱 함수입니다.
-	 * @param DeltaTime 
-	 */
 
 	UFUNCTION(BlueprintCallable)
 	ETeam GetTeamOf(const APlayerController* Player) const;
 	
+	/**
+	 * 언리얼 내장 Tick(), TickComponent() 대신 유연한 구현을 위한 별도 틱 함수입니다.
+	 * @param DeltaTime 
+	 */
 	UFUNCTION(BlueprintCallable)
 	void Update(float DeltaTime);
 
@@ -60,151 +60,132 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void StartGame();
 
+	/**
+	 * 중간에 플레이어가 퇴장한 경우 등 비정상적인 상황에 호출되는, 게임을 종료하는 함수입니다.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void EndGame();
+
 	UFUNCTION(BlueprintCallable)
 	void GiveRoundScoreForTeam(ETeam Team, int Score);
 
 	UFUNCTION(BlueprintCallable)
 	void GiveRoundScoreForPlayer(const APlayerController* Player, int Score);
 
-	UFUNCTION(BlueprintCallable)
 	const TArray<APlayerController*>& GetRedTeamPlayers() const
 	{
 		return RedTeamPlayers;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	const TArray<APlayerController*>& GetBlueTeamPlayers() const
 	{
 		return BlueTeamPlayers;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetMaxPlayersPerTeam() const
 	{
 		return MaxPlayersPerTeam;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetRoundWinningScore() const
 	{
 		return RoundWinningScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetGameWinningScore() const
 	{
 		return GameWinningScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	float GetRoundTime() const
 	{
 		return RoundTime;
 	}
 
-	/**
-	 * 라운드가 종료된 후부터 다음 라운드 시작까지 대기하는 시간입니다.
-	 * @return 
-	 */
-	UFUNCTION(BlueprintCallable)
 	float GetRoundEndTime() const
 	{
 		return RoundEndTime;
 	}
 
-	/**
-	 * 모든 게임이 종료되어 퇴장까지 대기하는 시간입니다.
-	 * @return 
-	 */
-	UFUNCTION(BlueprintCallable)
-	float GetGameEndTime() const
-	{
-		return RoundTime;
-	}
-
-	/**
-	 * 현재 페이즈의 시간입니다. 라운드 페이즈인 경우 라운드 시간이 될 것이고, 게임 종료 페이즈인 경우 게임 종료 후 지난 시간이 될 것입니다.
-	 * @return 
-	 */
-	UFUNCTION(BlueprintCallable)
 	float GetCurrentPhaseTime() const
 	{
 		return CurrentPhaseTime;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetBlueTeamRoundScore() const
 	{
 		return BlueTeamRoundScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetRedTeamRoundScore() const
 	{
 		return RedTeamRoundScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetBlueTeamGameScore() const
 	{
 		return BlueTeamGameScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetRedTeamGameScore() const
 	{
 		return RedTeamGameScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	ECompetitiveGamePhase GetCurrentPhase() const
 	{
 		return CurrentPhase;
 	}
 
-private:
-	UPROPERTY(meta=(BlueprintGetter="GetMaxPlayersPerTeam"))
+protected:
+	UPROPERTY(BlueprintReadOnly)
 	int MaxPlayersPerTeam = 2;
 
-	UPROPERTY(meta=(BlueprintGetter="GetRoundWinningScore"))
+	UPROPERTY(BlueprintReadOnly)
 	int RoundWinningScore = 100;
 
-	UPROPERTY(meta=(BlueprintGetter="GetGameWinningScore"))
-	int GameWinningScore = 5;
+	UPROPERTY(BlueprintReadOnly)
+	int GameWinningScore = 3;
 
-	UPROPERTY(meta=(BlueprintGetter="GetRoundTime"))
+	UPROPERTY(BlueprintReadOnly)
 	float RoundTime = 180.0f;
 
-	UPROPERTY(meta=(BlueprintGetter="GetRoundEndTime"))
-	float RoundEndTime = 5.0f;
-
-	UPROPERTY(meta=(BlueprintGetter="GetGameEndTime"))
+	// GameEnd에서 GameDestroyed 상태로 전이까지 필요한 시간
+	UPROPERTY(BlueprintReadOnly)
 	float GameEndTime = 10.0f;
 
-	UPROPERTY(meta=(BlueprintGetter="GetRedTeamPlayers"))
+	/**
+	 * 라운드가 종료된 후부터 다음 라운드 시작까지 대기하는 시간입니다.
+	 * @return 
+	 */
+	UPROPERTY(BlueprintReadOnly)
+	float RoundEndTime = 5.0f;
+
+	UPROPERTY(BlueprintReadOnly)
 	TArray<TObjectPtr<APlayerController>> RedTeamPlayers;
 
-	UPROPERTY(meta=(BlueprintGetter="GetBlueTeamPlayers"))
+	UPROPERTY(BlueprintReadOnly)
 	TArray<TObjectPtr<APlayerController>> BlueTeamPlayers;
 
-	UPROPERTY(meta=(BlueprintGetter="GetBlueTeamRoundScore"))
+	UPROPERTY(BlueprintReadOnly)
 	int BlueTeamRoundScore;
 
-	UPROPERTY(meta=(BlueprintGetter="GetRedTeamRoundScore"))
+	UPROPERTY(BlueprintReadOnly)
 	int RedTeamRoundScore;
 
-	UPROPERTY(meta=(BlueprintGetter="GetBlueTeamGameScore"))
+	UPROPERTY(BlueprintReadOnly)
 	int BlueTeamGameScore;
 
-	UPROPERTY(meta=(BlueprintGetter="GetRedTeamGameScore"))
+	UPROPERTY(BlueprintReadOnly)
 	int RedTeamGameScore;
-
-	UPROPERTY(meta=(BlueprintGetter="GetCurrentPhaseTime"))
+	
+	UPROPERTY(BlueprintReadOnly)
 	float CurrentPhaseTime;
 
-	UPROPERTY(meta=(BlueprintGetter="GetCurrentPhase"))
+	UPROPERTY(BlueprintReadOnly)
 	ECompetitiveGamePhase CurrentPhase;
 
+private:
 	void Update_WaitingForStart();
 
 	void Update_Game();

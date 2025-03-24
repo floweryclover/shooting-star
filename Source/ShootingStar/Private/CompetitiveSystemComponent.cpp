@@ -127,6 +127,19 @@ void UCompetitiveSystemComponent::StartGame()
 	CurrentPhaseTime = 0.0f;
 }
 
+void UCompetitiveSystemComponent::EndGame()
+{
+	ensure(CurrentPhase != ECompetitiveGamePhase::GameDestroyed);
+	ensure(CurrentPhase != ECompetitiveGamePhase::GameEnd);
+	if (CurrentPhase == ECompetitiveGamePhase::GameDestroyed || CurrentPhase == ECompetitiveGamePhase::GameEnd)
+	{
+		return;
+	}
+
+	CurrentPhase = ECompetitiveGamePhase::GameEnd;
+	CurrentPhaseTime = 0.0f;
+}
+
 void UCompetitiveSystemComponent::GiveRoundScoreForTeam(const ETeam Team, const int Score)
 {
 	ensure(Team != ETeam::None && CurrentPhase == ECompetitiveGamePhase::Game);

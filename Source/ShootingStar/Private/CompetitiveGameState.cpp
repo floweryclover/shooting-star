@@ -5,22 +5,30 @@
 #include "CompetitiveGameMode.h"
 #include "Net/UnrealNetwork.h"
 
+ACompetitiveGameState::ACompetitiveGameState()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
+
 void ACompetitiveGameState::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!HasAuthority() || !GetWorld())
+	if (!HasAuthority())
+	{
+		return;
+	}
+	ensure(GetWorld());
+
+	ACompetitiveGameMode* const CompetitiveGameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+	ensure(CompetitiveGameMode);
+	if (!CompetitiveGameMode)
 	{
 		return;
 	}
 
-	ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
-	if (!GameMode)
-	{
-		return;
-	}
-
-	UCompetitiveSystemComponent* const CompetitiveSystem = GameMode->GetCompetitiveSystemComponent();
+	UCompetitiveSystemComponent* const CompetitiveSystem = CompetitiveGameMode->GetCompetitiveSystemComponent();
+	ensure(CompetitiveSystem);
 	if (!CompetitiveSystem)
 	{
 		return;
@@ -50,6 +58,7 @@ void ACompetitiveGameState::Tick(float DeltaSeconds)
 	{
 		OnRep_PhaseTime();
 	}
+	ensure(false);
 }
 
 void ACompetitiveGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

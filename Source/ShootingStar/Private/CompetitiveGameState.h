@@ -25,75 +25,65 @@ class ACompetitiveGameState final : public AGameStateBase
 	GENERATED_BODY()
 
 public:
+	ACompetitiveGameState();
+	
 	virtual void Tick(float DeltaSeconds) override;
 
-	UFUNCTION(BlueprintCallable)
 	int GetBlueTeamRoundScore() const
 	{
 		return BlueTeamRoundScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetRedTeamRoundScore() const
 	{
 		return RedTeamRoundScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetBlueTeamGameScore() const
 	{
 		return BlueTeamGameScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	int GetRedTeamGameScore() const
 	{
 		return RedTeamGameScore;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	float GetPhaseTime() const
 	{
 		return PhaseTime;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	ECompetitiveGamePhase GetPhase() const
 	{
 		return Phase;
 	}
 
-	UFUNCTION(BlueprintCallable)
 	void BindOnBlueTeamRoundScoreChanged(const FIntChangedHandler& Delegate)
 	{
 		OnBlueTeamRoundScoreChanged.Add(Delegate);
 	}
 	
-	UFUNCTION(BlueprintCallable)
 	void BindOnRedTeamRoundScoreChanged(const FIntChangedHandler& Delegate)
 	{
 		OnRedTeamRoundScoreChanged.Add(Delegate);
 	}
 
-	UFUNCTION(BlueprintCallable)
 	void BindOnBlueTeamGameScoreChanged(const FIntChangedHandler& Delegate)
 	{
 		OnRedTeamGameScoreChanged.Add(Delegate);
 	}
 
-	UFUNCTION(BlueprintCallable)
 	void BindOnRedTeamGameScoreChanged(const FIntChangedHandler& Delegate)
 	{
 		OnBlueTeamGameScoreChanged.Add(Delegate);
 	}
 
-	UFUNCTION(BlueprintCallable)
 	void BindOnPhaseChanged(const FPhaseChangedHandler& Delegate)
 	{
 		OnPhaseChanged.Add(Delegate);
 	}
 
-	UFUNCTION(BlueprintCallable)
 	void BindOnPhaseTimeChanged(const FFloatChangedHandler& Delegate)
 	{
 		OnPhaseTimeChanged.Add(Delegate);
@@ -101,43 +91,44 @@ public:
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-private:
-	UPROPERTY(ReplicatedUsing=OnRep_BlueTeamRoundScore, meta=(BlueprintGetter=GetBlueTeamRoundScore))
+	
+	UPROPERTY(ReplicatedUsing=OnRep_BlueTeamRoundScore, BlueprintReadOnly)
 	int BlueTeamRoundScore;
 
-	UPROPERTY(ReplicatedUsing=OnRep_RedTeamRoundScore, meta=(BlueprintGetter=GetRedTeamRoundScore))
+	UPROPERTY(ReplicatedUsing=OnRep_RedTeamRoundScore, BlueprintReadOnly)
 	int RedTeamRoundScore;
 
-	UPROPERTY(ReplicatedUsing=OnRep_BlueTeamGameScore, meta=(BlueprintGetter=GetBlueTeamGameScore))
+	UPROPERTY(ReplicatedUsing=OnRep_BlueTeamGameScore, BlueprintReadOnly)
 	int BlueTeamGameScore;
 
-	UPROPERTY(ReplicatedUsing=OnRep_RedTeamGameScore, meta=(BlueprintGetter=GetRedTeamGameScore))
+	UPROPERTY(ReplicatedUsing=OnRep_RedTeamGameScore, BlueprintReadOnly)
 	int RedTeamGameScore;
 
-	UPROPERTY(ReplicatedUsing=OnRep_PhaseTime, meta=(BlueprintGetter=GetPhaseTime))
+	UPROPERTY(ReplicatedUsing=OnRep_PhaseTime, BlueprintReadOnly)
 	float PhaseTime;
 
-	UPROPERTY(ReplicatedUsing=OnRep_Phase, meta=(BlueprintGetter=GetPhase))
+	UPROPERTY(ReplicatedUsing=OnRep_Phase, BlueprintReadOnly)
 	ECompetitiveGamePhase Phase;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintAssignable)
 	FIntChanged OnBlueTeamRoundScoreChanged;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintAssignable)
 	FIntChanged OnRedTeamRoundScoreChanged;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintAssignable)
 	FIntChanged OnBlueTeamGameScoreChanged;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintAssignable)
 	FIntChanged OnRedTeamGameScoreChanged;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintAssignable)
 	FPhaseChanged OnPhaseChanged;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintAssignable)
 	FFloatChanged OnPhaseTimeChanged;
+	
+private:
 
 	UFUNCTION()
 	void OnRep_BlueTeamRoundScore();
