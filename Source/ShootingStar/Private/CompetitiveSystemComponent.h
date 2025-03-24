@@ -28,23 +28,6 @@ class UCompetitiveSystemComponent final : public UActorComponent
 
 public:
 	UCompetitiveSystemComponent();
-	/**
-	 * 해당 플레이어를 해당 팀에 배정하고 등록합니다.
-	 * WaitingForStart 페이즈에서만 가능합니다.
-	 * 플레이어 등록에 실패한 경우 false를 반환하며 내부적으로 등록되지 않습니다(이 경우 접속을 종료해야 할 것).
-	 * @param InPlayer
-	 * @param InTeam None인 경우 임의로 배정합니다.
-	 * @param OutFailReason 반환값이 false인 경우 실패 이유가 저장됩니다.
-	 * @return 유효하지 않은 플레이어인 경우 false
-	 */
-	UFUNCTION(BlueprintCallable)
-	bool RegisterPlayer(APlayerController* InPlayer, ETeam InTeam, FText& OutFailReason);
-	
-	UFUNCTION(BlueprintCallable)
-	bool IsPlayerRegistered(const APlayerController* Player) const;
-
-	UFUNCTION(BlueprintCallable)
-	ETeam GetTeamOf(const APlayerController* Player) const;
 	
 	/**
 	 * 언리얼 내장 Tick(), TickComponent() 대신 유연한 구현을 위한 별도 틱 함수입니다.
@@ -69,24 +52,20 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void GiveRoundScoreForTeam(ETeam Team, int Score);
 
+	/**
+	 * 플레이어에게 할당해 줄 수 있는 팀을 계산합니다.
+	 * @remarks 양 팀의 정원이 모두 가득 찬 경우 None이 반환됩니다.
+	 * @param PlayerArray 
+	 * @return 
+	 */
 	UFUNCTION(BlueprintCallable)
-	void GiveRoundScoreForPlayer(const APlayerController* Player, int Score);
-
-	const TArray<APlayerController*>& GetRedTeamPlayers() const
-	{
-		return RedTeamPlayers;
-	}
-
-	const TArray<APlayerController*>& GetBlueTeamPlayers() const
-	{
-		return BlueTeamPlayers;
-	}
+	ETeam GetTeamForNextPlayer(const TArray<APlayerState*>& PlayerArray) const;
 
 	int GetMaxPlayersPerTeam() const
 	{
 		return MaxPlayersPerTeam;
 	}
-
+	
 	int GetRoundWinningScore() const
 	{
 		return RoundWinningScore;
@@ -140,7 +119,7 @@ public:
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	int MaxPlayersPerTeam = 2;
-
+	
 	UPROPERTY(BlueprintReadOnly)
 	int RoundWinningScore = 100;
 
@@ -160,12 +139,6 @@ protected:
 	 */
 	UPROPERTY(BlueprintReadOnly)
 	float RoundEndTime = 5.0f;
-
-	UPROPERTY(BlueprintReadOnly)
-	TArray<TObjectPtr<APlayerController>> RedTeamPlayers;
-
-	UPROPERTY(BlueprintReadOnly)
-	TArray<TObjectPtr<APlayerController>> BlueTeamPlayers;
 
 	UPROPERTY(BlueprintReadOnly)
 	int BlueTeamRoundScore;

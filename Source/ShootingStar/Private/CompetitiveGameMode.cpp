@@ -7,15 +7,20 @@
 #include "CompetitiveSystemComponent.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
+	: NumPlayers{1} // 호스트 항상 포함
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	PlayerControllerClass = ACompetitivePlayerController::StaticClass();
 	GameStateClass = ACompetitiveGameState::StaticClass();
-	CompetitiveSystemComponent = CreateDefaultSubobject<UCompetitiveSystemComponent>(TEXT("CompetitiveSystemComponent"));
+	CompetitiveSystemComponent = CreateDefaultSubobject<
+		UCompetitiveSystemComponent>(TEXT("CompetitiveSystemComponent"));
 }
 
 void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	
 	CompetitiveSystemComponent->Update(DeltaSeconds);
 	const ECompetitiveGamePhase CurrentPhase = CompetitiveSystemComponent->GetCurrentPhase();
 	if (CurrentPhase == ECompetitiveGamePhase::WaitingForStart)
@@ -37,38 +42,56 @@ void ACompetitiveGameMode::OnPostLogin(AController* const NewPlayer)
 {
 	Super::OnPostLogin(NewPlayer);
 
-	ACompetitivePlayerController* const CompetitivePlayerController = Cast<ACompetitivePlayerController>(NewPlayer);
-	ensure(CompetitivePlayerController);
-	if (!CompetitivePlayerController)
-	{
-		return;
-	}
+	UTeamComponent* const TeamComponent = Cast<UTeamComponent>(
+		NewPlayer->GetComponentByClass(UTeamComponent::StaticClass()));
+	check(TeamComponent != nullptr);
 
-	UTeamComponent* const TeamComponent = CompetitivePlayerController->GetTeamComponent();
-	check(CompetitiveSystemComponent);
-	check(TeamComponent);
-	FText FailReason;
-	if (!CompetitiveSystemComponent->RegisterPlayer(CompetitivePlayerController, TeamComponent->GetTeam(), FailReason))
+	// 로비를 거치지 않고 시작한 경우 등 팀이 없는 경우에는 새로 할당
+	if (TeamComponent->GetTeam() == ETeam::None)
 	{
-		GEngine->AddOnScreenDebugMessage(0, 5.0f, FColor::Red, FailReason.ToString());
-		CompetitiveSystemComponent->EndGame();
+		const ETeam TeamToAssign = CompetitiveSystemComponent->GetTeamForNextPlayer(GetGameState<AGameStateBase>()->PlayerArray);
+		
+		// 혹시 팀 할당에 실패했으면 즉시 게임 종료
+		if (TeamToAssign == ETeam::None)
+		{
+			CompetitiveSystemComponent->EndGame();
+			return;
+		}
+		TeamComponent->SetTeam(TeamToAssign);
+	}
+}
+
+void ACompetitiveGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId,
+                                    FString& ErrorMessage)
+{
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+	
+	if (NumPlayers >= CompetitiveSystemComponent->GetMaxPlayersPerTeam() * 2)
+	{
+		ErrorMessage = TEXT("정원이 가득 찼습니다.");
 		return;
 	}
-	// 로비 등을 거치지 않고 게임을 시작한 경우, TeamComponent->Team은 ETeam::None이 되어 RegisterPlayer가 새로 임의의 팀에 할당함
-	// 따라서 이러한 경우를 위해 다시 값을 설정
-	TeamComponent->SetTeam(CompetitiveSystemComponent->GetTeamOf(CompetitivePlayerController));
+	NumPlayers += 1;
+}
+
+void ACompetitiveGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	NumPlayers -= 1;
 }
 
 void ACompetitiveGameMode::SwapPlayerControllers(APlayerController* const OldPC, APlayerController* const NewPC)
 {
 	Super::SwapPlayerControllers(OldPC, NewPC);
 
-	UTeamComponent* const OldTeamComponent = Cast<UTeamComponent>(OldPC->GetComponentByClass(UTeamComponent::StaticClass()));
-	UTeamComponent* const NewTeamComponent = Cast<UTeamComponent>(NewPC->GetComponentByClass(UTeamComponent::StaticClass()));
+	UTeamComponent* const OldTeamComponent = Cast<UTeamComponent>(
+		OldPC->GetComponentByClass(UTeamComponent::StaticClass()));
+	UTeamComponent* const NewTeamComponent = Cast<UTeamComponent>(
+		NewPC->GetComponentByClass(UTeamComponent::StaticClass()));
 	if (OldTeamComponent == nullptr || NewTeamComponent == nullptr)
 	{
 		return;
 	}
 	NewTeamComponent->SetTeam(OldTeamComponent->GetTeam());
 }
-

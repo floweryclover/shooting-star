@@ -22,15 +22,27 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	virtual void OnPostLogin(AController* NewPlayer) override;
+
+	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
+
+	virtual void Logout(AController* Exiting) override;
 	
 	virtual void SwapPlayerControllers(APlayerController* OldPC, APlayerController* NewPC) override;
+
+	virtual int32 GetNumPlayers() override
+	{
+		return NumPlayers;
+	}
 	
 	UCompetitiveSystemComponent* GetCompetitiveSystemComponent() const
 	{
 		return CompetitiveSystemComponent;
 	}
-	
+
 protected:
+	UPROPERTY(BlueprintReadOnly)
+	int32 NumPlayers;
+	
 	// 게임 입장 후 게임 시작까지 필요한 시간
 	UPROPERTY(BlueprintReadOnly)
 	float GameStartSeconds = 10.0f;
@@ -40,5 +52,5 @@ protected:
 	FName ExitLevel = TEXT("/Game/Levels/Lobby");
 	
 	UPROPERTY(BlueprintReadOnly)
-	UCompetitiveSystemComponent* CompetitiveSystemComponent;
+	TObjectPtr<UCompetitiveSystemComponent> CompetitiveSystemComponent;
 };

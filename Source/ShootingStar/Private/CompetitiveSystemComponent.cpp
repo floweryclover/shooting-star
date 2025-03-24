@@ -3,6 +3,7 @@
 
 #include "CompetitiveSystemComponent.h"
 
+#include "GameFramework/PlayerState.h"
 #include "ShootingStar/ShootingStar.h"
 
 UCompetitiveSystemComponent::UCompetitiveSystemComponent()
@@ -13,80 +14,6 @@ UCompetitiveSystemComponent::UCompetitiveSystemComponent()
 	  CurrentPhaseTime{0.0f},
 	  CurrentPhase{ECompetitiveGamePhase::WaitingForStart}
 {
-}
-
-
-bool UCompetitiveSystemComponent::RegisterPlayer(APlayerController* const InPlayer, ETeam InTeam, FText& OutFailReason)
-{
-	ensure(CurrentPhase == ECompetitiveGamePhase::WaitingForStart);
-	if (CurrentPhase != ECompetitiveGamePhase::WaitingForStart)
-	{
-		return false;
-	}
-
-	ensure(InPlayer);
-	if (!IsValid(InPlayer))
-	{
-		OutFailReason = FText::FromString(TEXT("InPlayer가 유효하지 않습니다."));
-		return false;
-	}
-
-	if (RedTeamPlayers.Num() >= MaxPlayersPerTeam && BlueTeamPlayers.Num() >= MaxPlayersPerTeam)
-	{
-		OutFailReason = FText::FromString(TEXT("참여 가능한 팀이 없습니다."));
-		return false;
-	}
-
-	if (InTeam == ETeam::None)
-	{
-		if (RedTeamPlayers.Num() <= BlueTeamPlayers.Num())
-		{
-			InTeam = ETeam::Red;
-		}
-		else
-		{
-			InTeam = ETeam::Blue;
-		}
-	}
-
-	TArray<TObjectPtr<APlayerController>>& SelectedTeamPlayers =
-		InTeam == ETeam::Red ? RedTeamPlayers : BlueTeamPlayers;
-	if (SelectedTeamPlayers.Num() >= MaxPlayersPerTeam)
-	{
-		FString Reason = TEXT("플레이어를 ");
-		Reason += InTeam == ETeam::Red ? TEXT("레드팀") : TEXT("블루팀");
-		Reason += TEXT("에 등록하려고 시도했으나, 해당 팀에 더 이상 자리가 없습니다.");
-		OutFailReason = FText::FromString(Reason);
-		return false;
-	}
-
-	SelectedTeamPlayers.Push(InPlayer);
-	return true;
-}
-
-bool UCompetitiveSystemComponent::IsPlayerRegistered(const APlayerController* const Player) const
-{
-	return GetTeamOf(Player) != ETeam::None;
-}
-
-ETeam UCompetitiveSystemComponent::GetTeamOf(const APlayerController* const Player) const
-{
-	for (const auto& RedTeamPlayer : RedTeamPlayers)
-	{
-		if (Player == RedTeamPlayer)
-		{
-			return ETeam::Red;
-		}
-	}
-	for (const auto& BlueTeamPlayer : BlueTeamPlayers)
-	{
-		if (Player == BlueTeamPlayer)
-		{
-			return ETeam::Blue;
-		}
-	}
-
-	return ETeam::None;
 }
 
 void UCompetitiveSystemComponent::Update(const float DeltaTime)
@@ -117,11 +44,7 @@ void UCompetitiveSystemComponent::Update(const float DeltaTime)
 
 void UCompetitiveSystemComponent::StartGame()
 {
-	ensure(CurrentPhase == ECompetitiveGamePhase::WaitingForStart);
-	if (CurrentPhase != ECompetitiveGamePhase::WaitingForStart)
-	{
-		return;
-	}
+	check(CurrentPhase == ECompetitiveGamePhase::WaitingForStart);
 
 	CurrentPhase = ECompetitiveGamePhase::Game;
 	CurrentPhaseTime = 0.0f;
@@ -129,12 +52,8 @@ void UCompetitiveSystemComponent::StartGame()
 
 void UCompetitiveSystemComponent::EndGame()
 {
-	ensure(CurrentPhase != ECompetitiveGamePhase::GameDestroyed);
-	ensure(CurrentPhase != ECompetitiveGamePhase::GameEnd);
-	if (CurrentPhase == ECompetitiveGamePhase::GameDestroyed || CurrentPhase == ECompetitiveGamePhase::GameEnd)
-	{
-		return;
-	}
+	check(CurrentPhase != ECompetitiveGamePhase::GameDestroyed);
+	check(CurrentPhase != ECompetitiveGamePhase::GameEnd);
 
 	CurrentPhase = ECompetitiveGamePhase::GameEnd;
 	CurrentPhaseTime = 0.0f;
@@ -142,7 +61,6 @@ void UCompetitiveSystemComponent::EndGame()
 
 void UCompetitiveSystemComponent::GiveRoundScoreForTeam(const ETeam Team, const int Score)
 {
-	ensure(Team != ETeam::None && CurrentPhase == ECompetitiveGamePhase::Game);
 	if (Team == ETeam::None || CurrentPhase != ECompetitiveGamePhase::Game)
 	{
 		return;
@@ -152,29 +70,38 @@ void UCompetitiveSystemComponent::GiveRoundScoreForTeam(const ETeam Team, const 
 	TeamScore += Score;
 }
 
-void UCompetitiveSystemComponent::GiveRoundScoreForPlayer(const APlayerController* const Player, const int Score)
+ETeam UCompetitiveSystemComponent::GetTeamForNextPlayer(const TArray<APlayerState*>& PlayerArray) const
 {
-	for (const auto& RedTeamPlayer : RedTeamPlayers)
+	int NumBlueTeamPlayers = 0;
+	int NumRedTeamPlayers = 0;
+	for (const auto PlayerState : PlayerArray)
 	{
-		if (Player == RedTeamPlayer)
+		UTeamComponent* TeamComponent = Cast<UTeamComponent>(PlayerState->GetPlayerController()->GetComponentByClass(UTeamComponent::StaticClass()));
+		check(TeamComponent != nullptr);
+
+		if (TeamComponent->GetTeam() == ETeam::Red)
 		{
-			GiveRoundScoreForTeam(ETeam::Red, Score);
-			return;
+			NumRedTeamPlayers += 1;
+		}
+		else if (TeamComponent->GetTeam() == ETeam::Blue)
+		{
+			NumBlueTeamPlayers += 1;
 		}
 	}
 
-	for (const auto& BlueTeamPlayer : BlueTeamPlayers)
+	if (NumRedTeamPlayers >= MaxPlayersPerTeam && NumBlueTeamPlayers >= MaxPlayersPerTeam)
 	{
-		if (Player == BlueTeamPlayer)
-		{
-			GiveRoundScoreForTeam(ETeam::Blue, Score);
-			return;
-		}
+		return ETeam::None;	
 	}
-
-	ensure(false);
+	else if (NumBlueTeamPlayers <= NumRedTeamPlayers)
+	{
+		return ETeam::Blue;
+	}
+	else
+	{
+		return ETeam::Red;
+	}
 }
-
 
 void UCompetitiveSystemComponent::Update_WaitingForStart()
 {
