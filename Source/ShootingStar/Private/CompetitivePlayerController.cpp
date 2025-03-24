@@ -6,5 +6,5 @@
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
-	CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
+	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 }
