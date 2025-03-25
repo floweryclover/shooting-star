@@ -35,38 +35,47 @@ void AGun::Tick(float DeltaTime)
 
 void AGun::PullTrigger()
 {
-	UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, Mesh, TEXT("MuzzleFlashSocket"));
+    APawn* OwnerPawn = Cast<APawn>(GetOwner());
+    if (!OwnerPawn)
+    {
+        UE_LOG(LogTemp, Error, TEXT("OwnerPawn is nullptr!"));
+        return;
+    }
 
-	APawn* OwnerPawn = Cast<APawn>(GetOwner());
-	if (OwnerPawn == nullptr) return;
-	AController* OwnerController = OwnerPawn->GetController();
-	if (OwnerController == nullptr) return;
+    AController* OwnerController = OwnerPawn->GetController();
+    if (!OwnerController)
+    {
+        UE_LOG(LogTemp, Error, TEXT("OwnerController is nullptr!"));
+        return;
+    }
 
+    FVector Location = OwnerPawn->GetActorLocation() + OwnerPawn->GetActorForwardVector() * 100.0f;
+    FRotator Rotation = OwnerPawn->GetActorRotation();
 
-	FVector Location = OwnerPawn->GetActorLocation() + OwnerPawn->GetActorForwardVector() * 100.0f;
-	FRotator Rotation = OwnerPawn->GetActorRotation();
-	
-	FVector End = Location + Rotation.Vector() * MaxRange;
-	// TODO: LineTrace
-	FHitResult Hit;
-	bool bSuccess = GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_GameTraceChannel1);
+    FVector End = Location + Rotation.Vector() * MaxRange;
 
-	if (bSuccess)
-	{	
-		DrawDebugLine(GetWorld(), Location, End, FColor::Green, false, 2, 0, 2);
-		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f );
+    FHitResult Hit;
+    bool bSuccess = GetWorld()->LineTraceSingleByChannel(Hit, Location, End, ECollisionChannel::ECC_GameTraceChannel1);
 
-		FVector ShotDirection = -Rotation.Vector();
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor != nullptr)
-		{
-			FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, nullptr);
-			HitActor->TakeDamage(Damage, DamageEvent, OwnerController, this);
-		}
+    if (bSuccess)
+    {
+        DrawDebugLine(GetWorld(), Location, End, FColor::Green, false, 2, 0, 2);
+        DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
 
-	}
+        FVector ShotDirection = -Rotation.Vector();
+        AActor* HitActor = Hit.GetActor();
 
-	
+        if (HitActor)
+        {
+            if (!OwnerController)
+            {
+                UE_LOG(LogTemp, Error, TEXT("OwnerController is nullptr in TakeDamage!"));
+                return;
+            }
 
+            FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, nullptr);
+            HitActor->TakeDamage(Damage, DamageEvent, OwnerController, this);
+        }
+    }
 }
 
