@@ -31,6 +31,7 @@ public:
 
 	virtual int32 GetNumPlayers() override
 	{
+		Super::GetNumPlayers();
 		return NumPlayers;
 	}
 	

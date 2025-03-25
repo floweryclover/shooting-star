@@ -11,6 +11,7 @@ ACompetitiveGameMode::ACompetitiveGameMode()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	bUseSeamlessTravel = true;
 	PlayerControllerClass = ACompetitivePlayerController::StaticClass();
 	GameStateClass = ACompetitiveGameState::StaticClass();
 	CompetitiveSystemComponent = CreateDefaultSubobject<
