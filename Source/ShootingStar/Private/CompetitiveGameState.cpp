@@ -58,7 +58,6 @@ void ACompetitiveGameState::Tick(float DeltaSeconds)
 	{
 		OnRep_PhaseTime();
 	}
-	ensure(false);
 }
 
 void ACompetitiveGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
