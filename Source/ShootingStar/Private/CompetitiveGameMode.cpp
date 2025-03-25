@@ -78,6 +78,13 @@ void ACompetitiveGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
 
+	// 누군가 게임을 도중에 나갈 경우 게임 즉시 종료
+	const ECompetitiveGamePhase Phase = CompetitiveSystemComponent->GetCurrentPhase();
+	if (Phase != ECompetitiveGamePhase::GameEnd && Phase != ECompetitiveGamePhase::GameDestroyed)
+	{
+		CompetitiveSystemComponent->EndGame();
+	}
+	
 	NumPlayers -= 1;
 }
 
