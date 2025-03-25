@@ -38,9 +38,9 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 	}
 }
 
-void ACompetitiveGameMode::OnPostLogin(AController* const NewPlayer)
+void ACompetitiveGameMode::PostLogin(APlayerController* const NewPlayer)
 {
-	Super::OnPostLogin(NewPlayer);
+	Super::PostLogin(NewPlayer);
 
 	UTeamComponent* const TeamComponent = Cast<UTeamComponent>(
 		NewPlayer->GetComponentByClass(UTeamComponent::StaticClass()));
