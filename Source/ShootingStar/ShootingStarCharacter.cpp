@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ShootingStarCharacter.h"
+#include "Gun.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
@@ -45,7 +46,45 @@ AShootingStarCharacter::AShootingStarCharacter()
 	PrimaryActorTick.bStartWithTickEnabled = true;
 }
 
+void AShootingStarCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	Health = MaxHealth;
+	
+	Gun = GetWorld()->SpawnActor<AGun>(GunClass);
+	if (Gun) 
+	{
+		Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("WeaponSocket"));
+		Gun->SetOwner(this);
+	}
+}
+
+bool AShootingStarCharacter::IsDead() const
+{
+	return Health <= 0;
+}
+
+float AShootingStarCharacter::GetHealthPercent() const
+{
+	return Health / MaxHealth;
+}
+
+
 void AShootingStarCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+}
+void AShootingStarCharacter::PullTrigger()
+{	
+	Gun->PullTrigger();
+}
+float AShootingStarCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+{
+	float DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	DamageToApply = FMath::Min(Health, DamageToApply);
+	Health -= DamageToApply;
+	UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
+
+	return DamageToApply;
 }
