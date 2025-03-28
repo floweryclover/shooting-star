@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright floweryclover 2024, All rights reserved. -->
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+    <init>
+        <log text="AndroidUPL Init"></log>
+        <trace enable="true"/>
+    </init>
+
+    <prebuildCopies>
+        <copyDir src="$S(PluginDir)/Private/Android" dst="$S(BuildDir)/src/com/shootingstar/wifidirect" />
+    </prebuildCopies>
+
+    <gameActivityImportAdditions>
+        <insert>
+            import java.util.stream.Collectors;
+            import android.util.Log;
+            import android.content.IntentFilter;
+            import android.net.wifi.p2p.WifiP2pManager;
+            import android.net.wifi.p2p.WifiP2pManager.ActionListener;
+            import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
+            import android.net.wifi.p2p.WifiP2pManager.GroupInfoListener;
+            import android.net.wifi.p2p.WifiP2pManager.P2pStateListener;
+            import android.net.wifi.p2p.WifiP2pManager.Channel;
+            import android.net.wifi.p2p.WifiP2pManager.Channel;
+            import android.net.wifi.p2p.WifiP2pDevice;
+            import android.net.wifi.p2p.WifiP2pConfig;
+            import android.net.wifi.p2p.WifiP2pInfo;
+            import android.net.wifi.p2p.WifiP2pGroup;
+            import android.net.wifi.WpsInfo;
+            import android.net.MacAddress;
+
+            import com.shootingstar.wifidirect.WifiDirectCallbacks;
+        </insert>
+    </gameActivityImportAdditions>
+
+    <gameActivityClassAdditions>
+        <insert>
+            private final IntentFilter intentFilter = new IntentFilter();
+            private Channel channel;
+            private WifiP2pManager manager;
+
+            public void discoverPeers() {
+                manager.discoverPeers(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {}
+
+                    @Override
+                    public void onFailure(int reasonCode) {
+                        WifiDirectCallbacks.onWifiDirectDiscoverPeersError(reasonCode);
+                    }
+                });
+            }
+
+            public void stopPeerDiscovery() {
+                manager.stopPeerDiscovery(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {}
+        
+                    @Override
+                    public void onFailure(int reasonCode) {}
+                });
+            }
+
+            public void removeGroup() {
+                manager.removeGroup(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {}
+        
+                    @Override
+                    public void onFailure(int reasonCode) {
+                        WifiDirectCallbacks.onWifiDirectRemoveGroupError(reasonCode);
+                    }
+                });
+            }
+            
+            public void requestP2pState() {
+                manager.requestP2pState(channel, new P2pStateListener() {
+                    @Override
+                    public void onP2pStateAvailable(int state) {
+                        WifiDirectCallbacks.onWifiDirectRefreshP2pState(state == WifiP2pManager.WIFI_P2P_STATE_ENABLED);
+                    }
+                });
+            }
+
+            public void connectToDevice(String deviceAddress) {
+                WifiP2pConfig config = new WifiP2pConfig();
+                config.deviceAddress = deviceAddress;
+                manager.connect(channel, config, new ActionListener() {
+                    @Override
+                    public void onSuccess() { }
+
+                    @Override
+                    public void onFailure(int reason) {
+                        WifiDirectCallbacks.onWifiDirectConnectError(reason);
+                    }
+                });
+            }
+        </insert>
+    </gameActivityClassAdditions>
+
+    <gameActivityOnCreateAdditions>
+        <insert>
+            intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
+            intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
+            intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
+            intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+            manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
+            channel = manager.initialize(this, getMainLooper(), null); // REQUIRES android.permission.CHANGE_WIFI_STATE
+        </insert>
+    </gameActivityOnCreateAdditions>
+
+    <gameActivityOnPauseAdditions>
+        <insert>
+        </insert>
+    </gameActivityOnPauseAdditions>
+
+    <gameActivityOnResumeAdditions>
+        <insert>
+        </insert>
+    </gameActivityOnResumeAdditions>
+</root>
