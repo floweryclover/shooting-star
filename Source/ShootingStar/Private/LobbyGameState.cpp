@@ -30,7 +30,7 @@ void ALobbyGameState::Tick(const float DeltaSeconds)
 		BlueTeamPlayerNames.Empty();
 		RedTeamPlayerNames.Empty();
 
-		for (const auto PlayerState : PlayerArray)
+		for (const auto& PlayerState : PlayerArray)
 		{
 			AController* const Controller = PlayerState->GetOwningController();
 
