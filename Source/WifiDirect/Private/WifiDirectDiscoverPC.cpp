@@ -2,7 +2,6 @@
 
 
 #include "WifiDirectDiscoverPC.h"
-#include "ShootingStarGameInstance.h"
 #include "Blueprint/UserWidget.h"
 
 AWifiDirectDiscoverPC::AWifiDirectDiscoverPC()
@@ -32,26 +31,26 @@ void AWifiDirectDiscoverPC::BeginPlay()
 
 void AWifiDirectDiscoverPC::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	Super::EndPlay(EndPlayReason);
-
-	UShootingStarGameInstance* const GameInstance = Cast<UShootingStarGameInstance>(GetGameInstance());
-	check(IsValid(GameInstance));
-
-	GameInstance->StopPeerDiscovering();
+	// Super::EndPlay(EndPlayReason);
+	//
+	// UShootingStarGameInstance* const GameInstance = Cast<UShootingStarGameInstance>(GetGameInstance());
+	// check(IsValid(GameInstance));
+	//
+	// GameInstance->StopPeerDiscovering();
 }
 
 void AWifiDirectDiscoverPC::Tick(const float DeltaSeconds)
 {
-	Super::Tick(DeltaSeconds);
-
-	PeerDiscoveringElapsed += DeltaSeconds;
-	if (PeerDiscoveringElapsed >= PeerDiscoveringInterval)
-	{
-		PeerDiscoveringElapsed = 0.0f;
-
-		UShootingStarGameInstance* const GameInstance = Cast<UShootingStarGameInstance>(GetGameInstance());
-		check(IsValid(GameInstance));
-
-		GameInstance->StartPeerDiscovering();
-	}
+	// Super::Tick(DeltaSeconds);
+	//
+	// PeerDiscoveringElapsed += DeltaSeconds;
+	// if (PeerDiscoveringElapsed >= PeerDiscoveringInterval)
+	// {
+	// 	PeerDiscoveringElapsed = 0.0f;
+	//
+	// 	UShootingStarGameInstance* const GameInstance = Cast<UShootingStarGameInstance>(GetGameInstance());
+	// 	check(IsValid(GameInstance));
+	//
+	// 	GameInstance->StartPeerDiscovering();
+	// }
 }

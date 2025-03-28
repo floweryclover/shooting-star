@@ -12,7 +12,7 @@ class UAndroidPermissionCallbackProxy;
  * 
  */
 UCLASS()
-class UAndroidFunctionLibrary final : public UBlueprintFunctionLibrary
+class WIFIDIRECT_API UAndroidFunctionLibrary final : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 

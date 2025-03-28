@@ -1,32 +1,31 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
-#include "ShootingStarGameInstance.h"
-#include "Kismet/GameplayStatics.h"
 
-#if PLATFORM_ANDROID
+#include "WifiDirectInterface.h"
+
+#if PLATFORM_ANDROID && USE_ANDROID_JNI
 #include <Android/AndroidApplication.h>
 #include <Android/AndroidJNI.h>
 #endif
 
-namespace
+UWifiDirectInterface* UWifiDirectInterface::GetWifiDirectInterface()
 {
-	UShootingStarGameInstance* GameInstance{nullptr};
+    static UWifiDirectInterface* Instance;
+    if (!Instance) {
+        Instance = NewObject<UWifiDirectInterface>();
+        Instance->AddToRoot();
+    }
+    return Instance;
 }
 
-void UShootingStarGameInstance::Init()
-{
-    Super::Init();
-    GameInstance = this;
-}
-
-void UShootingStarGameInstance::ConnectToNearbyDevice(const FString& DeviceAddress)
+void UWifiDirectInterface::ConnectToNearbyDevice(const FString& DeviceAddress)
 {
 	if (bIsP2pGroupFormed)
 	{
 		OnConnectToPeerFailed.Broadcast(-1);
 		return;
 	}
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID && USE_ANDROID_JNI
     JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
     jclass ActivityClass = Env->GetObjectClass(FAndroidApplication::GetGameActivityThis());
@@ -41,14 +40,14 @@ void UShootingStarGameInstance::ConnectToNearbyDevice(const FString& DeviceAddre
 #endif
 }
 
-void UShootingStarGameInstance::StartPeerDiscovering()
+void UWifiDirectInterface::StartPeerDiscovering()
 {
 	if (bIsP2pGroupFormed)
 	{
 		OnDiscoverPeersFailed.Broadcast(-1);
 		return;
 	}
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID && USE_ANDROID_JNI
     JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
     jclass ActivityClass = Env->GetObjectClass(FAndroidApplication::GetGameActivityThis());
@@ -60,14 +59,14 @@ void UShootingStarGameInstance::StartPeerDiscovering()
 #endif
 }
 
-void UShootingStarGameInstance::StopPeerDiscovering()
+void UWifiDirectInterface::StopPeerDiscovering()
 {
     if (bIsP2pGroupFormed)
     {
         OnDiscoverPeersFailed.Broadcast(-1);
         return;
     }
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID && USE_ANDROID_JNI
     JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
     jclass ActivityClass = Env->GetObjectClass(FAndroidApplication::GetGameActivityThis());
@@ -79,9 +78,37 @@ void UShootingStarGameInstance::StopPeerDiscovering()
 #endif
 }
 
-void UShootingStarGameInstance::RemoveGroup()
+void UWifiDirectInterface::RefreshP2pAvailability()
 {
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID && USE_ANDROID_JNI
+    JNIEnv* Env = FAndroidApplication::GetJavaEnv();
+
+    jclass ActivityClass = Env->GetObjectClass(FAndroidApplication::GetGameActivityThis());
+    jmethodID RequestP2pStateMethod = Env->GetMethodID(ActivityClass, "requestP2pState", "()V");
+
+    Env->CallVoidMethod(FAndroidApplication::GetGameActivityThis(), RequestP2pStateMethod);
+
+    Env->DeleteLocalRef(ActivityClass);
+#endif
+}
+
+void UWifiDirectInterface::RefreshPeerList()
+{
+#if PLATFORM_ANDROID && USE_ANDROID_JNI
+    JNIEnv* Env = FAndroidApplication::GetJavaEnv();
+
+    jclass ActivityClass = Env->GetObjectClass(FAndroidApplication::GetGameActivityThis());
+    jmethodID RequestPeersMethod = Env->GetMethodID(ActivityClass, "requestPeers", "()V");
+
+    Env->CallVoidMethod(FAndroidApplication::GetGameActivityThis(), RequestPeersMethod);
+
+    Env->DeleteLocalRef(ActivityClass);
+#endif
+}
+
+void UWifiDirectInterface::RemoveGroup()
+{
+#if PLATFORM_ANDROID && USE_ANDROID_JNI
     JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
     jclass ActivityClass = Env->GetObjectClass(FAndroidApplication::GetGameActivityThis());
@@ -93,7 +120,7 @@ void UShootingStarGameInstance::RemoveGroup()
 #endif
 }
 
-#if PLATFORM_ANDROID
+#if PLATFORM_ANDROID && USE_ANDROID_JNI
 extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectDiscoverPeersErrorFunction(JNIEnv * Env, jclass clazz, jint JavaErrorCode)
 {
     int32 ErrorCode;
@@ -101,7 +128,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCal
     
     FFunctionGraphTask::CreateAndDispatchWhenReady([ErrorCode]()
         {
-            GameInstance->OnDiscoverPeersFailed.Broadcast(ErrorCode);
+            UWifiDirectInterface::GetWifiDirectInterface()->OnDiscoverPeersFailed.Broadcast(ErrorCode);
         }, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 
@@ -112,69 +139,48 @@ extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCal
     
     FFunctionGraphTask::CreateAndDispatchWhenReady([ErrorCode]()
         {
-            GameInstance->OnConnectToPeerFailed.Broadcast(ErrorCode);
-        }, TStatId(), nullptr, ENamedThreads::GameThread);
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRemoveGroupErrorFunction(JNIEnv * Env, jclass clazz, jint JavaErrorCode)
-{
-    int32 ErrorCode;
-    ErrorCode = static_cast<int32>(JavaErrorCode);
-    FFunctionGraphTask::CreateAndDispatchWhenReady([ErrorCode]()
-        {
-            GameInstance->OnRemoveGroupFailed.Broadcast(ErrorCode);
+            UWifiDirectInterface::GetWifiDirectInterface()->OnConnectToPeerFailed.Broadcast(ErrorCode);
         }, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshPeerListFunction(JNIEnv * Env, jclass clazz, jobjectArray peerDeviceNames, jobjectArray peerDeviceAddresses)
 {
-    // 배열 길이(두 배열의 길이가 동일하다고 가정)
     jsize arrayLength = Env->GetArrayLength(peerDeviceNames);
     
-    // TArray에 변환할 결과 저장
     TArray<FWifiDirectPeerDeviceInfo> WifiDirectPeers;
     WifiDirectPeers.Reserve(arrayLength);
     
     for (jsize i = 0; i < arrayLength; i++)
     {
-        // 각 인덱스의 이름과 주소 얻기
         jstring jName = (jstring)Env->GetObjectArrayElement(peerDeviceNames, i);
         jstring jAddress = (jstring)Env->GetObjectArrayElement(peerDeviceAddresses, i);
         
-        // UTF-8 문자열로 변환
         const char* nameChars = Env->GetStringUTFChars(jName, nullptr);
         const char* addressChars = Env->GetStringUTFChars(jAddress, nullptr);
         
-        // FString으로 변환 (UTF8_TO_TCHAR 매크로 사용)
         FString DeviceName = FString(UTF8_TO_TCHAR(nameChars));
         FString DeviceMacAddress = FString(UTF8_TO_TCHAR(addressChars));
         
-        // JNI 메모리 해제
         Env->ReleaseStringUTFChars(jName, nameChars);
         Env->ReleaseStringUTFChars(jAddress, addressChars);
         
-        // 로컬 참조 삭제
         Env->DeleteLocalRef(jName);
         Env->DeleteLocalRef(jAddress);
         
-        // 구조체 생성 후 TArray에 추가
         FWifiDirectPeerDeviceInfo PeerInfo;
         PeerInfo.DeviceName = DeviceName;
         PeerInfo.DeviceMacAddress = DeviceMacAddress;
         WifiDirectPeers.Add(PeerInfo);
     }
     
-    // 게임 스레드에서 실행되도록 태스크 디스패치 (예: 델리게이트 실행)
     FFunctionGraphTask::CreateAndDispatchWhenReady([WifiDirectPeers]()
     {
-        // 델리게이트 실행: 인자 WifiDirectPeers를 전달
-        GameInstance->OnPeerListUpdated.Broadcast(WifiDirectPeers);
+        UWifiDirectInterface::GetWifiDirectInterface()->OnPeerListUpdated.Broadcast(WifiDirectPeers);
     }, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshGroupFunction(JNIEnv * Env, jclass clazz, jboolean isGroupFormed, jboolean isGroupOwner, jstring groupOwnerIpAddress)
 {
-    // jboolean을 bool로 변환
     bool bIsGroupFormed = (isGroupFormed == JNI_TRUE);
     bool bIsGroupOwner = (isGroupOwner == JNI_TRUE);
     
@@ -186,11 +192,19 @@ extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCal
         Env->ReleaseStringUTFChars(groupOwnerIpAddress, ipChars);
     }
     
-    // 게임 스레드에서 실행되도록 태스크 디스패치
     FFunctionGraphTask::CreateAndDispatchWhenReady([bIsGroupFormed, bIsGroupOwner, GroupOwnerIp]()
     {
-        // 델리게이트 실행: 그룹 정보를 전달
-        GameInstance->OnGroupInfoUpdated.Broadcast(bIsGroupFormed, bIsGroupOwner, GroupOwnerIp);
+        UWifiDirectInterface::GetWifiDirectInterface()->OnGroupInfoUpdated.Broadcast(bIsGroupFormed, bIsGroupOwner, GroupOwnerIp);
+    }, TStatId(), nullptr, ENamedThreads::GameThread);
+}
+
+extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshP2pStateFunction(JNIEnv * Env, jclass clazz, jboolean isAvailable)
+{
+    bool bIsAvailable = (isAvailable == JNI_TRUE);
+    
+    FFunctionGraphTask::CreateAndDispatchWhenReady([bIsAvailable]()
+    {
+        UWifiDirectInterface::GetWifiDirectInterface()->OnP2pAvailabilityUpdated.Broadcast(bIsAvailable);
     }, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 

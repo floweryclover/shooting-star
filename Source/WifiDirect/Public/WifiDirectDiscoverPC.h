@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class AWifiDirectDiscoverPC final : public APlayerController
+class WIFIDIRECT_API AWifiDirectDiscoverPC final : public APlayerController
 {
 	GENERATED_BODY()
 

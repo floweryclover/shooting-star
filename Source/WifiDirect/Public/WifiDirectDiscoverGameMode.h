@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class AWifiDirectDiscoverGameMode final : public AGameModeBase
+class WIFIDIRECT_API AWifiDirectDiscoverGameMode final : public AGameModeBase
 {
 	GENERATED_BODY()
 

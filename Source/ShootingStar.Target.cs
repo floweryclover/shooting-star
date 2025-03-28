@@ -11,5 +11,6 @@ public class ShootingStarTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V5;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_5;
 		ExtraModuleNames.Add("ShootingStar");
+		ExtraModuleNames.Add("WifiDirect");
 	}
 }

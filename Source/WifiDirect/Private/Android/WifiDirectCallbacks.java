@@ -15,12 +15,6 @@ public class WifiDirectCallbacks {
 		nativeOnWifiDirectConnectErrorFunction(errorCode);
 	}
 
-	public static native void nativeOnWifiDirectRemoveGroupErrorFunction(int errorCode);
-
-	public static void onWifiDirectRemoveGroupError(int errorCode) {
-		nativeOnWifiDirectRemoveGroupErrorFunction(errorCode);
-	}
-
 	public static native void nativeOnWifiDirectRefreshPeerListFunction(String[] peerDeviceNames, String[] peerDeviceAddresses);
 
 	public static void onWifiDirectRefreshPeerList(String[] peerDeviceNames, String[] peerDeviceAddresses) {

@@ -12,6 +12,8 @@
 
     <gameActivityImportAdditions>
         <insert>
+            import java.util.List;
+            import java.util.Collection;
             import java.util.stream.Collectors;
             import android.util.Log;
             import android.content.IntentFilter;
@@ -26,6 +28,7 @@
             import android.net.wifi.p2p.WifiP2pConfig;
             import android.net.wifi.p2p.WifiP2pInfo;
             import android.net.wifi.p2p.WifiP2pGroup;
+            import android.net.wifi.p2p.WifiP2pDeviceList;
             import android.net.wifi.WpsInfo;
             import android.net.MacAddress;
 
@@ -50,6 +53,30 @@
                     }
                 });
             }
+            
+            public void requestPeers() {
+                manager.requestPeers(channel, new WifiP2pManager.PeerListListener() {
+                    @Override
+                    public void onPeersAvailable(WifiP2pDeviceList peers) {
+                        Collection&lt;WifiP2pDevice&gt; devices = peers.getDeviceList();
+                        if (devices == null || devices.isEmpty()) {
+                            return;
+                        }
+            
+                        String[] deviceNames = new String[devices.size()];
+                        String[] deviceAddresses = new String[devices.size()];
+            
+                        int i = 0;
+                        for (WifiP2pDevice device : devices) {
+                            deviceNames[i] = device.deviceName;
+                            deviceAddresses[i] = device.deviceAddress;
+                            i++;
+                        }
+            
+                        WifiDirectCallbacks.onWifiDirectRefreshPeerList(deviceNames, deviceAddresses);
+                    }
+                });
+            }
 
             public void stopPeerDiscovery() {
                 manager.stopPeerDiscovery(channel, new ActionListener() {
@@ -67,9 +94,7 @@
                     public void onSuccess() {}
         
                     @Override
-                    public void onFailure(int reasonCode) {
-                        WifiDirectCallbacks.onWifiDirectRemoveGroupError(reasonCode);
-                    }
+                    public void onFailure(int reasonCode) { }
                 });
             }
             
