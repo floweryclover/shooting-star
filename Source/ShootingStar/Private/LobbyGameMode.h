@@ -42,4 +42,10 @@ protected:
 	// 최대 인원수 등 경쟁모드의 여러 설정값들을 가져오기 위한 컴포넌트입니다.
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UCompetitiveSystemComponent> CompetitiveSystemComponent;
+
+	UPROPERTY(BlueprintReadOnly)
+	float WifiDirectRefreshInterval = 1.0f;
+
+	UPROPERTY(BlueprintReadOnly)
+	float WifiDirectRefreshElapsed;
 };

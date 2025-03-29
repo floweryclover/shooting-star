@@ -5,9 +5,11 @@
 #include "CompetitiveSystemComponent.h"
 #include "LobbyPlayerController.h"
 #include "LobbyGameState.h"
+#include "WifiDirectInterface.h"
 
 ALobbyGameMode::ALobbyGameMode()
-	: NumPlayers{1} // 항상 호스트 포함
+	: NumPlayers{1}, // 항상 호스트 포함
+	  WifiDirectRefreshElapsed{0.0f}
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bUseSeamlessTravel = true;
@@ -28,13 +30,24 @@ int32 ALobbyGameMode::GetNumPlayers()
 void ALobbyGameMode::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
+	if (Interface->IsP2pGroupFormed() && Interface->IsP2pGroupOwner())
+	{
+		WifiDirectRefreshElapsed += DeltaSeconds;
+		if (WifiDirectRefreshElapsed >= WifiDirectRefreshInterval)
+		{
+			WifiDirectRefreshElapsed = 0.0f;
+			Interface->Refresh();
+		}
+	}
 }
 
 void ALobbyGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId,
                               FString& ErrorMessage)
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
-	
+
 	if (NumPlayers >= CompetitiveSystemComponent->GetMaxPlayersPerTeam() * 2)
 	{
 		ErrorMessage = TEXT("정원이 가득 찼습니다.");
@@ -67,7 +80,7 @@ void ALobbyGameMode::PostLogin(APlayerController* const NewPlayer)
 void ALobbyGameMode::Logout(AController* const Exiting)
 {
 	Super::Logout(Exiting);
-	
+
 	NumPlayers -= 1;
 }
 

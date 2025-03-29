@@ -25,10 +25,10 @@ public:
 
 protected:
 	UPROPERTY(BlueprintReadOnly)
-	float PeerDiscoveringInterval = 5.0f;
+	float WifiDirectRefreshInterval = 1.0f;
 
 	UPROPERTY(BlueprintReadOnly)
-	float PeerDiscoveringElapsed;
+	float WifiDirectRefreshElapsed;
 	
 private:
 	UPROPERTY()
@@ -36,4 +36,6 @@ private:
 	
 	UPROPERTY()
 	TObjectPtr<UUserWidget> WifiDirectDiscoverUI;
+
+	bool bOpenLevelRequested;
 };

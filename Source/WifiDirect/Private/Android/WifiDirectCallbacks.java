@@ -15,6 +15,12 @@ public class WifiDirectCallbacks {
 		nativeOnWifiDirectConnectErrorFunction(errorCode);
 	}
 
+   public static native void nativeOnWifiDirectAddLocalServiceErrorFunction(int errorCode);
+
+   public static void onWifiDirectAddLocalServiceError(int errorCode) {
+       nativeOnWifiDirectAddLocalServiceErrorFunction(errorCode);
+   }
+
 	public static native void nativeOnWifiDirectRefreshPeerListFunction(String[] peerDeviceNames, String[] peerDeviceAddresses);
 
 	public static void onWifiDirectRefreshPeerList(String[] peerDeviceNames, String[] peerDeviceAddresses) {
@@ -31,5 +37,17 @@ public class WifiDirectCallbacks {
 
     public static void onWifiDirectRefreshP2pState(boolean isAvailable) {
         nativeOnWifiDirectRefreshP2pStateFunction(isAvailable);
+    } 
+       
+    public static native void nativeOnWifiDirectRefreshDiscoveryStateFunction(boolean isDiscovering);
+
+    public static void onWifiDirectRefreshDiscoveryState(boolean isDiscovering) {
+        nativeOnWifiDirectRefreshDiscoveryStateFunction(isDiscovering);
+    }
+    
+    public static native void nativeOnWifiDirectDnsSdServiceAvailableFunction(String deviceName, String deviceMacAddress);
+
+    public static void onWifiDirectDnsSdServiceAvailable(String deviceName, String deviceMacAddress) {
+        nativeOnWifiDirectDnsSdServiceAvailableFunction(deviceName, deviceMacAddress);
     }
 }

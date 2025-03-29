@@ -2,11 +2,13 @@
 
 
 #include "WifiDirectDiscoverPC.h"
+#include "WifiDirectInterface.h"
 #include "Blueprint/UserWidget.h"
 
 AWifiDirectDiscoverPC::AWifiDirectDiscoverPC()
-	: PeerDiscoveringElapsed{0.0f},
-	  WifiDirectDiscoverUI{nullptr}
+	: WifiDirectRefreshElapsed{0.0f},
+	  WifiDirectDiscoverUI{nullptr},
+	  bOpenLevelRequested{false}
 {
 	static ConstructorHelpers::FClassFinder<UUserWidget> WifiDirectDiscoverUIBPFinder{
 		TEXT("/Game/Levels/WifiDirectDiscover/BP_WifiDirectDiscoverUI")
@@ -21,36 +23,53 @@ AWifiDirectDiscoverPC::AWifiDirectDiscoverPC()
 void AWifiDirectDiscoverPC::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	check(IsValid(WifiDirectDiscoverUIClass));
 	WifiDirectDiscoverUI = CreateWidget<UUserWidget>(
 		GetWorld(), WifiDirectDiscoverUIClass);
 	check(IsValid(WifiDirectDiscoverUI));
 	WifiDirectDiscoverUI->AddToViewport();
+
+	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
+	Interface->Refresh();
 }
 
 void AWifiDirectDiscoverPC::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// Super::EndPlay(EndPlayReason);
-	//
-	// UShootingStarGameInstance* const GameInstance = Cast<UShootingStarGameInstance>(GetGameInstance());
-	// check(IsValid(GameInstance));
-	//
-	// GameInstance->StopPeerDiscovering();
+	Super::EndPlay(EndPlayReason);
 }
 
 void AWifiDirectDiscoverPC::Tick(const float DeltaSeconds)
 {
-	// Super::Tick(DeltaSeconds);
-	//
-	// PeerDiscoveringElapsed += DeltaSeconds;
-	// if (PeerDiscoveringElapsed >= PeerDiscoveringInterval)
-	// {
-	// 	PeerDiscoveringElapsed = 0.0f;
-	//
-	// 	UShootingStarGameInstance* const GameInstance = Cast<UShootingStarGameInstance>(GetGameInstance());
-	// 	check(IsValid(GameInstance));
-	//
-	// 	GameInstance->StartPeerDiscovering();
-	// }
+	Super::Tick(DeltaSeconds);
+
+	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
+
+	WifiDirectRefreshElapsed += DeltaSeconds;
+	if (WifiDirectRefreshElapsed >= WifiDirectRefreshInterval)
+	{
+		WifiDirectRefreshElapsed = 0.0f;
+		Interface->Refresh();
+	}
+
+	if (Interface->IsP2pGroupFormed())
+	{
+		if (bOpenLevelRequested)
+		{
+			return;
+		}
+		bOpenLevelRequested = true;
+		
+		if (Interface->IsP2pGroupOwner())
+		{
+			const FName LobbyLevelName = TEXT("/Game/Levels/Lobby");
+			const FString ServerOptions = LobbyLevelName.ToString() + "?listen";
+
+			GetWorld()->ServerTravel(ServerOptions);
+		}
+		else
+		{
+			ClientTravel(Interface->GetGroupOwnerIpAddress(), TRAVEL_Absolute);
+		}
+	}
 }
