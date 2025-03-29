@@ -186,6 +186,16 @@
                     }
                 });
             }
+            
+            public void cancelConnect() {
+                manager.cancelConnect(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() { }
+        
+                    @Override
+                    public void onFailure(int reason) { }
+                });
+            }
         </insert>
     </gameActivityClassAdditions>
 
@@ -220,19 +230,12 @@
             );
         </insert>
     </gameActivityOnCreateAdditions>
-
-    <gameActivityOnPauseAdditions>
-        <insert>
-            stopPeerDiscovery();
-            removeLocalService();
-        </insert>
-    </gameActivityOnPauseAdditions>
     
-    <gameActivityOnStopAdditions>
+    <gameActivityOnDestroyAdditions>
         <insert>
             stopPeerDiscovery();
             removeLocalService();
             removeGroup();
         </insert>
-    </gameActivityOnStopAdditions>
+    </gameActivityOnDestroyAdditions>
 </root>

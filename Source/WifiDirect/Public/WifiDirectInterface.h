@@ -19,7 +19,6 @@ struct FWifiDirectPeerDeviceInfo final
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDiscoverPeersFailed, int32, ErrorCode);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FConnectToPeerFailed, int32, ErrorCode);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAddLocalServiceFailed, int32, ErrorCode);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FWifiDirectUpdated);
 
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 extern "C"
@@ -36,7 +35,13 @@ extern "C"
 #endif
 
 /**
- * 
+ * On-Failed 이벤트의 ErrorCode 설명 <br/>
+ * 음수: 임의로 정의한 에러 코드<br/>
+ * 0: Android 내부 문제를 의미하지만 경험상 권한 문제였음<br/>
+ * 1: P2P 미지원 기기<br/>
+ * 2: 다른 작업을 처리 중임(ex. 연결 시도 중에 discoverPeers() 호출 등)<br/>
+ * 3: Service Request 관련 오류로 볼 일 없을 듯<br/>
+ * 4: 권한 없음. requestDeviceInfo() 등 권한 필요한 메소드 호출했는데 권한 없는 경우 - 아마 볼 일 없을 것, 사전에 설정을 해 두었기 때문에
  */
 UCLASS()
 class WIFIDIRECT_API UWifiDirectInterface final : public UObject
@@ -46,32 +51,33 @@ class WIFIDIRECT_API UWifiDirectInterface final : public UObject
 public:
 	UWifiDirectInterface();
 	
-	/**
-	 * @details
-	 * 에러 코드 0: 주로 권한 문제, 2: Wifi 꺼짐
-	 */
 	UPROPERTY(BlueprintAssignable)
 	FDiscoverPeersFailed OnDiscoverPeersFailed;
 
+	/**
+	 * 에러 코드 -1: P2P 그룹이 존재하는 상황에서 호출됨, -2: 주소값이 비었음, -3: 타임아웃
+	 */
 	UPROPERTY(BlueprintAssignable)
 	FConnectToPeerFailed OnConnectToPeerFailed;
 
 	UPROPERTY(BlueprintAssignable)
 	FAddLocalServiceFailed OnAddLocalServiceFailed;
 	
-	UPROPERTY(BlueprintAssignable)
-	FWifiDirectUpdated OnWifiDirectUpdated;
-	
 	UFUNCTION(BlueprintCallable)
 	void ConnectToNearbyDevice(const FString& DeviceMacAddress);
 	
-	UFUNCTION(BlueprintCallable)
-	void Refresh();
 	/**
 	 * WiFi Direct 동작을 모두 중지하고 초기화합니다.
 	 */
 	UFUNCTION(BlueprintCallable)
 	void Reset();
+
+	/**
+	 * 수동 업데이트 함수입니다. 반드시 한 번에 하나의 객체가 호출하게 하세요.
+	 * @param DeltaSeconds 
+	 */
+	UFUNCTION(BlueprintCallable)
+	void Update(float DeltaSeconds);
 
 	/**
 	 * 게임을 시작한 경우 등 더 이상 주변 피어에게서 검색되지 않게 합니다.
@@ -139,6 +145,21 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	FString GroupOwnerIpAddress;
 
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsConnecting;
+
+	UPROPERTY(BlueprintReadOnly)
+	float ConnectingElapsed;
+
+	UPROPERTY(BlueprintReadOnly)
+	float ConnectionTimeOutSeconds = 5.0f;
+
+	UPROPERTY(BlueprintReadOnly)
+	float UpdateInterval = 1.0f;
+
+	UPROPERTY(BlueprintReadOnly)
+	float UpdateElapsed;
+
 private:
 	/**
 	 * ShootingStar가 아닐 수도 있는, 주변 모든 기기
@@ -154,6 +175,8 @@ private:
 	void StartPeerDiscovering();
 	
 	void StopPeerDiscovering();
+	
+	void CancelConnect();
 	
 	void RefreshP2pAvailability();
 	

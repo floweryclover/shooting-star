@@ -26,7 +26,10 @@ UWifiDirectInterface::UWifiDirectInterface()
 	  bIsP2pGroupFormed{false},
 	  bIsP2pGroupOwner{false},
 	  bIsP2pAvailable{false},
-	  bIsP2pPeerDiscovering{false}
+	  bIsP2pPeerDiscovering{false},
+	  bIsConnecting{false},
+	  ConnectingElapsed{0.0f},
+	  UpdateElapsed{UpdateInterval}
 {
 	OnDiscoverPeersFailed.AddDynamic(this, &UWifiDirectInterface::ClearPeerList);
 	OnAddLocalServiceFailed.AddDynamic(this, &UWifiDirectInterface::ClearIsP2pServiceAdded);
@@ -34,6 +37,13 @@ UWifiDirectInterface::UWifiDirectInterface()
 
 void UWifiDirectInterface::ConnectToNearbyDevice(const FString& DeviceAddress)
 {
+	if (bIsConnecting)
+	{
+		return;
+	}
+	bIsConnecting = true;
+	ConnectingElapsed = 0.0f;
+
 	if (bIsP2pGroupFormed)
 	{
 		OnConnectToPeerFailed.Broadcast(-1);
@@ -61,11 +71,6 @@ void UWifiDirectInterface::ConnectToNearbyDevice(const FString& DeviceAddress)
 
 void UWifiDirectInterface::StartPeerDiscovering()
 {
-	if (bIsP2pGroupFormed)
-	{
-		OnDiscoverPeersFailed.Broadcast(-1);
-		return;
-	}
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
     JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
@@ -80,11 +85,6 @@ void UWifiDirectInterface::StartPeerDiscovering()
 
 void UWifiDirectInterface::StopPeerDiscovering()
 {
-	if (bIsP2pGroupFormed)
-	{
-		OnDiscoverPeersFailed.Broadcast(-1);
-		return;
-	}
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
     JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
@@ -97,29 +97,20 @@ void UWifiDirectInterface::StopPeerDiscovering()
 #endif
 }
 
-void UWifiDirectInterface::Refresh()
+void UWifiDirectInterface::CancelConnect()
 {
-	RefreshP2pAvailability();
-	if (!bIsP2pAvailable)
-	{
-		return;
-	}
+	bIsConnecting = false;
+	ConnectingElapsed = 0.0f;
+#if PLATFORM_ANDROID && USE_ANDROID_JNI
+	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
-	if (!bIsP2pServiceAdded)
-	{
-		bIsP2pServiceAdded = true;
-		AddLocalService();
-	}
+	jclass ActivityClass = Env->GetObjectClass(FAndroidApplication::GetGameActivityThis());
+	jmethodID CancelConnectMethod = Env->GetMethodID(ActivityClass, "cancelConnect", "()V");
 
-	if (!bIsP2pGroupFormed && !bIsP2pPeerDiscovering)
-	{
-		StartPeerDiscovering();
-	}
+	Env->CallVoidMethod(FAndroidApplication::GetGameActivityThis(), CancelConnectMethod);
 
-	RefreshDiscoveryState();
-	RefreshGroupInfo();
-	RefreshPeerList();
-	OnWifiDirectUpdated.Broadcast();
+	Env->DeleteLocalRef(ActivityClass);
+#endif
 }
 
 void UWifiDirectInterface::Reset()
@@ -132,10 +123,42 @@ void UWifiDirectInterface::Reset()
 	bIsP2pPeerDiscovering = false;
 	GroupOwnerIpAddress.Empty();
 
+	CancelConnect();
 	StopPeerDiscovering();
 	RemoveGroup();
 	RemoveLocalService();
-	OnWifiDirectUpdated.Broadcast();
+	UpdateElapsed = 0.0f;
+}
+
+void UWifiDirectInterface::Update(const float DeltaSeconds)
+{
+	if (bIsConnecting)
+	{
+		ConnectingElapsed += DeltaSeconds;
+		if (ConnectingElapsed >= ConnectionTimeOutSeconds)
+		{
+			OnConnectToPeerFailed.Broadcast(-3);
+			CancelConnect();
+		}
+	}
+
+	UpdateElapsed += DeltaSeconds;
+	if (UpdateElapsed < UpdateInterval)
+	{
+		return;
+	}
+	UpdateElapsed = 0.0f;
+
+	if (!bIsP2pPeerDiscovering && !bIsConnecting)
+	{
+		StartPeerDiscovering();
+	}
+
+	RefreshP2pAvailability();
+	AddLocalService();
+	RefreshDiscoveryState();
+	RefreshGroupInfo();
+	RefreshPeerList();
 }
 
 void UWifiDirectInterface::StopDiscovering()
@@ -191,8 +214,6 @@ void UWifiDirectInterface::RefreshPeerList()
 			ShootingStarPeers.RemoveAt(i);
 		}
 	}
-
-	OnWifiDirectUpdated.Broadcast();
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
     JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
@@ -238,14 +259,12 @@ void UWifiDirectInterface::ClearPeerList(const int32 ErrorCode)
 	ShootingStarPeers.Empty();
 	GeneralPeers.Empty();
 	UE_LOG(LogWifiDirect, Error, TEXT("WiFi Direct discoverPeers() error: %d"), ErrorCode);
-	OnWifiDirectUpdated.Broadcast();
 }
 
 void UWifiDirectInterface::ClearIsP2pServiceAdded(const int32 ErrorCode)
 {
 	bIsP2pServiceAdded = false;
 	UE_LOG(LogWifiDirect, Error, TEXT("WiFi Direct addLocalService() error: %d"), ErrorCode);
-	OnWifiDirectUpdated.Broadcast();
 }
 
 void UWifiDirectInterface::RemoveLocalService()
@@ -381,7 +400,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCal
         Interface->bIsP2pGroupFormed = bIsGroupFormed;
         Interface->bIsP2pGroupOwner = bIsGroupOwner;
         Interface->GroupOwnerIpAddress = GroupOwnerIp;
-        Interface->OnWifiDirectUpdated.Broadcast();
     }, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 
@@ -393,7 +411,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCal
     {
         UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
         Interface->bIsP2pAvailable = bIsAvailable;
-        Interface->OnWifiDirectUpdated.Broadcast();
     }, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 
@@ -405,7 +422,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCal
     {
         UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
         Interface->bIsP2pPeerDiscovering = bIsDiscovering;
-        Interface->OnWifiDirectUpdated.Broadcast();
     }, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 

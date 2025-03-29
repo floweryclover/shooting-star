@@ -23,13 +23,6 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
-protected:
-	UPROPERTY(BlueprintReadOnly)
-	float WifiDirectRefreshInterval = 1.0f;
-
-	UPROPERTY(BlueprintReadOnly)
-	float WifiDirectRefreshElapsed;
-	
 private:
 	UPROPERTY()
 	TSubclassOf<UUserWidget> WifiDirectDiscoverUIClass;

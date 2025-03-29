@@ -6,8 +6,7 @@
 #include "Blueprint/UserWidget.h"
 
 AWifiDirectDiscoverPC::AWifiDirectDiscoverPC()
-	: WifiDirectRefreshElapsed{0.0f},
-	  WifiDirectDiscoverUI{nullptr},
+	: WifiDirectDiscoverUI{nullptr},
 	  bOpenLevelRequested{false}
 {
 	static ConstructorHelpers::FClassFinder<UUserWidget> WifiDirectDiscoverUIBPFinder{
@@ -29,14 +28,13 @@ void AWifiDirectDiscoverPC::BeginPlay()
 		GetWorld(), WifiDirectDiscoverUIClass);
 	check(IsValid(WifiDirectDiscoverUI));
 	WifiDirectDiscoverUI->AddToViewport();
-
-	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
-	Interface->Refresh();
 }
 
 void AWifiDirectDiscoverPC::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
+	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
+	Interface->StopDiscovering();
 }
 
 void AWifiDirectDiscoverPC::Tick(const float DeltaSeconds)
@@ -44,13 +42,7 @@ void AWifiDirectDiscoverPC::Tick(const float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
-
-	WifiDirectRefreshElapsed += DeltaSeconds;
-	if (WifiDirectRefreshElapsed >= WifiDirectRefreshInterval)
-	{
-		WifiDirectRefreshElapsed = 0.0f;
-		Interface->Refresh();
-	}
+	Interface->Update(DeltaSeconds);
 
 	if (Interface->IsP2pGroupFormed())
 	{

@@ -6,10 +6,12 @@
 #include "LobbyPlayerController.h"
 #include "LobbyGameState.h"
 #include "WifiDirectInterface.h"
+#include "Kismet/GameplayStatics.h"
 
 ALobbyGameMode::ALobbyGameMode()
 	: NumPlayers{1}, // 항상 호스트 포함
-	  WifiDirectRefreshElapsed{0.0f}
+	  bIsFromP2p{false},
+	  bIsDestroying{false}
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bUseSeamlessTravel = true;
@@ -27,18 +29,30 @@ int32 ALobbyGameMode::GetNumPlayers()
 	return NumPlayers;
 }
 
+void ALobbyGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	bIsFromP2p = UWifiDirectInterface::GetWifiDirectInterface()->IsP2pGroupFormed();
+}
+
 void ALobbyGameMode::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
 	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
-	if (Interface->IsP2pGroupFormed() && Interface->IsP2pGroupOwner())
+	if (bIsFromP2p && Interface->IsP2pGroupOwner())
 	{
-		WifiDirectRefreshElapsed += DeltaSeconds;
-		if (WifiDirectRefreshElapsed >= WifiDirectRefreshInterval)
+		Interface->Update(DeltaSeconds);
+	}
+
+	// P2P 그룹이 해체된 경우 방 폭파
+	if (bIsFromP2p && !Interface->IsP2pGroupFormed())
+	{
+		if (!bIsDestroying)
 		{
-			WifiDirectRefreshElapsed = 0.0f;
-			Interface->Refresh();
+			bIsDestroying = true;
+			UGameplayStatics::OpenLevel(GetWorld(), "/Game/Levels/MainMenu");
 		}
 	}
 }
