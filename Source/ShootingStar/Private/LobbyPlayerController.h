@@ -6,6 +6,9 @@
 #include "GameFramework/PlayerController.h"
 #include "LobbyPlayerController.generated.h"
 
+class ULobbyNetworkComponent;
+class UTeamComponent;
+
 /**
  * 
  */
@@ -19,10 +22,26 @@ public:
 
 	virtual void BeginPlay() override;
 
-private:
-	UPROPERTY()
+	UTeamComponent* GetTeamComponent() const
+	{
+		return TeamComponent;
+	}
+
+	ULobbyNetworkComponent* GetLobbyNetworkComponent() const
+	{
+		return LobbyNetworkComponent;
+	}
+
+protected:
+	UPROPERTY(BlueprintReadOnly)
 	TSubclassOf<UUserWidget> LobbyUIClass;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UUserWidget> LobbyUI;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UTeamComponent> TeamComponent;
+	
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<ULobbyNetworkComponent> LobbyNetworkComponent;
 };
