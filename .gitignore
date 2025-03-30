@@ -1,5 +1,8 @@
 /.idea
 
+.vscode
+*.code-workspace
+
 # 이하는 github의 UnrealEngine 템플릿 자동 생성 내용입니다.
 
 # Visual Studio 2015 user specific files
