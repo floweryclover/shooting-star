@@ -2,6 +2,7 @@
 
 
 #include "MainMenuPlayerController.h"
+#include "WifiDirectInterface.h"
 #include "JoinOrHostGameComponent.h"
 #include "Blueprint/UserWidget.h"
 
@@ -33,4 +34,7 @@ void AMainMenuPlayerController::BeginPlay()
 
 	bShowMouseCursor = true;
 	SetInputMode(FInputModeUIOnly());
+
+	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
+	Interface->Reset();
 }

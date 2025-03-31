@@ -20,6 +20,8 @@ public:
 
 	virtual int32 GetNumPlayers() override;
 
+	virtual void BeginPlay() override;
+	
 	virtual void Tick(float DeltaSeconds) override;
 	
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
@@ -39,7 +41,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	int32 NumPlayers;
 
+	// 이 게임이 WiFi Direct P2P로부터 생성된 게임인지
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsFromP2p;
+	
 	// 최대 인원수 등 경쟁모드의 여러 설정값들을 가져오기 위한 컴포넌트입니다.
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UCompetitiveSystemComponent> CompetitiveSystemComponent;
+	
+	bool bIsDestroying;
 };
