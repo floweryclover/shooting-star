@@ -20,14 +20,11 @@ void UWindPusher::BeginPlay()
 	Super::BeginPlay();
 
 	AActor* Owner = GetOwner();
-	if (Owner) 
+	if (Owner)
 		OwnerMesh = Owner->FindComponentByClass<UStaticMeshComponent>();
 
 	BaseTime = FMath::FRandRange(1.f, 2.f);
-	ImpulsePower.Z = FMath::FRandRange(300.f, 600.f);
-	ImpulsePower.X = FMath::FRandRange(-600.f, -300.f);
-
-	OwnerMesh->AddImpulse(ImpulsePower, NAME_None, true);
+	Push(ImplusePower_Initial);
 }
 
 
@@ -43,8 +40,23 @@ void UWindPusher::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 	if (AccTime >= BaseTime)
 	{
 		AccTime = 0.f;
-
-		OwnerMesh->AddImpulse(ImpulsePower, NAME_None, true);
+		Random_Push();
 	}
+}
+
+void UWindPusher::Push(const FVector& Impulse)
+{
+	OwnerMesh->AddImpulse(Impulse, NAME_None, true);
+}
+
+void UWindPusher::Random_Push()
+{
+	FVector ImpulsePower = FVector(
+		FMath::FRandRange(ImpulsePower_Min.X, ImpulsePower_Max.X),
+		FMath::FRandRange(ImpulsePower_Min.Y, ImpulsePower_Max.Y),
+		FMath::FRandRange(ImpulsePower_Min.Z, ImpulsePower_Max.Z)
+	);
+
+	OwnerMesh->AddImpulse(ImpulsePower, NAME_None, true);
 }
 

@@ -40,6 +40,8 @@ void AEnvironmentActorSpawner::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
+	FRotator Rotator = GetActorRotation();
+
 #if WITH_EDITOR
 	FlushPersistentDebugLines(GetWorld());
 
@@ -47,6 +49,7 @@ void AEnvironmentActorSpawner::OnConstruction(const FTransform& Transform)
 		GetWorld(),
 		GetActorLocation(),
 		SpawnExtent,
+		Rotator.Quaternion(),
 		FColor::Green,
 		true,
 		-1.f,
@@ -63,6 +66,10 @@ void AEnvironmentActorSpawner::Spawn()
 
 	FVector Origin = GetActorLocation();
 	FVector RandomLocation = UKismetMathLibrary::RandomPointInBoundingBox(Origin, SpawnExtent);
+	float Radius = FVector::Dist2D(Origin, RandomLocation);
+	float RadZ = FMath::DegreesToRadians(GetActorRotation().Yaw + 90);
+	RandomLocation.X = Origin.X + Radius * cosf((RadZ));
+	RandomLocation.Y = Origin.Y + Radius * sinf(RadZ);
 
 	GetWorld()->SpawnActor<AActor>(ActorToSpawn, RandomLocation, FRotator::ZeroRotator);
 }

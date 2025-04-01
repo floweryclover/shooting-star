@@ -23,10 +23,20 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	void Push(const FVector& Impulse);
+	void Random_Push();
 
 private:
 	UStaticMeshComponent* OwnerMesh{};
 	float AccTime{};
 	float BaseTime{};
-	FVector ImpulsePower{};
+	
+	UPROPERTY(EditAnywhere)
+	FVector ImplusePower_Initial{};
+
+	UPROPERTY(EditAnywhere)
+	FVector ImpulsePower_Min{};
+
+	UPROPERTY(EditAnywhere)
+	FVector ImpulsePower_Max{};
 };
