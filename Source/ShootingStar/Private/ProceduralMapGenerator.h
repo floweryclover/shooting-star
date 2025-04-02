@@ -17,6 +17,8 @@ public:
 	// Sets default values for this actor's properties
 	AProceduralMapGenerator();
 
+    void InitializeMapCoordinate(int32 GridSize);
+    FORCEINLINE int32 GetIndex(int32 X, int32 Y, int32 Size) { return X + (Y * Size); } // 2D 좌표 => 1D 변환 함수
 	void GenerateMap();
     void GenerateBuildings();
     void GenerateWalls();
@@ -41,6 +43,8 @@ private:
     int32 NumWalls = 20;
     UPROPERTY(EditAnywhere, Category = "Map Settings")
     int32 NumResources = 30;
+    UPROPERTY(EditAnywhere, Category = "Map Settings")
+    TArray<int32> mapCoordinate; // 맵 좌표를 저장할 1차원 배열
 
     UPROPERTY(EditAnywhere, Category = "Procedural Generation")
     AActor* PlaneActor; // Plane 액터를 저장할 변수

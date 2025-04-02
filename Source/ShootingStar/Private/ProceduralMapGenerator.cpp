@@ -25,7 +25,13 @@ void AProceduralMapGenerator::BeginPlay()
     if (world == nullptr)
         UE_LOG(ProceduralMapGenerator, Error, TEXT("World is null!"));
 
+    InitializeMapCoordinate(MapHalfSize * 2);
     GenerateMap();
+}
+
+void AProceduralMapGenerator::InitializeMapCoordinate(int32 GridSize)
+{
+    mapCoordinate.SetNum(GridSize * GridSize); // 1차원 배열로 할당
 }
 
 // 랜덤 포지션과 랜덤 오브젝트를 선정해 맵을 생성하는 함수
