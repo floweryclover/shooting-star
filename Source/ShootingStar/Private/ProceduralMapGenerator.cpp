@@ -9,6 +9,7 @@
 
 DEFINE_LOG_CATEGORY(ProceduralMapGenerator);
 
+#pragma region 생성자 및 초기화
 AProceduralMapGenerator::AProceduralMapGenerator()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -25,37 +26,56 @@ void AProceduralMapGenerator::BeginPlay()
     if (world == nullptr)
         UE_LOG(ProceduralMapGenerator, Error, TEXT("World is null!"));
 
+    InitializeMapCoordinate(mapHalfSize * 2);
     GenerateMap();
 }
 
+void AProceduralMapGenerator::InitializeMapCoordinate(int32 GridSize)
+{
+    mapCoordinate.SetNum(GridSize * GridSize); // 1차원 배열로 할당
+}
+#pragma endregion
+
+#pragma region 절차적 맵 생성
 // 랜덤 포지션과 랜덤 오브젝트를 선정해 맵을 생성하는 함수
 void AProceduralMapGenerator::GenerateMap()
 {
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generate Map Start"));
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generate Map Started"));
 
-    if (ObjectMeshes.Num() == 0)
+    GenerateObstacles(); // 장애물 생성
+    GenerateSubObstacles(); // 서브 장애물 생성
+    GenerateResources(); // 자원 생성
+    GenerateDecos(); // 장식물 생성
+
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generate Map Completed"));
+}
+
+// 건물, 큰 바위 등 주요 Obstalces 생성을 위한 함수
+void AProceduralMapGenerator::GenerateObstacles()
+{
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generate Obstacles Started"));
+
+    if (obstacleMeshes.Num() == 0)
     {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in ObjectMeshes array!"));
+        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in obstacleMeshes array!"));
         return;
     }
-    else
-        UE_LOG(ProceduralMapGenerator, Log, TEXT("ObjectMeshes Num: %d"), ObjectMeshes.Num());
     
     int32 SpawnAttempts = 0;
     int32 PlacedObjects = 0;
 
-    while (PlacedObjects < NumObjects && SpawnAttempts < NumObjects * 5)
+    while (PlacedObjects < numObstacles && SpawnAttempts < numObstacles * 5) // 최대 생성 시도 횟수는 배치할 오브젝트의 5배이다.
     {
         FVector RandomLocation = GetRandomPosition();
         UStaticMesh* RandomMesh = nullptr;
 
         if (IsLocationValid(RandomLocation))
         {
-            int32 RandomIndex = FMath::RandRange(0, ObjectMeshes.Num() - 1);
+            int32 RandomIndex = FMath::RandRange(0, obstacleMeshes.Num() - 1);
             
-            if(ObjectMeshes.IsValidIndex(RandomIndex))
+            if(obstacleMeshes.IsValidIndex(RandomIndex))
             {
-                RandomMesh = ObjectMeshes[RandomIndex];
+                RandomMesh = obstacleMeshes[RandomIndex];
                 if (PlaceObject(RandomLocation, RandomMesh))
                 {
                     PlacedObjects++;
@@ -64,39 +84,175 @@ void AProceduralMapGenerator::GenerateMap()
             }
             else
             {
-                UE_LOG(ProceduralMapGenerator, Error, TEXT("Invalid index selected for ObjectMeshes"));
+                UE_LOG(ProceduralMapGenerator, Error, TEXT("Invalid index selected for obstacleMeshes"));
             }
         }
         else
         {
             UE_LOG(ProceduralMapGenerator, Warning, TEXT("%s은 유효하지 않은 위치입니다."), *RandomLocation.ToString());
         }
-        UE_LOG(ProceduralMapGenerator, Log, TEXT("Generate Map Attempt . . . %d, %d, %s"), PlacedObjects, SpawnAttempts, RandomMesh ? *RandomMesh->GetName() : TEXT("None"));
+        UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Map Attempt . . . %d, %d, %s"), PlacedObjects, SpawnAttempts, RandomMesh ? *RandomMesh->GetName() : TEXT("None"));
 
         SpawnAttempts++;
     }
+
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Obstacles Completed"));
 }
 
-void AProceduralMapGenerator::GenerateBuildings()
+// 벽, 울타리 등의 Sub Obstacles 생성을 위한 함수
+void AProceduralMapGenerator::GenerateSubObstacles()
 {
-    // Generate Buildings
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Sub Obstacles Started"));
+
+    if (subObstacleMeshes.Num() == 0)
+    {
+        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in obstacleMeshes array!"));
+        return;
+    }
+    
+    int32 SpawnAttempts = 0;
+    int32 PlacedObjects = 0;
+
+    while (PlacedObjects < numSubObstacles && SpawnAttempts < numSubObstacles * 5) // 최대 생성 시도 횟수는 배치할 오브젝트의 5배이다.
+    {
+        FVector RandomLocation = GetRandomPosition();
+        UStaticMesh* RandomMesh = nullptr;
+
+        if (IsLocationValid(RandomLocation))
+        {
+            int32 RandomIndex = FMath::RandRange(0, subObstacleMeshes.Num() - 1);
+            
+            if(subObstacleMeshes.IsValidIndex(RandomIndex))
+            {
+                RandomMesh = subObstacleMeshes[RandomIndex];
+                if (PlaceObject(RandomLocation, RandomMesh))
+                {
+                    PlacedObjects++;
+                    UE_LOG(ProceduralMapGenerator, Log, TEXT("%s 메쉬를 %s 위치에 생성 중"), *RandomMesh->GetName(), *RandomLocation.ToString());
+                }
+            }
+            else
+            {
+                UE_LOG(ProceduralMapGenerator, Error, TEXT("Invalid index selected for Sub Obstacle Meshes"));
+            }
+        }
+        else
+        {
+            UE_LOG(ProceduralMapGenerator, Warning, TEXT("%s은 유효하지 않은 위치입니다."), *RandomLocation.ToString());
+        }
+        UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Map Attempt . . . %d, %d, %s"), PlacedObjects, SpawnAttempts, RandomMesh ? *RandomMesh->GetName() : TEXT("None"));
+
+        SpawnAttempts++;
+    }
+
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Sub Obstacles Completed"));
 }
 
-void AProceduralMapGenerator::GenerateWalls()
-{
-    // Generate Walls
-}
-
+// 돌, 철, 우라늄 등의 자원 생성을 위한 함수
 void AProceduralMapGenerator::GenerateResources()
 {
-    // Generate Resources
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Resources Started"));
+
+    if (resourceMeshes.Num() == 0)
+    {
+        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in obstacleMeshes array!"));
+        return;
+    }
+    
+    int32 SpawnAttempts = 0;
+    int32 PlacedObjects = 0;
+
+    while (PlacedObjects < numResources && SpawnAttempts < numResources * 5) // 최대 생성 시도 횟수는 배치할 오브젝트의 5배이다.
+    {
+        FVector RandomLocation = GetRandomPosition();
+        UStaticMesh* RandomMesh = nullptr;
+
+        if (IsLocationValid(RandomLocation))
+        {
+            int32 RandomIndex = FMath::RandRange(0, resourceMeshes.Num() - 1);
+            
+            if(resourceMeshes.IsValidIndex(RandomIndex))
+            {
+                RandomMesh = resourceMeshes[RandomIndex];
+                if (PlaceObject(RandomLocation, RandomMesh))
+                {
+                    PlacedObjects++;
+                    UE_LOG(ProceduralMapGenerator, Log, TEXT("%s 메쉬를 %s 위치에 생성 중"), *RandomMesh->GetName(), *RandomLocation.ToString());
+                }
+            }
+            else
+            {
+                UE_LOG(ProceduralMapGenerator, Error, TEXT("Invalid index selected for resource Meshes"));
+            }
+        }
+        else
+        {
+            UE_LOG(ProceduralMapGenerator, Warning, TEXT("%s은 유효하지 않은 위치입니다."), *RandomLocation.ToString());
+        }
+        UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Map Attempt . . . %d, %d, %s"), PlacedObjects, SpawnAttempts, RandomMesh ? *RandomMesh->GetName() : TEXT("None"));
+
+        SpawnAttempts++;
+    }
+
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Resources Completed"));
 }
 
+void AProceduralMapGenerator::GenerateDecos()
+{
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Decos Started"));
+
+    if (decoMeshes.Num() == 0)
+    {
+        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in obstacleMeshes array!"));
+        return;
+    }
+    
+    int32 SpawnAttempts = 0;
+    int32 PlacedObjects = 0;
+
+    while (PlacedObjects < numDecos && SpawnAttempts < numDecos * 5) // 최대 생성 시도 횟수는 배치할 오브젝트의 5배이다.
+    {
+        FVector RandomLocation = GetRandomPosition();
+        UStaticMesh* RandomMesh = nullptr;
+
+        if (IsLocationValid(RandomLocation))
+        {
+            int32 RandomIndex = FMath::RandRange(0, decoMeshes.Num() - 1);
+            
+            if(decoMeshes.IsValidIndex(RandomIndex))
+            {
+                RandomMesh = decoMeshes[RandomIndex];
+                if (PlaceObject(RandomLocation, RandomMesh))
+                {
+                    PlacedObjects++;
+                    UE_LOG(ProceduralMapGenerator, Log, TEXT("%s 메쉬를 %s 위치에 생성 중"), *RandomMesh->GetName(), *RandomLocation.ToString());
+                }
+            }
+            else
+            {
+                UE_LOG(ProceduralMapGenerator, Error, TEXT("Invalid index selected for Decorations"));
+            }
+        }
+        else
+        {
+            UE_LOG(ProceduralMapGenerator, Warning, TEXT("%s은 유효하지 않은 위치입니다."), *RandomLocation.ToString());
+        }
+        UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Map Attempt . . . %d, %d, %s"), PlacedObjects, SpawnAttempts, RandomMesh ? *RandomMesh->GetName() : TEXT("None"));
+
+        SpawnAttempts++;
+    }
+
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Decos Completed"));
+}
+
+#pragma endregion
+
+#pragma region Utilities & Helpers
 // 랜덤한 좌표를 FVector로 반환하는 함수
 FORCEINLINE FVector AProceduralMapGenerator::GetRandomPosition()
 {
-    float X = FMath::RandRange(-MapHalfSize, MapHalfSize);
-    float Y = FMath::RandRange(-MapHalfSize, MapHalfSize);
+    float X = FMath::RandRange(-mapHalfSize, mapHalfSize);
+    float Y = FMath::RandRange(-mapHalfSize, mapHalfSize);
     return FVector(X, Y, 0.f);
 }
 
@@ -108,9 +264,9 @@ bool AProceduralMapGenerator::IsLocationValid(FVector Location)
     FCollisionQueryParams CollisionParams;
 
     // PlaneActor가 유효하면 무시하도록 설정
-    if (PlaneActor)
+    if (planeActor)
     {
-        CollisionParams.AddIgnoredActor(PlaneActor);
+        CollisionParams.AddIgnoredActor(planeActor);
     }
     else
     {
@@ -142,10 +298,11 @@ bool AProceduralMapGenerator::PlaceObject(FVector Location, UStaticMesh* ObjectM
             NewMeshComponent->SetStaticMesh(ObjectMesh);
             NewMeshComponent->SetWorldLocation(Location);
 
-            UE_LOG(ProceduralMapGenerator, Log, TEXT("Place Object 실행: %s"), *Location.ToString());
+            UE_LOG(ProceduralMapGenerator, Log, TEXT("Place Object: %s"), *Location.ToString());
 
             return true;
         }
     }
     return false;
 }
+#pragma endregion
