@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "ProceduralMapGenerator.generated.h"
 
+// 디버깅용 로그 카테고리 선언
 DECLARE_LOG_CATEGORY_EXTERN(ProceduralMapGenerator, Log, All);
 
 UCLASS()
@@ -13,50 +14,55 @@ class AProceduralMapGenerator : public AActor
 {
 	GENERATED_BODY()
 	
-public:	
-	// Sets default values for this actor's properties
+public:
 	AProceduralMapGenerator();
 
     void InitializeMapCoordinate(int32 GridSize);
-    FORCEINLINE int32 GetIndex(int32 X, int32 Y, int32 Size) { return X + (Y * Size); } // 2D 좌표 => 1D 변환 함수
 	void GenerateMap();
-    void GenerateBuildings();
-    void GenerateWalls();
+    void GenerateObstacles();
+    void GenerateSubObstacles();
     void GenerateResources();
+    void GenerateDecos();
+
     bool IsLocationValid(FVector Location);
     bool PlaceObject(FVector Location, UStaticMesh* ObjectMesh);
+
+    // 2D 좌표 => 1D 변환용 인라인 함수
+    FORCEINLINE int32 GetIndex(int32 X, int32 Y, int32 Size) { return X + (Y * Size); }
     FVector GetRandomPosition();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 private:
     UPROPERTY(EditAnywhere, Category = "Map Settings")
-    int32 MapHalfSize = 4500;
+    int32 mapHalfSize = 9000;
 
     UPROPERTY(EditAnywhere, Category = "Map Settings")
-    int32 NumObjects = 50;
+    int32 numObstacles = 20;
     UPROPERTY(EditAnywhere, Category = "Map Settings")
-    int32 NumBuildings = 20;
+    int32 numSubObstacles = 20;
     UPROPERTY(EditAnywhere, Category = "Map Settings")
-    int32 NumWalls = 20;
+    int32 numResources = 30;
     UPROPERTY(EditAnywhere, Category = "Map Settings")
-    int32 NumResources = 30;
-    UPROPERTY(EditAnywhere, Category = "Map Settings")
-    TArray<int32> mapCoordinate; // 맵 좌표를 저장할 1차원 배열
+    int32 numDecos = 30;
+
+    // 맵 좌표를 저장할 1차원 배열
+    UPROPERTY(VisibleAnywhere, Category = "Map Settings")
+    TArray<int32> mapCoordinate;
+
+    // Plane 액터를 저장할 변수
+    UPROPERTY(EditAnywhere, Category = "Procedural Generation")
+    AActor* planeActor;
 
     UPROPERTY(EditAnywhere, Category = "Procedural Generation")
-    AActor* PlaneActor; // Plane 액터를 저장할 변수
-
+    TArray<UStaticMesh*> obstacleMeshes;
     UPROPERTY(EditAnywhere, Category = "Procedural Generation")
-    TArray<UStaticMesh*> ObjectMeshes;
-    UPROPERTY(EditAnywhere, Category = "Procedural Generation")
-    TArray<UStaticMesh*> buildingMeshes;
-    UPROPERTY(EditAnywhere, Category = "Procedural Generation")
-    TArray<UStaticMesh*> wallMeshes;
+    TArray<UStaticMesh*> subObstacleMeshes;
     UPROPERTY(EditAnywhere, Category = "Procedural Generation")
     TArray<UStaticMesh*> resourceMeshes;
+    UPROPERTY(EditAnywhere, Category = "Procedural Generation")
+    TArray<UStaticMesh*> decoMeshes;
 
     UWorld* world; // 현재 World 포인터
 };
