@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "LobbyPlayerController.generated.h"
 
+class ALobbyGameMode;
 class ULobbyNetworkComponent;
 class UTeamComponent;
 
@@ -21,6 +22,8 @@ public:
 	ALobbyPlayerController();
 
 	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaSeconds) override;
 
 	UTeamComponent* GetTeamComponent() const
 	{
@@ -44,4 +47,8 @@ protected:
 	
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<ULobbyNetworkComponent> LobbyNetworkComponent;
+
+private:
+	UPROPERTY()
+	ALobbyGameMode* LobbyGameMode;
 };

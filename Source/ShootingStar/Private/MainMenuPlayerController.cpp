@@ -36,5 +36,6 @@ void AMainMenuPlayerController::BeginPlay()
 	SetInputMode(FInputModeUIOnly());
 
 	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
-	Interface->Reset();
+	Interface->Clear();
+	Interface->CheckAndRequestPermissions();
 }

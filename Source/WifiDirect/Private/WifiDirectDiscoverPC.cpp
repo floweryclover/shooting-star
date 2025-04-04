@@ -22,19 +22,14 @@ AWifiDirectDiscoverPC::AWifiDirectDiscoverPC()
 void AWifiDirectDiscoverPC::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UWifiDirectInterface::GetWifiDirectInterface()->RegisterService();
 	
 	check(IsValid(WifiDirectDiscoverUIClass));
 	WifiDirectDiscoverUI = CreateWidget<UUserWidget>(
 		GetWorld(), WifiDirectDiscoverUIClass);
 	check(IsValid(WifiDirectDiscoverUI));
 	WifiDirectDiscoverUI->AddToViewport();
-}
-
-void AWifiDirectDiscoverPC::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	Super::EndPlay(EndPlayReason);
-	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
-	Interface->StopDiscovering();
 }
 
 void AWifiDirectDiscoverPC::Tick(const float DeltaSeconds)
