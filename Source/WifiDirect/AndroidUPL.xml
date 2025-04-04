@@ -17,7 +17,6 @@
             import java.util.Collection;
             import java.util.stream.Collectors;
             import android.util.Log;
-            import android.content.IntentFilter;
             import android.net.wifi.p2p.WifiP2pManager;
             import android.net.wifi.p2p.WifiP2pManager.ActionListener;
             import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
@@ -31,6 +30,7 @@
             import android.net.wifi.p2p.WifiP2pGroup;
             import android.net.wifi.p2p.WifiP2pDeviceList;
             import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
+            import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
             import android.net.wifi.WpsInfo;
             import android.net.MacAddress;
 
@@ -40,62 +40,15 @@
 
     <gameActivityClassAdditions>
         <insert>
-            private final IntentFilter intentFilter = new IntentFilter();
+            private static final int REQUEST_WIFI_DIRECT_PERMISSION = 100;
+            private static final String shootingStarServiceName = "_shootingstar._tcp";
             private Channel channel;
             private WifiP2pManager manager;
             private WifiP2pDnsSdServiceInfo serviceInfo;
-            
-            public void discoverPeers() {
-                manager.discoverPeers(channel, new ActionListener() {
-                    @Override
-                    public void onSuccess() {}
+            private WifiP2pDnsSdServiceRequest serviceRequest;
+            private String uniqueInstanceName;
 
-                    @Override
-                    public void onFailure(int reasonCode) {
-                        WifiDirectCallbacks.onWifiDirectDiscoverPeersError(reasonCode);
-                    }
-                });
-            }
-            
-            public void requestPeers() {
-                manager.requestPeers(channel, new WifiP2pManager.PeerListListener() {
-                    @Override
-                    public void onPeersAvailable(WifiP2pDeviceList peers) {
-                        if (peers == null) {
-                            return;
-                        }
-            
-                        Collection&lt;WifiP2pDevice&gt; devices = peers.getDeviceList();
-                        if (devices == null || devices.isEmpty()) {
-                            return;
-                        }
-            
-                        List&lt;String&gt; availableDeviceNames = new ArrayList&lt;&gt;();
-                        List&lt;String&gt; availableDeviceAddresses = new ArrayList&lt;&gt;();
-            
-                        for (WifiP2pDevice device : devices) {
-                            if (device.status == WifiP2pDevice.AVAILABLE || device.status == WifiP2pDevice.CONNECTED) {
-                                availableDeviceNames.add(device.deviceName);
-                                availableDeviceAddresses.add(device.deviceAddress);
-                            }
-                        }
-
-                        for (WifiP2pDevice device : devices) {
-                            if (device.status == WifiP2pDevice.AVAILABLE) {
-                                availableDeviceNames.add(device.deviceName);
-                                availableDeviceAddresses.add(device.deviceAddress);
-                            }
-                        }
-            
-                        String[] deviceNames = availableDeviceNames.toArray(new String[0]);
-                        String[] deviceAddresses = availableDeviceAddresses.toArray(new String[0]);
-            
-                        WifiDirectCallbacks.onWifiDirectRefreshPeerList(deviceNames, deviceAddresses);
-                    }
-                });
-            }
-
-            public void stopPeerDiscovery() {
+            private void stopPeerDiscovery() {
                 manager.stopPeerDiscovery(channel, new ActionListener() {
                     @Override
                     public void onSuccess() {}
@@ -105,29 +58,7 @@
                 });
             }
 
-            public void addLocalService() {
-                manager.addLocalService(channel, serviceInfo, new ActionListener() {
-                    @Override
-                    public void onSuccess() {}
-        
-                    @Override
-                    public void onFailure(int reasonCode) {
-                        WifiDirectCallbacks.onWifiDirectAddLocalServiceError(reasonCode);
-                    }
-                });
-            }
-
-            public void removeLocalService() {
-                manager.removeLocalService(channel, serviceInfo, new ActionListener() {
-                    @Override
-                    public void onSuccess() {}
-        
-                    @Override
-                    public void onFailure(int reasonCode) {}
-                });
-            }
-
-            public void removeGroup() {
+            public void disconnect() {
                 manager.removeGroup(channel, new ActionListener() {
                     @Override
                     public void onSuccess() {}
@@ -136,26 +67,8 @@
                     public void onFailure(int reasonCode) { }
                 });
             }
-            
-            public void requestP2pState() {
-                manager.requestP2pState(channel, new P2pStateListener() {
-                    @Override
-                    public void onP2pStateAvailable(int state) {
-                        WifiDirectCallbacks.onWifiDirectRefreshP2pState(state == WifiP2pManager.WIFI_P2P_STATE_ENABLED);
-                    }
-                });
-            }
 
-            public void requestDiscoveryState() {
-                manager.requestDiscoveryState(channel, new WifiP2pManager.DiscoveryStateListener() {
-                    @Override
-                    public void onDiscoveryStateAvailable(int state) {
-                        WifiDirectCallbacks.onWifiDirectRefreshDiscoveryState(state == WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED);
-                    }
-                });
-            }
-
-            public void requestConnectionInfo() {
+            public void refreshGroupInfo() {
                 manager.requestConnectionInfo(channel, new WifiP2pManager.ConnectionInfoListener() {
                     @Override
                     public void onConnectionInfoAvailable(WifiP2pInfo info) {
@@ -166,23 +79,24 @@
                             } else {
                                 groupOwnerAddress = "";
                             }
-            
-                            WifiDirectCallbacks.onWifiDirectRefreshGroup(info.groupFormed, info.isGroupOwner, groupOwnerAddress);
+                            android.util.Log.e("ShootingStarWifiDirect", "Group Info available");
+                            WifiDirectCallbacks.onRefreshGroup(info.groupFormed, info.isGroupOwner, groupOwnerAddress);
                         }
                     }
                 });
             }
 
-            public void connectToDevice(String deviceAddress) {
+            public void connect(String deviceMacAddress) {
                 WifiP2pConfig config = new WifiP2pConfig();
-                config.deviceAddress = deviceAddress;
+                config.deviceAddress = deviceMacAddress;
                 manager.connect(channel, config, new ActionListener() {
                     @Override
                     public void onSuccess() { }
 
                     @Override
                     public void onFailure(int reason) {
-                        WifiDirectCallbacks.onWifiDirectConnectError(reason);
+                        android.util.Log.e("ShootingStarWifiDirect", "connect() Failed: " + reason);
+                        WifiDirectCallbacks.onConnectionFailed("", deviceMacAddress);
                     }
                 });
             }
@@ -190,25 +104,165 @@
             public void cancelConnect() {
                 manager.cancelConnect(channel, new ActionListener() {
                     @Override
-                    public void onSuccess() { }
+                    public void onSuccess() {}
         
                     @Override
-                    public void onFailure(int reason) { }
+                    public void onFailure(int reason) {}
                 });
             }
+            
+            public void refreshServiceDiscovery() {
+                manager.clearServiceRequests(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        manager.addServiceRequest(channel, serviceRequest, new ActionListener() {
+                            public void onSuccess() {
+                                manager.discoverServices(channel, new ActionListener() {
+                                    @Override
+                                    public void onSuccess() {
+                                        android.util.Log.d("ShootingStarWifiDirect", "RefreshServiceDiscovery() Success");
+
+                                    }
+                                    
+                                    @Override
+                                    public void onFailure(int reason) {
+                                        if (reason == 2) {
+                                            return;
+                                        }
+                                        WifiDirectCallbacks.onError("서비스 검색 실패, 서비스 검색 실행에 실패하였습니다. 에러 코드: " + reason + ".");
+                                    }
+                                });
+                            }
+                
+                            @Override
+                            public void onFailure(int reason) {
+                                if (reason == 2) {
+                                    return;
+                                }
+                                WifiDirectCallbacks.onError("서비스 검색 실패, 서비스 요청 정보 등록에 실패하였습니다. 에러 코드: " + reason + ".");
+                                clear();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(int reason) {
+                        if (reason == 2) {
+                            return;
+                        }
+                        WifiDirectCallbacks.onError("서비스 검색 실패, 서비스 요청 정보 초기화에 실패하였습니다. 에러 코드: " + reason + ".");
+                        clear();
+                    }
+                });
+            }
+            
+            private void clearServiceDiscovery() {
+                manager.clearServiceRequests(channel, null);
+            }
+            
+            public void registerService() {
+                manager.clearLocalServices(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        manager.addLocalService(channel, serviceInfo, new ActionListener() {
+                            @Override
+                            public void onSuccess() {
+                                android.util.Log.d("ShootingStarWifiDirect", "registerService() Success");
+                            }
+                
+                            @Override
+                            public void onFailure(int reason) {
+                                if (reason == 2) { // BUSY
+                                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            android.util.Log.w("ShootingStarWifiDirect", "registerService() was busy, retrying");
+                                            registerService();
+                                        }
+                                    }, 100);
+                                } else {
+                                    WifiDirectCallbacks.onError("서비스 등록 실패, 서비스 등록에 실패하였습니다. 에러 코드: " + reason + ".");
+                                    clear();
+                                }
+                            }
+                        });
+                    }
+        
+                    @Override
+                    public void onFailure(int reason) {
+                        if (reason == 2) { // BUSY
+                            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    registerService();
+                                }
+                            }, 500);
+                        } else {
+                            WifiDirectCallbacks.onError("서비스 등록 실패, 서비스 등록에 실패하였습니다. 에러 코드: " + reason + ".");
+                            clear();
+                        }
+                    }
+                });
+            }
+            
+            private void unregisterService() {
+                manager.clearLocalServices(channel, null);
+            }
+            
+            public void refreshServiceBroadcast() {
+                manager.discoverPeers(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        android.util.Log.d("ShootingStarWifiDirect", "RefreshServiceBroadcast() Success");
+                    }
+        
+                    @Override
+                    public void onFailure(int reason) {
+                        if (reason == 2) {
+                            return;
+                        }
+                        WifiDirectCallbacks.onError("서비스 브로드캐스트 갱신에 실패하였습니다. 에러 코드: " + reason + ".");
+                        clear();
+                    }
+                });
+            }
+
+            public void checkAndRequestPermissions() {
+                if (Build.VERSION.SDK_INT &gt;= Build.VERSION_CODES.TIRAMISU) {
+                    if (checkSelfPermission(android.Manifest.permission.NEARBY_WIFI_DEVICES)
+                            != PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(new String[]{ android.Manifest.permission.NEARBY_WIFI_DEVICES },
+                            REQUEST_WIFI_DIRECT_PERMISSION);
+                    }
+                } else {
+                    if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(new String[]{ android.Manifest.permission.ACCESS_FINE_LOCATION },
+                            REQUEST_WIFI_DIRECT_PERMISSION);
+                    }
+                }
+            }
+            
+            public void clear() {
+                disconnect();
+                stopBroadcastAndDiscovery();
+            }
+            
+            public void stopBroadcastAndDiscovery() {
+                cancelConnect();
+                clearServiceDiscovery();
+                stopPeerDiscovery();
+                unregisterService();
+            }
+            
         </insert>
     </gameActivityClassAdditions>
 
     <gameActivityOnCreateAdditions>
         <insert>
-            intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
-            intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-            intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-            intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
-            
-            Map&lt;String, String&gt; record = new HashMap&lt;&gt;();
-            record.put("available", "visible");
-            serviceInfo = WifiP2pDnsSdServiceInfo.newInstance("ShootingStarInstance", "_shootingstar._tcp", record);
+            uniqueInstanceName = Build.MODEL + "_" + Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+            serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(uniqueInstanceName, shootingStarServiceName, null);
+            serviceRequest = WifiP2pDnsSdServiceRequest.newInstance(shootingStarServiceName);
             
             manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
             channel = manager.initialize(this, getMainLooper(), null); // REQUIRES android.permission.CHANGE_WIFI_STATE
@@ -217,9 +271,11 @@
                 new WifiP2pManager.DnsSdServiceResponseListener() {
                     @Override
                     public void onDnsSdServiceAvailable(String instanceName, String registrationType, WifiP2pDevice srcDevice) {
-                        if (instanceName.equals("ShootingStarInstance") &amp;&amp; (srcDevice.status == WifiP2pDevice.CONNECTED || srcDevice.status == WifiP2pDevice.AVAILABLE)) {
-                            WifiDirectCallbacks.onWifiDirectDnsSdServiceAvailable(srcDevice.deviceName, srcDevice.deviceAddress);
+                        if (instanceName.equals("") || instanceName.equals(uniqueInstanceName) || srcDevice.deviceName.equals("") || srcDevice.deviceAddress.equals("")) {
+                            return;
                         }
+                        android.util.Log.d("ShootingStarWifiDirect", "Service found: " + srcDevice.deviceName + " " + instanceName);
+                        WifiDirectCallbacks.onServiceFound(srcDevice.deviceName, srcDevice.deviceAddress);
                     }
                 },
                 new WifiP2pManager.DnsSdTxtRecordListener() {
@@ -233,9 +289,7 @@
     
     <gameActivityOnDestroyAdditions>
         <insert>
-            stopPeerDiscovery();
-            removeLocalService();
-            removeGroup();
+            clear();
         </insert>
     </gameActivityOnDestroyAdditions>
 </root>
