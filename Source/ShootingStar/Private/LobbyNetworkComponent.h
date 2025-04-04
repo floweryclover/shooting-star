@@ -15,6 +15,17 @@ class ULobbyNetworkComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	ULobbyNetworkComponent();
+	
+	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	
+	void Process(int32 NumCurrentPlayers, int32 NumMaxPlayers, float DeltaTime);
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsP2pSession;
+	
 	/**
 	 * 클라이언트에서 호출하는 경우 아무것도 하지 않습니다.
 	 * 서버인 경우 즉시 게임을 시작합니다(경쟁 모드).
@@ -28,4 +39,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	void LeaveGame();
+
+private:
+	bool bIsLocalComponent;
+
+	int32 NumPreviousPlayers;
 };

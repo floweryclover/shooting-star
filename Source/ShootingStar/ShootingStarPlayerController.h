@@ -58,7 +58,7 @@ protected:
 	void Move(const FInputActionValue& Value);
 	// Rotation Control
 	void LookMouse();
-	void Shoot();
+	void Attack();
 
 private:
 	FVector CachedDestination;

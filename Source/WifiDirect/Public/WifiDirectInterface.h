@@ -16,33 +16,19 @@ struct FWifiDirectPeerDeviceInfo final
 	FString DeviceMacAddress;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDiscoverPeersFailed, int32, ErrorCode);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FConnectToPeerFailed, int32, ErrorCode);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAddLocalServiceFailed, int32, ErrorCode);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWifiDirectError, const FString&, Error);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FConnectionFailed,  const FString&, DeviceName);
 
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 extern "C"
 {
-	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectDiscoverPeersErrorFunction(JNIEnv * Env, jclass clazz, jint JavaErrorCode);
-	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectConnectErrorFunction(JNIEnv * Env, jclass clazz, jint JavaErrorCode);
-	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectAddLocalServiceErrorFunction(JNIEnv * Env, jclass clazz, jint JavaErrorCode);
-	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshPeerListFunction(JNIEnv * Env, jclass clazz, jobjectArray peerDeviceNames, jobjectArray peerDeviceAddresses);
-	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshGroupFunction(JNIEnv * Env, jclass clazz, jboolean isGroupFormed, jboolean isGroupOwner, jstring groupOwnerIpAddress);
-	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshP2pStateFunction(JNIEnv * Env, jclass clazz, jboolean isAvailable);
-	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshDiscoveryStateFunction(JNIEnv * Env, jclass clazz, jboolean isDiscovering);
-	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectDnsSdServiceAvailableFunction(JNIEnv * Env, jclass clazz, jstring javaDeviceName, jstring javaDeviceMacAddress);
+	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnErrorFunction(JNIEnv * Env, jclass Clazz, jstring JavaError);
+	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionFailedFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
+	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnRefreshGroupFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsGroupFormed, jboolean JavaIsGroupOwner, jstring JavaGroupOwnerIpAddress);
+	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnServiceFoundFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
 }
 #endif
 
-/**
- * On-Failed 이벤트의 ErrorCode 설명 <br/>
- * 음수: 임의로 정의한 에러 코드<br/>
- * 0: Android 내부 문제를 의미하지만 경험상 권한 문제였음<br/>
- * 1: P2P 미지원 기기<br/>
- * 2: 다른 작업을 처리 중임(ex. 연결 시도 중에 discoverPeers() 호출 등)<br/>
- * 3: Service Request 관련 오류로 볼 일 없을 듯<br/>
- * 4: 권한 없음. requestDeviceInfo() 등 권한 필요한 메소드 호출했는데 권한 없는 경우 - 아마 볼 일 없을 것, 사전에 설정을 해 두었기 때문에
- */
 UCLASS()
 class WIFIDIRECT_API UWifiDirectInterface final : public UObject
 {
@@ -51,26 +37,35 @@ class WIFIDIRECT_API UWifiDirectInterface final : public UObject
 public:
 	UWifiDirectInterface();
 	
-	UPROPERTY(BlueprintAssignable)
-	FDiscoverPeersFailed OnDiscoverPeersFailed;
-
 	/**
-	 * 에러 코드 -1: P2P 그룹이 존재하는 상황에서 호출됨, -2: 주소값이 비었음, -3: 타임아웃
+	 * Error 메시지의 에러코드 설명 <br/>
+	 * 음수: 임의로 정의한 에러 코드<br/>
+	 * 0: Android 내부 문제를 의미하지만 경험상 권한 문제였음<br/>
+	 * 1: P2P 미지원 기기<br/>
+	 * 2: 다른 작업을 처리 중임(ex. 연결 시도 중에 discoverPeers() 호출 등)<br/>
+	 * 3: Service Request 관련 오류<br/>
+	 * 4: 권한 없음. requestDeviceInfo() 등 권한 필요한 메소드 호출했는데 권한 없는 경우 - 아마 볼 일 없을 것, 사전에 설정을 해 두었기 때문에
 	 */
 	UPROPERTY(BlueprintAssignable)
-	FConnectToPeerFailed OnConnectToPeerFailed;
-
+	FWifiDirectError OnWifiDirectError;
+	
 	UPROPERTY(BlueprintAssignable)
-	FAddLocalServiceFailed OnAddLocalServiceFailed;
+	FConnectionFailed OnConnectionFailed;
 	
 	UFUNCTION(BlueprintCallable)
-	void ConnectToNearbyDevice(const FString& DeviceMacAddress);
+	void Connect(const FString& DeviceMacAddress);
 	
 	/**
-	 * WiFi Direct 동작을 모두 중지하고 초기화합니다.
+	 * 연결된 P2P 그룹이 있다면 나가며, WiFi Direct 동작을 모두 중지하고 초기화합니다.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void Reset();
+	void Clear();
+
+	/**
+	 * P2P 그룹 상태는 유지하고 탐색 및 브로드캐스트 동작만 중지합니다.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void StopBroadcastAndDiscovery();
 
 	/**
 	 * 수동 업데이트 함수입니다. 반드시 한 번에 하나의 객체가 호출하게 하세요.
@@ -80,10 +75,13 @@ public:
 	void Update(float DeltaSeconds);
 
 	/**
-	 * 게임을 시작한 경우 등 더 이상 주변 피어에게서 검색되지 않게 합니다.
+	 * 로컬 서비스를 등록합니다. 최초 탐색 시작 이전이나 Clear()를 호출한 후 다시 탐색을 시작할 경우 호출하세요.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void StopDiscovering();
+	void RegisterService();
+
+	UFUNCTION(Blueprintable)
+	void CheckAndRequestPermissions();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	static UWifiDirectInterface* GetWifiDirectInterface();
@@ -91,11 +89,6 @@ public:
 	const TArray<FWifiDirectPeerDeviceInfo>& GetShootingStarPeers() const
 	{
 		return ShootingStarPeers;
-	}
-	
-	bool IsP2pServiceAdded() const
-	{
-		return bIsP2pServiceAdded;
 	}
 	
 	bool IsP2pGroupFormed() const
@@ -108,16 +101,6 @@ public:
 		return bIsP2pGroupOwner;
 	}
 	
-	bool IsP2pAvailable() const
-	{
-		return bIsP2pAvailable;
-	}
-	
-	bool IsP2pPeerDiscovering() const
-	{
-		return bIsP2pPeerDiscovering;
-	}
-	
 	const FString& GetGroupOwnerIpAddress() const
 	{
 		return GroupOwnerIpAddress;
@@ -126,9 +109,6 @@ public:
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FWifiDirectPeerDeviceInfo> ShootingStarPeers;
-
-	UPROPERTY(BlueprintReadOnly)
-	bool bIsP2pServiceAdded;
 	
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsP2pGroupFormed;
@@ -136,12 +116,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsP2pGroupOwner;
 	
-	UPROPERTY(BlueprintReadOnly)
-	bool bIsP2pAvailable;
-
-	UPROPERTY(BlueprintReadOnly)
-	bool bIsP2pPeerDiscovering;
-
 	UPROPERTY(BlueprintReadOnly)
 	FString GroupOwnerIpAddress;
 
@@ -152,55 +126,54 @@ protected:
 	float ConnectingElapsed;
 
 	UPROPERTY(BlueprintReadOnly)
-	float ConnectionTimeOutSeconds = 5.0f;
+	float ConnectionTimeOutSeconds = 10.0f;
 
 	UPROPERTY(BlueprintReadOnly)
-	float UpdateInterval = 1.0f;
+	float PeerLifespan = 20.0f;
+	
+	UPROPERTY(BlueprintReadOnly)
+	float BroadcastInterval = 6.0f;
 
 	UPROPERTY(BlueprintReadOnly)
-	float UpdateElapsed;
+	float DiscoveryInterval = 5.0f;
+
+	UPROPERTY(BlueprintReadOnly)
+	float GroupUpdateInterval = 0.5f;
+
+	UPROPERTY(BlueprintReadOnly)
+	float DiscoveryElapsed;
+	
+	UPROPERTY(BlueprintReadOnly)
+	float BroadcastElapsed;
+
+	UPROPERTY(BlueprintReadOnly)
+	float GroupUpdateElapsed;
 
 private:
 	/**
-	 * ShootingStar가 아닐 수도 있는, 주변 모든 기기
+	 * 일정 시간이 지나도 다시 서비스 검색되지 않는다면 목록에서 삭제하기 위한 맵입니다.
 	 */
-	TArray<FWifiDirectPeerDeviceInfo> GeneralPeers;
-	
-	void RemoveLocalService();
-	
-	void RemoveGroup();
+	TMap<FString /*DeviceMacAddress*/, float /*RemainingLifeTime*/> PeerLifeTimes;
 
-	void AddLocalService();
-	
-	void StartPeerDiscovering();
-	
-	void StopPeerDiscovering();
-	
+	FString LastConnectionRequestedDeviceMacAddress;
+
 	void CancelConnect();
 	
-	void RefreshP2pAvailability();
-	
-	void RefreshPeerList();
-	
-	void RefreshDiscoveryState();
-
 	void RefreshGroupInfo();
 
-	UFUNCTION()
-	void ClearPeerList(int32 ErrorCode);
+	void RefreshServiceBroadcast();
 
-	UFUNCTION()
-	void ClearIsP2pServiceAdded(int32 ErrorCode);
+	void RefreshServiceDiscovery();
+	
+	void OnServiceFound(const FString& DeviceName, const FString& DeviceMacAddress);
+	
+	void OnConnectionFailedCallback(const FString& DeviceName, const FString& DeviceMacAddress);
 
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
-	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectDiscoverPeersErrorFunction(JNIEnv * Env, jclass clazz, jint JavaErrorCode);
-	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectConnectErrorFunction(JNIEnv * Env, jclass clazz, jint JavaErrorCode);
-	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectAddLocalServiceErrorFunction(JNIEnv * Env, jclass clazz, jint JavaErrorCode);
-	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshPeerListFunction(JNIEnv * Env, jclass clazz, jobjectArray peerDeviceNames, jobjectArray peerDeviceAddresses);
-	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshGroupFunction(JNIEnv * Env, jclass clazz, jboolean isGroupFormed, jboolean isGroupOwner, jstring groupOwnerIpAddress);
-	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshP2pStateFunction(JNIEnv * Env, jclass clazz, jboolean isAvailable);
-	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectRefreshDiscoveryStateFunction(JNIEnv * Env, jclass clazz, jboolean isDiscovering);
-	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnWifiDirectDnsSdServiceAvailableFunction(JNIEnv * Env, jclass clazz, jstring javaDeviceName, jstring javaDeviceMacAddress);
+	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnErrorFunction(JNIEnv * Env, jclass Clazz, jstring JavaError);
+	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionFailedFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
+	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnRefreshGroupFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsGroupFormed, jboolean JavaIsGroupOwner, jstring JavaGroupOwnerIpAddress);
+	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnServiceFoundFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
 #endif
 
 };

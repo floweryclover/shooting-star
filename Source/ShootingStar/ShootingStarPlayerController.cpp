@@ -50,7 +50,7 @@ void AShootingStarPlayerController::SetupInputComponent()
 	{
 		// Setup Move input events
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AShootingStarPlayerController::Move);
-		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AShootingStarPlayerController::Shoot);
+		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AShootingStarPlayerController::Attack);
 
 	}
 	else
@@ -98,7 +98,7 @@ void AShootingStarPlayerController::LookMouse()
 
 }
 
-void AShootingStarPlayerController::Shoot()
+void AShootingStarPlayerController::Attack()
 {
 	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
 	if (ControlledCharacter) 
