@@ -71,4 +71,11 @@ protected:
 	// Rotation Control
 	void LookMouse();
 	void Shoot();
+
+	// HUD
+	UPROPERTY(BlueprintReadOnly)
+	TSubclassOf<UUserWidget> ScoreBoardUIClass;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UUserWidget> ScoreBoardUI;
 };
