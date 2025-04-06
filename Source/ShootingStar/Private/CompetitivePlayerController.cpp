@@ -13,18 +13,40 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "Blueprint/UserWidget.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> ScoreBoardUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_ScoreUI") };
+	ensure(ScoreBoardUIBPFinder.Succeeded());
+	if (ScoreBoardUIBPFinder.Succeeded())
+	{
+		ScoreBoardUIClass = ScoreBoardUIBPFinder.Class;
+	}
 }
 
 void ACompetitivePlayerController::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	//if (IsLocalPlayerController())
+	//{
+	//	ensure(ScoreBoardUIClass);
+	//	if (ScoreBoardUIClass)
+	//	{
+	//		ScoreBoardUI = CreateWidget<UUserWidget>(GetWorld(), ScoreBoardUIClass);
+	//		ensure(ScoreBoardUI);
+	//		if (ScoreBoardUI)
+	//		{
+	//			ScoreBoardUI->AddToViewport();
+	//		}
+	//	}
+	//}
 }
 
 void ACompetitivePlayerController::Tick(float DeltaTime)
