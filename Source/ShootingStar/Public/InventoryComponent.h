@@ -1,0 +1,34 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "ResourceDataAsset.h" // UResourceDataAsset 포함
+#include "InventoryComponent.generated.h"
+
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+class SHOOTINGSTAR_API UInventoryComponent : public UActorComponent
+{
+    GENERATED_BODY()
+
+public:
+    UInventoryComponent();
+
+    // 자원 인벤토리: 자원 데이터 에셋 → 수량
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+    TMap<UResourceDataAsset*, int32> ResourceInventory;
+
+    // 무기
+
+
+    // 자원 추가
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    void AddResource(UResourceDataAsset* Resource, int32 Amount = 1);
+
+    // 자원 수량 가져오기
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    int32 GetResourceQuantity(UResourceDataAsset* Resource) const;
+
+    // 전체 인벤토리 가져오기 (블루프린트에서 ForEach 사용 가능)
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    const TMap<UResourceDataAsset*, int32>& GetAllResources() const { return ResourceInventory; }
+};

@@ -7,6 +7,7 @@
 #include "ShootingStarCharacter.generated.h"
 
 class AGun;
+class UInventoryComponent;
 
 UCLASS(Blueprintable)
 class AShootingStarCharacter : public ACharacter
@@ -24,6 +25,9 @@ public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
+	UFUNCTION(BlueprintCallable)
+	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+
 	virtual float TakeDamage(float DamageAmount, 
 		struct FDamageEvent const& DamageEvent, 
 		class AController* EventInstigator, 
@@ -32,6 +36,9 @@ public:
 	void PullTrigger();
 	bool IsDead() const;
 	float GetHealthPercent() const;
+
+	// 자원 상호 작용
+	void OnInteract();
 
 protected:
 	virtual void BeginPlay() override;
@@ -59,6 +66,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	AGun* Gun;
+
+	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
+	UInventoryComponent* InventoryComponent;
 	
 };
 
