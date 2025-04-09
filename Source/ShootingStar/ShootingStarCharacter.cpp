@@ -11,6 +11,13 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Materials/Material.h"
 #include "Engine/World.h"
+#include "InventoryComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "ResourceActor.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 
 AShootingStarCharacter::AShootingStarCharacter()
 {
@@ -43,6 +50,9 @@ AShootingStarCharacter::AShootingStarCharacter()
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
+
+	// Addon Inventory Component
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 void AShootingStarCharacter::BeginPlay()
@@ -50,7 +60,7 @@ void AShootingStarCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	Health = MaxHealth;
-	
+
 	if (!GunClass)
 	{
 		UE_LOG(LogTemp, Error, TEXT("GunClass is nullptr! Did you forget to set it in the Blueprint?"));
@@ -58,7 +68,7 @@ void AShootingStarCharacter::BeginPlay()
 	}
 
 	Gun = GetWorld()->SpawnActor<AGun>(GunClass);
-	if (Gun) 
+	if (Gun)
 	{
 		Gun->SetOwner(this);
 	}
@@ -74,13 +84,42 @@ float AShootingStarCharacter::GetHealthPercent() const
 	return Health / MaxHealth;
 }
 
+void AShootingStarCharacter::OnInteract()
+{
+	const float InteractRange = 200.f;
+
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AResourceActor::StaticClass(), FoundActors);
+
+	AResourceActor* ClosestResource = nullptr;
+	float MinDistance = InteractRange;
+
+	for (AActor* Actor : FoundActors)
+	{
+		AResourceActor* Resource = Cast<AResourceActor>(Actor);
+		if (!Resource || !Resource->ResourceData) continue;
+
+		float Distance = FVector::Dist(GetActorLocation(), Resource->GetActorLocation());
+		if (Distance <= MinDistance)
+		{
+			MinDistance = Distance;
+			ClosestResource = Resource;
+		}
+	}
+
+	if (ClosestResource && InventoryComponent)
+	{
+		InventoryComponent->AddResource(ClosestResource->ResourceData, 1);
+		ClosestResource->Destroy();
+	}
+}
 
 void AShootingStarCharacter::Tick(float DeltaSeconds)
 {
-    Super::Tick(DeltaSeconds);
+	Super::Tick(DeltaSeconds);
 }
 void AShootingStarCharacter::PullTrigger()
-{	
+{
 	if (!Gun)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Gun is nullptr!"));
