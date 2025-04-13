@@ -30,5 +30,8 @@ public:
 
     // 전체 인벤토리 가져오기 (블루프린트에서 ForEach 사용 가능)
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    const TMap<UResourceDataAsset*, int32>& GetAllResources() const { return ResourceInventory; }
+    TMap<UResourceDataAsset*, int32>& GetAllResources() { return ResourceInventory; }
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    UResourceDataAsset* GetResourceDataAsset_ByResourceEnum(const int32& Enum);
 };
