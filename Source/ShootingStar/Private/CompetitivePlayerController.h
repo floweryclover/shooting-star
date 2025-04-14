@@ -12,6 +12,7 @@ class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
 class UTeamComponent;
+class UInventoryComponent;
 /**
  *
  */
@@ -49,6 +50,19 @@ public:
 	{
 		return TeamComponent;
 	}
+
+	/** Inventory */
+	UFUNCTION(BlueprintCallable)
+	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UUserWidget> InventoryWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> InventoryWidgetClass;
+
+	UFUNCTION(BlueprintCallable)
+	void ToggleInventoryWidget();
 	
 	/**
 	 * Actor에 부착되어 공격 판정 등에 이용되는 일반적인 TeamComponent와는 달리,
@@ -78,4 +92,8 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UUserWidget> ScoreBoardUI;
+
+	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
+	UInventoryComponent* InventoryComponent;
+
 };

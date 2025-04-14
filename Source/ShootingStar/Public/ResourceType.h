@@ -10,4 +10,5 @@ enum class EResourceType : uint8
     Stone     UMETA(DisplayName = "Stone"),
     Iron      UMETA(DisplayName = "Iron"),
     Uranium   UMETA(DisplayName = "Uranium"),
+    End       UMETA(DisplayName = "EndPoint")
 };
