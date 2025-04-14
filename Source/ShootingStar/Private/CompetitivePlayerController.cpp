@@ -14,6 +14,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "Blueprint/UserWidget.h"
+#include "InventoryComponent.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
@@ -27,6 +28,16 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 	{
 		ScoreBoardUIClass = ScoreBoardUIBPFinder.Class;
 	}
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> InventoryUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_Inventory") };
+	ensure(InventoryUIBPFinder.Succeeded());
+	if (InventoryUIBPFinder.Succeeded())
+	{
+		InventoryWidgetClass = InventoryUIBPFinder.Class;
+	}
+
+	// Attach Inventory Component
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 void ACompetitivePlayerController::BeginPlay()
@@ -53,6 +64,25 @@ void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	LookMouse();
+}
+
+void ACompetitivePlayerController::ToggleInventoryWidget()
+{
+	if (InventoryWidget && InventoryWidget->IsInViewport())
+	{
+		InventoryWidget->RemoveFromParent();
+		InventoryWidget = nullptr;
+	}
+	else
+	{
+		if (!InventoryWidgetClass) return;
+
+		InventoryWidget = CreateWidget<UUserWidget>(this, InventoryWidgetClass);
+		if (InventoryWidget)
+		{
+			InventoryWidget->AddToViewport();
+		}
+	}
 }
 
 void ACompetitivePlayerController::SetupInputComponent()

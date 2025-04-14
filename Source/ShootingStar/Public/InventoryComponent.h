@@ -34,4 +34,10 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     UResourceDataAsset* GetResourceDataAsset_ByResourceEnum(const int32& Enum);
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    void Clear_ZeroResources();
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    TArray<UResourceDataAsset*> Get_SortedResources();
 };

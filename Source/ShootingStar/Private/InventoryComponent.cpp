@@ -59,3 +59,35 @@ UResourceDataAsset* UInventoryComponent::GetResourceDataAsset_ByResourceEnum(con
 
     return nullptr;
 }
+
+void UInventoryComponent::Clear_ZeroResources()
+{
+    TArray<UResourceDataAsset*> KeysToRemove;
+
+    for (auto& Pair : ResourceInventory)
+    {
+        if (Pair.Value == 0)
+            KeysToRemove.Add(Pair.Key);
+    }
+
+    for (auto& Key : KeysToRemove)
+    {
+        ResourceInventory.Remove(Key);
+    }
+}
+
+TArray<UResourceDataAsset*> UInventoryComponent::Get_SortedResources()
+{
+    TArray<UResourceDataAsset*> Ret;
+    for (auto& Pair : ResourceInventory)
+    {
+        Ret.Push(Pair.Key);
+    }
+
+    Ret.Sort([](const UResourceDataAsset& A, const UResourceDataAsset& B)
+        {
+            return A.ResourceType < B.ResourceType;
+        });
+
+    return Ret;
+}

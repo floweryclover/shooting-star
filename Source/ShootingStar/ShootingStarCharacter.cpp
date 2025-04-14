@@ -50,9 +50,6 @@ AShootingStarCharacter::AShootingStarCharacter()
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
-
-	// Addon Inventory Component
-	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 void AShootingStarCharacter::BeginPlay()
@@ -84,40 +81,11 @@ float AShootingStarCharacter::GetHealthPercent() const
 	return Health / MaxHealth;
 }
 
-void AShootingStarCharacter::OnInteract()
-{
-	const float InteractRange = 200.f;
-
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AResourceActor::StaticClass(), FoundActors);
-
-	AResourceActor* ClosestResource = nullptr;
-	float MinDistance = InteractRange;
-
-	for (AActor* Actor : FoundActors)
-	{
-		AResourceActor* Resource = Cast<AResourceActor>(Actor);
-		if (!Resource || !Resource->ResourceData) continue;
-
-		float Distance = FVector::Dist(GetActorLocation(), Resource->GetActorLocation());
-		if (Distance <= MinDistance)
-		{
-			MinDistance = Distance;
-			ClosestResource = Resource;
-		}
-	}
-
-	if (ClosestResource && InventoryComponent)
-	{
-		InventoryComponent->AddResource(ClosestResource->ResourceData, 1);
-		ClosestResource->Destroy();
-	}
-}
-
 void AShootingStarCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 }
+
 void AShootingStarCharacter::PullTrigger()
 {
 	if (!Gun)
