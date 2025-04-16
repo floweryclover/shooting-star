@@ -20,14 +20,13 @@ struct FWeaponData : public FTableRowBase
 	UTexture2D* WeaponIcon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<uint8> NeedResourceCounts;
+	uint8 NeedResourceCounts;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<uint8> UsedResourceCounts;
 
 	FWeaponData()
 	{
-		NeedResourceCounts.Init(0, (uint8)EResourceType::End);
 		UsedResourceCounts.Init(0, (uint8)EResourceType::End);
 	}
 };

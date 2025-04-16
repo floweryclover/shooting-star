@@ -95,5 +95,4 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
-
 };
