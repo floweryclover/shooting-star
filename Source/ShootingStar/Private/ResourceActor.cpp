@@ -19,11 +19,13 @@ void AResourceActor::OnConstruction(const FTransform& Transform)
     UpdateVisual();
 }
 
+#if WITH_EDITOR
 void AResourceActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
     Super::PostEditChangeProperty(PropertyChangedEvent);
     UpdateVisual();
 }
+#endif
 
 void AResourceActor::UpdateVisual()
 {

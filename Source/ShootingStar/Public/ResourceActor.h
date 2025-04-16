@@ -23,8 +23,10 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void OnConstruction(const FTransform& Transform) override;
 
+#if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-
+#endif
+	
 private:
 	void UpdateVisual();
 
