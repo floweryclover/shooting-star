@@ -4,58 +4,37 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/ActorComponent.h"
 #include <utility>
-#include "FenceData.h"
+#include "MapEnum.h"
 #include "ProceduralMapGenerator.generated.h"
+
+class SHOOTINGSTAR_API UObstacleGenerator;
+class SHOOTINGSTAR_API USubObstacleGenerator;
+class SHOOTINGSTAR_API UFenceGenerator;
+class SHOOTINGSTAR_API UResourceGenerator;
+class SHOOTINGSTAR_API UDecorationGenerator;
 
 // 디버깅용 로그 카테고리 선언
 DECLARE_LOG_CATEGORY_EXTERN(ProceduralMapGenerator, Log, All);
 
-UENUM(meta = (Bitflags))
-enum class EObjectMask : uint8
-{
-    ObstacleMask = 1 << 0,
-    SubObstacleMask = 1 << 1,
-    FenceMask = 1 << 2,
-    ResourceMask = 1 << 3,
-    DecoMask = 1 << 4
-};
-
-UENUM()
-enum class EPatternType : uint8
-{
-    Rectangle,
-    UShape,
-    LShape
-};
-
-typedef std::pair<int32, int32> Point;
-
-UCLASS()
-class AProceduralMapGenerator : public AActor
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class SHOOTINGSTAR_API UProceduralMapGenerator : public UActorComponent
 {
 	GENERATED_BODY()
+
+    friend class UObstacleGenerator;
+    friend class USubObstacleGenerator;
+    friend class UFenceGenerator;
+    friend class UResourceGenerator;
+    friend class UDecorationGenerator;
 	
 public:
-	AProceduralMapGenerator();
+	UProceduralMapGenerator();
 
     void InitializeMapCoordinate(int32 GridSize);
 
 	void GenerateMap();
-
-    void GenerateObstacles();
-
-    void GenerateSubObstacles();
-
-    void GenerateFences();
-    bool GenerateFenceAroundObstacle();
-    void GenerateFencePattern(const FVector& Center, EPatternType PatternType, float Radius, TArray<FFenceData>& OutPositions);
-    bool PlaceFencePattern(const TArray<FFenceData>& Positions);
-
-    void GenerateResources();
-
-    void GenerateDecorations();
-    void GenerateClusteredDecorations(FVector Center, float Radius, UStaticMesh* DecoMesh);
 
     void SetObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType);
     void SetObjectRegion(FVector Location, UStaticMesh* ObjectMesh, EObjectMask ObjectType);
@@ -79,10 +58,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+    UPROPERTY(VisibleAnywhere)
+    USceneComponent* RootSceneComponent;
+
 private:
-    // 맵의 지름은 150m로 설정
+    // 맵의 지름은 100m로 설정
     UPROPERTY(EditAnywhere, Category = "Map Settings")
-    int32 mapHalfSize = 7500;
+    int32 mapHalfSize = 5000;
 
     UPROPERTY(EditAnywhere, Category = "Map Settings")
     int32 numObstacles = 20;
@@ -113,7 +95,7 @@ private:
     float clusterRadius = 300.f;
     // 풀, 덤불 등의 군집 크기
     UPROPERTY(EditAnywhere, Category = "Pattern Settings")
-    int32 maxClusterSize = 20;
+    int32 maxClusterNum = 20;
 
     // 맵 좌표를 저장할 1차원 배열
     UPROPERTY()
@@ -134,13 +116,22 @@ private:
     UPROPERTY(EditAnywhere, Category = "Meshes for Generation")
     TArray<UStaticMesh*> decoMeshes;
 
-    // InstancedStaticMeshComponents for repeated objects
+    // 반복 생성될 객체를 위한 InstancedStaticMeshComponent
     UPROPERTY(VisibleAnywhere, Category = "Instanced Meshes")
     UInstancedStaticMeshComponent* FenceInstancedMeshComponent;
-
     UPROPERTY(VisibleAnywhere, Category = "Instanced Meshes")
     UInstancedStaticMeshComponent* ResourceInstancedMeshComponent;
-
     UPROPERTY(VisibleAnywhere, Category = "Instanced Meshes")
     UInstancedStaticMeshComponent* DecorationInstancedMeshComponent;
+
+    UPROPERTY(EditAnywhere, Category = "Generators")
+    UObstacleGenerator* obstacleGenerator;
+    UPROPERTY(EditAnywhere, Category = "Generators")
+    USubObstacleGenerator* subObstacleGenerator;
+    UPROPERTY(EditAnywhere, Category = "Generators")
+    UFenceGenerator* fenceGenerator;
+    UPROPERTY(EditAnywhere, Category = "Generators")
+    UResourceGenerator* resourceGenerator;
+    UPROPERTY(EditAnywhere, Category = "Generators")
+    UDecorationGenerator* decorationGenerator;
 };
