@@ -79,7 +79,6 @@
                             } else {
                                 groupOwnerAddress = "";
                             }
-                            android.util.Log.e("ShootingStarWifiDirect", "Group Info available");
                             WifiDirectCallbacks.onRefreshGroup(info.groupFormed, info.isGroupOwner, groupOwnerAddress);
                         }
                     }
