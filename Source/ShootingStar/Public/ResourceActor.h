@@ -9,6 +9,7 @@
 
 class UStaticMeshComponent;
 class UResource;
+class UInventoryComponent;
 
 UCLASS()
 class SHOOTINGSTAR_API AResourceActor : public AActor
@@ -18,6 +19,7 @@ class SHOOTINGSTAR_API AResourceActor : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AResourceActor();
+	void Harvest(UInventoryComponent* Inventory);
 
 protected:
 	// Called when the game starts or when spawned

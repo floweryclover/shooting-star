@@ -51,6 +51,10 @@ public:
 		return TeamComponent;
 	}
 
+	/** Resource */
+	UFUNCTION(BlueprintCallable)
+	void Interact_Resources();
+
 	/** Inventory */
 	UFUNCTION(BlueprintCallable)
 	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
