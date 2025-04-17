@@ -2,13 +2,18 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "ResourceDataAsset.h" // UResourceDataAsset 포함
+#include "ResourceDataAsset.h"
 #include "InventoryComponent.generated.h"
+
+struct FWeaponData;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class SHOOTINGSTAR_API UInventoryComponent : public UActorComponent
 {
     GENERATED_BODY()
+
+protected:
+    virtual void BeginPlay() override;
 
 public:
     UInventoryComponent();
@@ -17,8 +22,12 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
     TMap<UResourceDataAsset*, int32> ResourceInventory;
 
-    // 무기
+    // Weapon
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
+    UDataTable* ModifierDataTable{};
 
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    FWeaponData Craft_Weapon(const FWeaponData& SelectWeapon, const TArray<int32>& ClickedResources);
 
     // 자원 추가
     UFUNCTION(BlueprintCallable, Category = "Inventory")
