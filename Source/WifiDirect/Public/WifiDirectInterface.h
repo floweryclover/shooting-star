@@ -137,6 +137,12 @@ protected:
 	float GroupUpdateInterval = 0.5f;
 
 	UPROPERTY(BlueprintReadOnly)
+	float ConnectingElapsed;
+
+	UPROPERTY(BlueprintReadOnly)
+	float ConnectTimeout = 5.0f;
+
+	UPROPERTY(BlueprintReadOnly)
 	float DiscoveryElapsed;
 
 	UPROPERTY(BlueprintReadOnly)

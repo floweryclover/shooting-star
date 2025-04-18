@@ -23,6 +23,7 @@ UWifiDirectInterface::UWifiDirectInterface()
 	: bIsP2pGroupFormed{false},
 	  bIsP2pGroupOwner{false},
 	  bIsConnecting{false},
+	  ConnectingElapsed{0.0f},
 	  DiscoveryElapsed{DiscoveryInterval * 0.8f},
 	  GroupUpdateElapsed{GroupUpdateInterval * 0.8f}
 {
@@ -30,7 +31,12 @@ UWifiDirectInterface::UWifiDirectInterface()
 
 void UWifiDirectInterface::Connect(const FString& DeviceAddress)
 {
+	if (bIsConnecting)
+	{
+		return;
+	}
 	bIsConnecting = true;
+	ConnectingElapsed = 0.0f;
 
 	if (bIsP2pGroupFormed)
 	{
@@ -65,6 +71,7 @@ void UWifiDirectInterface::Clear()
 	GroupOwnerIpAddress.Empty();
 	DiscoveryElapsed = 0.0f;
 	GroupUpdateElapsed = 0.0f;
+	ConnectingElapsed = 0.0f;
 	bIsConnecting = false;
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
     JNIEnv* Env = FAndroidApplication::GetJavaEnv();
@@ -124,6 +131,7 @@ void UWifiDirectInterface::CheckAndRequestPermissions()
 void UWifiDirectInterface::CancelConnect()
 {
 	bIsConnecting = false;
+	ConnectingElapsed = 0.0f;
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
@@ -138,6 +146,14 @@ void UWifiDirectInterface::CancelConnect()
 
 void UWifiDirectInterface::Update(const float DeltaSeconds)
 {
+	if (bIsConnecting)
+	{
+		ConnectingElapsed += DeltaSeconds;
+		if (ConnectingElapsed > ConnectTimeout)
+		{
+			CancelConnect();
+		}
+	}
 	DiscoveryElapsed += DeltaSeconds;
 	if (DiscoveryElapsed >= DiscoveryInterval)
 	{
@@ -151,7 +167,7 @@ void UWifiDirectInterface::Update(const float DeltaSeconds)
 			StopBroadcastAndDiscovery();
 		}
 	}
-	
+
 	GroupUpdateElapsed += DeltaSeconds;
 	if (GroupUpdateElapsed >= GroupUpdateInterval)
 	{
