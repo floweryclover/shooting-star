@@ -48,16 +48,6 @@
             private WifiP2pDnsSdServiceRequest serviceRequest;
             private String uniqueInstanceName;
 
-            private void stopPeerDiscovery() {
-                manager.stopPeerDiscovery(channel, new ActionListener() {
-                    @Override
-                    public void onSuccess() {}
-        
-                    @Override
-                    public void onFailure(int reasonCode) {}
-                });
-            }
-
             public void disconnect() {
                 manager.removeGroup(channel, new ActionListener() {
                     @Override
@@ -111,80 +101,55 @@
             }
             
             public void refreshServiceDiscovery() {
-                manager.clearServiceRequests(channel, new ActionListener() {
+                manager.stopPeerDiscovery(channel, new ActionListener() {
                     @Override
                     public void onSuccess() {
-                        manager.addServiceRequest(channel, serviceRequest, new ActionListener() {
-                            public void onSuccess() {
-                                manager.discoverServices(channel, new ActionListener() {
-                                    @Override
-                                    public void onSuccess() {
-                                        android.util.Log.d("ShootingStarWifiDirect", "RefreshServiceDiscovery() Success");
-
-                                    }
-                                    
-                                    @Override
-                                    public void onFailure(int reason) {
-                                        if (reason == 2) {
-                                            return;
-                                        }
-                                        WifiDirectCallbacks.onError("서비스 검색 실패, 서비스 검색 실행에 실패하였습니다. 에러 코드: " + reason + ".");
-                                    }
-                                });
-                            }
-                
-                            @Override
-                            public void onFailure(int reason) {
-                                if (reason == 2) {
-                                    return;
-                                }
-                                WifiDirectCallbacks.onError("서비스 검색 실패, 서비스 요청 정보 등록에 실패하였습니다. 에러 코드: " + reason + ".");
-                                clear();
-                            }
+                        manager.discoverServices(channel, new ActionListener() {
+                        @Override
+                        public void onSuccess() {
+                        android.util.Log.d("ShootingStarWifiDirect", "RefreshServiceDiscovery() Success");
+            
+                        }
+            
+                        @Override
+                        public void onFailure(int reason) {
+                        if (reason == 2) {
+                        android.util.Log.w("ShootingStarWifiDirect", "discoverServices() was busy.");
+                        return;
+                        }
+                        WifiDirectCallbacks.onError("서비스 검색 실패, 서비스 검색 실행에 실패하였습니다. 에러 코드: " + reason + ".");
+                        }
                         });
                     }
 
                     @Override
                     public void onFailure(int reason) {
-                        if (reason == 2) {
-                            return;
-                        }
-                        WifiDirectCallbacks.onError("서비스 검색 실패, 서비스 요청 정보 초기화에 실패하였습니다. 에러 코드: " + reason + ".");
-                        clear();
-                    }
-                });
-            }
-            
-            private void clearServiceDiscovery() {
-                manager.clearServiceRequests(channel, null);
-            }
-            
-            public void registerService() {
-                manager.clearLocalServices(channel, new ActionListener() {
-                    @Override
-                    public void onSuccess() {
-                        manager.addLocalService(channel, serviceInfo, new ActionListener() {
+                        manager.discoverServices(channel, new ActionListener() {
                             @Override
                             public void onSuccess() {
-                                android.util.Log.d("ShootingStarWifiDirect", "registerService() Success");
+                                android.util.Log.d("ShootingStarWifiDirect", "RefreshServiceDiscovery() Success");
+                
                             }
                 
                             @Override
                             public void onFailure(int reason) {
-                                if (reason == 2) { // BUSY
-                                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            android.util.Log.w("ShootingStarWifiDirect", "registerService() was busy, retrying");
-                                            registerService();
-                                        }
-                                    }, 100);
-                                } else {
-                                    WifiDirectCallbacks.onError("서비스 등록 실패, 서비스 등록에 실패하였습니다. 에러 코드: " + reason + ".");
-                                    clear();
+                                if (reason == 2) {
+                                    android.util.Log.w("ShootingStarWifiDirect", "discoverServices() was busy.");
+                                    return;
                                 }
+                                WifiDirectCallbacks.onError("서비스 검색 실패, 서비스 검색 실행에 실패하였습니다. 에러 코드: " + reason + ".");
                             }
                         });
+                    }
+                });
+            }
+            
+            public void registerService() {
+                manager.addLocalService(channel, serviceInfo, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        android.util.Log.d("ShootingStarWifiDirect", "addLocalService() Success");
+                        addServiceRequest();
                     }
         
                     @Override
@@ -193,9 +158,10 @@
                             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
                                 @Override
                                 public void run() {
+                                    android.util.Log.w("ShootingStarWifiDirect", "addLocalService() was busy, retrying");
                                     registerService();
                                 }
-                            }, 500);
+                            }, 5000);
                         } else {
                             WifiDirectCallbacks.onError("서비스 등록 실패, 서비스 등록에 실패하였습니다. 에러 코드: " + reason + ".");
                             clear();
@@ -204,23 +170,24 @@
                 });
             }
             
-            private void unregisterService() {
-                manager.clearLocalServices(channel, null);
-            }
-            
-            public void refreshServiceBroadcast() {
-                manager.discoverPeers(channel, new ActionListener() {
-                    @Override
+            private void addServiceRequest() {
+                manager.addServiceRequest(channel, serviceRequest, new ActionListener() {
                     public void onSuccess() {
-                        android.util.Log.d("ShootingStarWifiDirect", "RefreshServiceBroadcast() Success");
+                        android.util.Log.d("ShootingStarWifiDirect", "addServiceRequest() Success");
                     }
-        
+                    
                     @Override
                     public void onFailure(int reason) {
                         if (reason == 2) {
-                            return;
+                            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    android.util.Log.w("ShootingStarWifiDirect", "addServiceRequest() was busy, retrying");
+                                    addServiceRequest();
+                                }
+                            }, 5000);
                         }
-                        WifiDirectCallbacks.onError("서비스 브로드캐스트 갱신에 실패하였습니다. 에러 코드: " + reason + ".");
+                        WifiDirectCallbacks.onError("서비스 요청 정보 등록에 실패하였습니다. 에러 코드: " + reason + ".");
                         clear();
                     }
                 });
@@ -243,16 +210,73 @@
             }
             
             public void clear() {
-                disconnect();
-                stopBroadcastAndDiscovery();
+                manager.removeGroup(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        stopBroadcastAndDiscovery();
+                    }
+    
+                    @Override
+                    public void onFailure(int reasonCode) {
+                        stopBroadcastAndDiscovery();
+                    }
+                });
             }
             
             public void stopBroadcastAndDiscovery() {
-                cancelConnect();
-                clearServiceDiscovery();
-                stopPeerDiscovery();
-                unregisterService();
+                manager.cancelConnect(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        clearServiceDiscovery();
+                    }
+        
+                    @Override
+                    public void onFailure(int reason) {
+                        clearServiceDiscovery();
+                    }
+                });
             }
+
+            private void clearServiceDiscovery() {
+                manager.clearServiceRequests(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        stopPeerDiscovery();
+                    }
+        
+                    @Override
+                    public void onFailure(int reason) {
+                        stopPeerDiscovery();
+                    }
+                });
+            }
+
+            private void stopPeerDiscovery() {
+                manager.stopPeerDiscovery(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        unregisterLocalService();
+                    }
+        
+                    @Override
+                    public void onFailure(int reason) {
+                        unregisterLocalService();
+                    }
+                });
+            }
+            
+            private void unregisterLocalService() {
+                manager.clearLocalServices(channel, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                    }
+        
+                    @Override
+                    public void onFailure(int reason) {
+                    }
+                });              
+            }
+            
             
         </insert>
     </gameActivityClassAdditions>
@@ -270,6 +294,8 @@
                 new WifiP2pManager.DnsSdServiceResponseListener() {
                     @Override
                     public void onDnsSdServiceAvailable(String instanceName, String registrationType, WifiP2pDevice srcDevice) {
+            android.util.Log.d("ShootingStarWifiDirect", "222 Service found: " + srcDevice.deviceName + " instanceName: " + instanceName + " , deviceAddress: " + srcDevice.deviceAddress);
+            
                         if (instanceName.equals("") || instanceName.equals(uniqueInstanceName) || srcDevice.deviceName.equals("") || srcDevice.deviceAddress.equals("")) {
                             return;
                         }

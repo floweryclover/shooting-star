@@ -123,45 +123,21 @@ protected:
 	bool bIsConnecting;
 
 	UPROPERTY(BlueprintReadOnly)
-	float ConnectingElapsed;
-
-	UPROPERTY(BlueprintReadOnly)
-	float ConnectionTimeOutSeconds = 10.0f;
-
-	UPROPERTY(BlueprintReadOnly)
-	float PeerLifespan = 20.0f;
-	
-	UPROPERTY(BlueprintReadOnly)
-	float BroadcastInterval = 6.0f;
-
-	UPROPERTY(BlueprintReadOnly)
-	float DiscoveryInterval = 5.0f;
+	float DiscoveryInterval = 20.0f;
 
 	UPROPERTY(BlueprintReadOnly)
 	float GroupUpdateInterval = 0.5f;
 
 	UPROPERTY(BlueprintReadOnly)
 	float DiscoveryElapsed;
-	
-	UPROPERTY(BlueprintReadOnly)
-	float BroadcastElapsed;
 
 	UPROPERTY(BlueprintReadOnly)
 	float GroupUpdateElapsed;
 
 private:
-	/**
-	 * 일정 시간이 지나도 다시 서비스 검색되지 않는다면 목록에서 삭제하기 위한 맵입니다.
-	 */
-	TMap<FString /*DeviceMacAddress*/, float /*RemainingLifeTime*/> PeerLifeTimes;
-
-	FString LastConnectionRequestedDeviceMacAddress;
-
 	void CancelConnect();
 	
 	void RefreshGroupInfo();
-
-	void RefreshServiceBroadcast();
 
 	void RefreshServiceDiscovery();
 	

@@ -3,9 +3,6 @@
 
 #include "WifiDirectInterface.h"
 
-#include "WifiDirect.h"
-#include "ShootingStar/ShootingStar.h"
-
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 #include <Android/AndroidApplication.h>
 #include <Android/AndroidJNI.h>
@@ -26,9 +23,7 @@ UWifiDirectInterface::UWifiDirectInterface()
 	: bIsP2pGroupFormed{false},
 	  bIsP2pGroupOwner{false},
 	  bIsConnecting{false},
-	  ConnectingElapsed{0.0f},
 	  DiscoveryElapsed{DiscoveryInterval * 0.8f},
-	  BroadcastElapsed{BroadcastInterval * 0.8f},
 	  GroupUpdateElapsed{GroupUpdateInterval * 0.8f}
 {
 }
@@ -36,8 +31,6 @@ UWifiDirectInterface::UWifiDirectInterface()
 void UWifiDirectInterface::Connect(const FString& DeviceAddress)
 {
 	bIsConnecting = true;
-	ConnectingElapsed = 0.0f;
-	LastConnectionRequestedDeviceMacAddress = DeviceAddress;
 
 	if (bIsP2pGroupFormed)
 	{
@@ -67,15 +60,12 @@ void UWifiDirectInterface::Connect(const FString& DeviceAddress)
 void UWifiDirectInterface::Clear()
 {
 	ShootingStarPeers.Empty();
-	PeerLifeTimes.Empty();
 	bIsP2pGroupFormed = false;
 	bIsP2pGroupOwner = false;
 	GroupOwnerIpAddress.Empty();
-	BroadcastElapsed = 0.0f;
 	DiscoveryElapsed = 0.0f;
 	GroupUpdateElapsed = 0.0f;
 	bIsConnecting = false;
-	LastConnectionRequestedDeviceMacAddress.Empty();
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
     JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
@@ -104,6 +94,7 @@ void UWifiDirectInterface::StopBroadcastAndDiscovery()
 
 void UWifiDirectInterface::RegisterService()
 {
+	DiscoveryElapsed = DiscoveryInterval * 0.8f;
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
@@ -133,8 +124,6 @@ void UWifiDirectInterface::CheckAndRequestPermissions()
 void UWifiDirectInterface::CancelConnect()
 {
 	bIsConnecting = false;
-	ConnectingElapsed = 0.0f;
-	LastConnectionRequestedDeviceMacAddress.Empty();
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
@@ -149,44 +138,6 @@ void UWifiDirectInterface::CancelConnect()
 
 void UWifiDirectInterface::Update(const float DeltaSeconds)
 {
-	if (bIsConnecting)
-	{
-		ConnectingElapsed += DeltaSeconds;
-		if (ConnectingElapsed >= ConnectionTimeOutSeconds)
-		{
-			OnConnectionFailed.Broadcast(LastConnectionRequestedDeviceMacAddress);
-			CancelConnect();
-		}
-	}
-
-	for (int i = ShootingStarPeers.Num() - 1; i >= 0; --i)
-	{
-		const FWifiDirectPeerDeviceInfo& DeviceInfo = ShootingStarPeers[i];
-		if (!PeerLifeTimes.Contains(DeviceInfo.DeviceMacAddress))
-		{
-			ShootingStarPeers.RemoveAt(i);
-			continue;
-		}
-
-		float& PeerLifeTime = PeerLifeTimes[DeviceInfo.DeviceMacAddress];
-		PeerLifeTime -= DeltaSeconds;
-		if (PeerLifeTime < 0.0f)
-		{
-			PeerLifeTimes.Remove(DeviceInfo.DeviceMacAddress);
-			ShootingStarPeers.RemoveAt(i);
-		}
-	}
-
-	BroadcastElapsed += DeltaSeconds;
-	if (BroadcastElapsed >= BroadcastInterval)
-	{
-		BroadcastElapsed = 0.0f;
-		if (!bIsP2pGroupFormed || bIsP2pGroupOwner)
-		{
-			RefreshServiceBroadcast();
-		}
-	}
-
 	DiscoveryElapsed += DeltaSeconds;
 	if (DiscoveryElapsed >= DiscoveryInterval)
 	{
@@ -223,22 +174,13 @@ void UWifiDirectInterface::RefreshGroupInfo()
 #endif
 }
 
-void UWifiDirectInterface::RefreshServiceBroadcast()
-{
-#if PLATFORM_ANDROID && USE_ANDROID_JNI
-	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
-
-	jclass ActivityClass = Env->GetObjectClass(FAndroidApplication::GetGameActivityThis());
-	jmethodID RefreshServiceBroadcastMethod = Env->GetMethodID(ActivityClass, "refreshServiceBroadcast", "()V");
-
-	Env->CallVoidMethod(FAndroidApplication::GetGameActivityThis(), RefreshServiceBroadcastMethod);
-
-	Env->DeleteLocalRef(ActivityClass);
-#endif
-}
-
 void UWifiDirectInterface::RefreshServiceDiscovery()
 {
+	if (bIsConnecting)
+	{
+		return;
+	}
+	ShootingStarPeers.Empty();
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
 
@@ -259,15 +201,6 @@ void UWifiDirectInterface::OnServiceFound(const FString& DeviceName, const FStri
 	}))
 	{
 		ShootingStarPeers.Push(FWifiDirectPeerDeviceInfo{DeviceName, DeviceMacAddress});
-	}
-
-	if (!PeerLifeTimes.Contains(DeviceMacAddress))
-	{
-		PeerLifeTimes.Add(DeviceMacAddress, PeerLifespan);
-	}
-	else
-	{
-		PeerLifeTimes[DeviceMacAddress] = PeerLifespan;
 	}
 }
 
