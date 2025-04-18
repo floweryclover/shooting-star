@@ -70,10 +70,7 @@ void AShootingStarPlayerController::Interact_Resources()
 	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
 
 	FHitResult Hit;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(OwnerPawn);
-
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor, Params))
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
 	{
 		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
 		AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
@@ -85,6 +82,9 @@ void AShootingStarPlayerController::Interact_Resources()
 
 void AShootingStarPlayerController::ToggleInventoryWidget()
 {
+	if (!IsLocalPlayerController())
+		return;
+
 	if (InventoryWidget && InventoryWidget->IsInViewport())
 	{
 		InventoryWidget->RemoveFromParent();
