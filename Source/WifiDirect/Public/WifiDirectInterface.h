@@ -17,7 +17,8 @@ struct FWifiDirectPeerDeviceInfo final
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWifiDirectError, const FString&, Error);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FConnectionFailed,  const FString&, DeviceName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FConnectionFailed, const FString&, DeviceName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FP2pStateChanged, bool, bIsP2pAvailable);
 
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 extern "C"
@@ -26,6 +27,7 @@ extern "C"
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionFailedFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnRefreshGroupFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsGroupFormed, jboolean JavaIsGroupOwner, jstring JavaGroupOwnerIpAddress);
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnServiceFoundFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
+	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnP2pStateChangedFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsP2pAvailable);
 }
 #endif
 
@@ -51,6 +53,9 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FConnectionFailed OnConnectionFailed;
+
+	UPROPERTY(BlueprintAssignable)
+	FP2pStateChanged OnP2pStateChanged;
 	
 	UFUNCTION(BlueprintCallable)
 	void Connect(const FString& DeviceMacAddress);
@@ -115,6 +120,9 @@ protected:
 	
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsP2pGroupOwner;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsP2pAvailable;
 	
 	UPROPERTY(BlueprintReadOnly)
 	FString GroupOwnerIpAddress;
@@ -123,45 +131,27 @@ protected:
 	bool bIsConnecting;
 
 	UPROPERTY(BlueprintReadOnly)
-	float ConnectingElapsed;
-
-	UPROPERTY(BlueprintReadOnly)
-	float ConnectionTimeOutSeconds = 10.0f;
-
-	UPROPERTY(BlueprintReadOnly)
-	float PeerLifespan = 20.0f;
-	
-	UPROPERTY(BlueprintReadOnly)
-	float BroadcastInterval = 6.0f;
-
-	UPROPERTY(BlueprintReadOnly)
-	float DiscoveryInterval = 5.0f;
+	float DiscoveryInterval = 20.0f;
 
 	UPROPERTY(BlueprintReadOnly)
 	float GroupUpdateInterval = 0.5f;
 
 	UPROPERTY(BlueprintReadOnly)
-	float DiscoveryElapsed;
-	
+	float ConnectingElapsed;
+
 	UPROPERTY(BlueprintReadOnly)
-	float BroadcastElapsed;
+	float ConnectTimeout = 5.0f;
+
+	UPROPERTY(BlueprintReadOnly)
+	float DiscoveryElapsed;
 
 	UPROPERTY(BlueprintReadOnly)
 	float GroupUpdateElapsed;
 
 private:
-	/**
-	 * 일정 시간이 지나도 다시 서비스 검색되지 않는다면 목록에서 삭제하기 위한 맵입니다.
-	 */
-	TMap<FString /*DeviceMacAddress*/, float /*RemainingLifeTime*/> PeerLifeTimes;
-
-	FString LastConnectionRequestedDeviceMacAddress;
-
 	void CancelConnect();
 	
 	void RefreshGroupInfo();
-
-	void RefreshServiceBroadcast();
 
 	void RefreshServiceDiscovery();
 	
@@ -174,6 +164,7 @@ private:
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionFailedFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnRefreshGroupFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsGroupFormed, jboolean JavaIsGroupOwner, jstring JavaGroupOwnerIpAddress);
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnServiceFoundFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
+	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnP2pStateChangedFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsP2pAvailable);
 #endif
 
 };

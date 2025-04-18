@@ -68,6 +68,12 @@ void UCompetitiveSystemComponent::GiveRoundScoreForTeam(const ETeam Team, const 
 
 	int& TeamScore = Team == ETeam::Blue ? BlueTeamRoundScore : RedTeamRoundScore;
 	TeamScore += Score;
+	
+	// 골든 스코어(점수를 얻는 팀이 즉시 승리)인지?
+	if (CurrentPhaseTime >= RoundTime)
+	{
+		WinTeam(Team);
+	}
 }
 
 ETeam UCompetitiveSystemComponent::GetTeamForNextPlayer(const TArray<APlayerState*>& PlayerArray) const
@@ -109,51 +115,22 @@ void UCompetitiveSystemComponent::Update_WaitingForStart()
 
 void UCompetitiveSystemComponent::Update_Game()
 {
+	// 3선승 팀이 결정되었다면 게임 즉시 종료
 	ensure(BlueTeamGameScore < GameWinningScore && RedTeamGameScore < GameWinningScore);
 	if (BlueTeamGameScore >= GameWinningScore || RedTeamGameScore >= GameWinningScore)
 	{
 		CurrentPhase = ECompetitiveGamePhase::GameEnd;
 		CurrentPhaseTime = 0.0f;
+		
 		return;
 	}
-
-	if (CurrentPhaseTime >= RoundTime
-		|| BlueTeamRoundScore >= RoundWinningScore
-		|| RedTeamRoundScore >= RoundWinningScore)
+	
+	// 승리 팀 결정됨
+	if (BlueTeamRoundScore >= RoundWinningScore || RedTeamRoundScore >= RoundWinningScore)
 	{
-		ETeam WinTeam = ETeam::None;
-		if (BlueTeamRoundScore > RedTeamRoundScore)
-		{
-			WinTeam = ETeam::Blue;
-		}
-		else if (BlueTeamRoundScore < RedTeamRoundScore)
-		{
-			WinTeam = ETeam::Red;
-		}
+		const ETeam Team = BlueTeamRoundScore >= RoundWinningScore ? ETeam::Blue : ETeam::Red;
 
-		if (WinTeam != ETeam::None)
-		{
-			int& CurrentTeamGameScore = WinTeam == ETeam::Blue ? BlueTeamGameScore : RedTeamGameScore;
-			ensure(CurrentTeamGameScore < GameWinningScore);
-			if (CurrentTeamGameScore < GameWinningScore)
-			{
-				CurrentTeamGameScore += 1;
-			}
-		}
-
-		RedTeamRoundScore = 0;
-		BlueTeamRoundScore = 0;
-		CurrentPhaseTime = 0.0f;
-
-		if (BlueTeamGameScore >= GameWinningScore
-			|| RedTeamGameScore >= GameWinningScore)
-		{
-			CurrentPhase = ECompetitiveGamePhase::GameEnd;
-		}
-		else
-		{
-			CurrentPhase = ECompetitiveGamePhase::RoundEnd;
-		}
+		WinTeam(Team);
 	}
 }
 
@@ -162,6 +139,8 @@ void UCompetitiveSystemComponent::Update_RoundEnd()
 	if (CurrentPhaseTime >= RoundEndTime)
 	{
 		CurrentPhase = ECompetitiveGamePhase::Game;
+		BlueTeamRoundScore = 0;
+		RedTeamRoundScore = 0;
 		CurrentPhaseTime = 0.0f;
 	}
 }
@@ -177,4 +156,31 @@ void UCompetitiveSystemComponent::Update_GameEnd()
 
 void UCompetitiveSystemComponent::Update_GameDestroyed()
 {
+}
+
+void UCompetitiveSystemComponent::WinTeam(const ETeam Team)
+{
+	ensure(CurrentPhase == ECompetitiveGamePhase::Game);
+	if (CurrentPhase != ECompetitiveGamePhase::Game)
+	{
+		return;
+	}
+	
+	int& CurrentTeamGameScore = Team == ETeam::Blue ? BlueTeamGameScore : RedTeamGameScore;
+	ensure(CurrentTeamGameScore < GameWinningScore);
+	if (CurrentTeamGameScore < GameWinningScore)
+	{
+		CurrentTeamGameScore += 1;
+	}
+		
+	if (BlueTeamGameScore >= GameWinningScore
+		|| RedTeamGameScore >= GameWinningScore)
+	{
+		CurrentPhase = ECompetitiveGamePhase::GameEnd;
+	}
+	else
+	{
+		CurrentPhase = ECompetitiveGamePhase::RoundEnd;
+	}
+	CurrentPhaseTime = 0.0f;
 }
