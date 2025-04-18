@@ -15,6 +15,7 @@
 #include "Engine/LocalPlayer.h"
 #include "Blueprint/UserWidget.h"
 #include "InventoryComponent.h"
+#include "ResourceActor.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
@@ -29,15 +30,15 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 		ScoreBoardUIClass = ScoreBoardUIBPFinder.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> InventoryUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_Inventory") };
-	ensure(InventoryUIBPFinder.Succeeded());
-	if (InventoryUIBPFinder.Succeeded())
-	{
-		InventoryWidgetClass = InventoryUIBPFinder.Class;
-	}
+	//static ConstructorHelpers::FClassFinder<UUserWidget> InventoryUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_Inventory") };
+	//ensure(InventoryUIBPFinder.Succeeded());
+	//if (InventoryUIBPFinder.Succeeded())
+	//{
+	//	InventoryWidgetClass = InventoryUIBPFinder.Class;
+	//}
 
-	// Attach Inventory Component
-	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	//// Attach Inventory Component
+	//InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 void ACompetitivePlayerController::BeginPlay()
@@ -64,6 +65,33 @@ void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	LookMouse();
+}
+
+void ACompetitivePlayerController::Interact_Resources()
+{
+	if (!IsLocalPlayerController())
+		return;
+
+	FVector Start, Direction;
+	FRotator Rotation;
+
+	GetPlayerViewPoint(Start, Rotation);
+	Direction = Rotation.Vector();
+
+	FVector End = Start + Direction * 500.0f;
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetPawn()); // 자기 자신 제외
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params))
+	{
+		if (AResourceActor* Resource = Cast<AResourceActor>(HitResult.GetActor()))
+		{
+			// Server 
+			Resource->Harvest(InventoryComponent);
+		}
+	}
 }
 
 void ACompetitivePlayerController::ToggleInventoryWidget()
