@@ -17,7 +17,8 @@ struct FWifiDirectPeerDeviceInfo final
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWifiDirectError, const FString&, Error);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FConnectionFailed,  const FString&, DeviceName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FConnectionFailed, const FString&, DeviceName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FP2pStateChanged, bool, bIsP2pAvailable);
 
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 extern "C"
@@ -26,6 +27,7 @@ extern "C"
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionFailedFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnRefreshGroupFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsGroupFormed, jboolean JavaIsGroupOwner, jstring JavaGroupOwnerIpAddress);
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnServiceFoundFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
+	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnP2pStateChangedFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsP2pAvailable);
 }
 #endif
 
@@ -51,6 +53,9 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FConnectionFailed OnConnectionFailed;
+
+	UPROPERTY(BlueprintAssignable)
+	FP2pStateChanged OnP2pStateChanged;
 	
 	UFUNCTION(BlueprintCallable)
 	void Connect(const FString& DeviceMacAddress);
@@ -115,6 +120,9 @@ protected:
 	
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsP2pGroupOwner;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsP2pAvailable;
 	
 	UPROPERTY(BlueprintReadOnly)
 	FString GroupOwnerIpAddress;
@@ -150,6 +158,7 @@ private:
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionFailedFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnRefreshGroupFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsGroupFormed, jboolean JavaIsGroupOwner, jstring JavaGroupOwnerIpAddress);
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnServiceFoundFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
+	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnP2pStateChangedFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsP2pAvailable);
 #endif
 
 };

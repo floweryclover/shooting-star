@@ -306,4 +306,14 @@ extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCal
 	}, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 
+extern "C" JNIEXPORT void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnP2pStateChangedFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsP2pAvailable)
+{
+	FFunctionGraphTask::CreateAndDispatchWhenReady([JavaIsP2pAvailable]()
+{
+	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
+	Interface->bIsP2pAvailable = JavaIsP2pAvailable == JNI_TRUE;
+	Interface->OnP2pStateChanged.Broadcast(Interface->bIsP2pAvailable);
+}, TStatId(), nullptr, ENamedThreads::GameThread);
+}
+
 #endif
