@@ -4,7 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "IObjectGenerator.h"
+#include "ResourceDataAsset.h"
 #include "ResourceGenerator.generated.h"
+
+USTRUCT()
+struct FResourceSpawnData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere)
+    UResourceDataAsset* ResourceData;
+
+    UPROPERTY(EditAnywhere)
+    float SpawnProbability;
+};
 
 UCLASS(Blueprintable)
 class SHOOTINGSTAR_API UResourceGenerator : public UObject, public IObjectGenerator
@@ -20,10 +33,16 @@ public:
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numResources = 30;
 
-    UPROPERTY(EditAnywhere, Category = "Meshes")
-    TArray<UStaticMesh*> resourceMeshes;
+    UPROPERTY(EditAnywhere, Category = "Resource Settings")
+    TSubclassOf<class AResourceActor> ResourceActorClass;
+
+    UPROPERTY(EditAnywhere, Category = "Resource Settings")
+    TArray<FResourceSpawnData> ResourceSpawnData;
 
 private:
     UPROPERTY()
     UProceduralMapGenerator* Owner;
+
+    UResourceDataAsset* SelectResourceDataAsset();
+    bool SpawnResourceActor(const FVector& Location, UResourceDataAsset* ResourceData);
 };

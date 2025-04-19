@@ -13,7 +13,25 @@ void UDecorationGenerator::Initialize(UProceduralMapGenerator* InOwner)
 
     if (Owner)
     {
+        numDecos = Owner->numDecos;
+        decoMinDistance = Owner->decoMinDistance;
+        clusterRadius = Owner->clusterRadius;
+        maxClusterNum = Owner->maxClusterNum;
         decoMeshes = Owner->decoMeshes;
+
+        // Owner의 컴포넌트들을 로컬 배열로 복사
+        DecorationInstancedMeshComponents = Owner->DecorationInstancedMeshComponents;
+        
+        // 컴포넌트 설정
+        for (int32 i = 0; i < DecorationInstancedMeshComponents.Num(); ++i)
+        {
+            if (UInstancedStaticMeshComponent* Component = DecorationInstancedMeshComponents[i])
+            {
+                Component->SetVisibility(true);
+                Component->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+                UE_LOG(ProceduralMapGenerator, Log, TEXT("(Decoration) InstancedMeshComponent %d set successfully"), i);
+            }
+        }
     }
 }
 
@@ -78,6 +96,7 @@ void UDecorationGenerator::GenerateClusteredDecorations(FVector origin, float ra
     {
         // 군집의 위치를 랜덤으로 결정
         FVector offset = FMath::VRand() * FMath::RandRange(0.f, radius);
+        offset.Z = 0.f; // Z축은 고정
         FVector location = origin + offset;
 
         // 위치가 유효한지 확인 후 배치

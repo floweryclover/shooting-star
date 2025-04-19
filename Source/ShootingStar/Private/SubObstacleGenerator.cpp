@@ -13,6 +13,8 @@ void USubObstacleGenerator::Initialize(UProceduralMapGenerator* InOwner)
 
     if (Owner)
     {
+        numSubObstacles = Owner->numSubObstacles;
+        subObstacleMinDistance = Owner->subObstacleMinDistance;
         subObstacleMeshes = Owner->subObstacleMeshes;
     }
 }

@@ -13,7 +13,18 @@ void UFenceGenerator::Initialize(UProceduralMapGenerator* InOwner)
 
     if (Owner)
     {
+        numFences = Owner->numFences;
+        fenceMinDistance = Owner->fenceMinDistance;
         fenceMesh = Owner->fenceMesh;
+
+        // FenceInstancedMeshComponent 가져오기 및 확인
+        if (Owner->FenceInstancedMeshComponent)
+        {
+            SetInstancedMeshComponent(Owner->FenceInstancedMeshComponent);
+            UE_LOG(ProceduralMapGenerator, Log, TEXT("FenceGenerator: InstancedMeshComponent set successfully"));
+        }
+        else
+            UE_LOG(ProceduralMapGenerator, Error, TEXT("FenceGenerator: Failed to get InstancedMeshComponent"));
     }
 }
 
@@ -24,26 +35,27 @@ void UFenceGenerator::SetInstancedMeshComponent(UInstancedStaticMeshComponent* I
         UE_LOG(LogTemp, Error, TEXT("FenceGenerator: Invalid InstancedMeshComponent!"));
         return;
     }
-    FenceInstancedMeshComponent = InMeshComponent; 
+    FenceInstancedMeshComponent = InMeshComponent;
+
+    FenceInstancedMeshComponent->SetVisibility(true);
+    FenceInstancedMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void UFenceGenerator::GenerateObjects()
 {
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Fences Started"));
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("FenceGenerator: Generating Fences Started"));
 
-    if (!Owner)
+    if (!Owner || !fenceMesh)
     {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("Owner is not initialized!"));
-        return;
-    }
-    if (!fenceMesh)
-    {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in fenceMesh!"));
+        UE_LOG(ProceduralMapGenerator, Error, TEXT("FenceGenerator: Owner or fenceMesh is not set!"));
         return;
     }
 
-    if (FenceInstancedMeshComponent)
-        FenceInstancedMeshComponent->SetStaticMesh(fenceMesh);
+    if (!FenceInstancedMeshComponent)
+    {
+        UE_LOG(ProceduralMapGenerator, Error, TEXT("FenceGenerator: InstancedMeshComponent is not set!"));
+        return;
+    }
 
     int32 SpawnAttempts = 0;
     int32 PlacedObjects = 0;
@@ -73,7 +85,7 @@ void UFenceGenerator::GenerateObjects()
         SpawnAttempts++;
     }
 
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Fences Completed"));
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("FenceGenerator: Generating Fences Completed"));
 }
 
 // 생성할 펜스의 모양을 랜덤하게 결정하고, 펜스의 위치들을 Fvector 배열에 담아주는 함수
@@ -167,7 +179,7 @@ void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType P
             }
             break;
         default:
-            UE_LOG(ProceduralMapGenerator, Warning, TEXT("Invalid PatternType . . ."));
+            UE_LOG(ProceduralMapGenerator, Warning, TEXT("FenceGenerator: Invalid PatternType . . ."));
             break;
     }
 }
@@ -207,7 +219,7 @@ bool UFenceGenerator::GenerateFenceAroundObstacle()
 
     if (ObstacleLocations.Num() == 0)
     {
-        UE_LOG(ProceduralMapGenerator, Warning, TEXT("No obstacles found to generate fence around."));
+        UE_LOG(ProceduralMapGenerator, Warning, TEXT("FenceGenerator: No obstacles found to generate fence around."));
         return false;
     }
 
@@ -229,6 +241,6 @@ bool UFenceGenerator::GenerateFenceAroundObstacle()
     TArray<FFenceData> FencePositions;
     GenerateFencePattern(TargetLocation, RandomPattern, randomRadius, FencePositions);
 
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating fence pattern around obstacle at %s"), *TargetLocation.ToString());
+    UE_LOG(ProceduralMapGenerator, Log, TEXT("FenceGenerator: Generating fence pattern around obstacle at %s"), *TargetLocation.ToString());
     return PlaceFencePattern(FencePositions);
 }
