@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "IObjectGenerator.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "DecorationGenerator.generated.h"
 
 UCLASS(Blueprintable)
@@ -35,6 +36,10 @@ public:
 private:
     UPROPERTY()
     UProceduralMapGenerator* Owner;
+
+    // Weak Pointer로 설정한다. 컴포넌트의 소유권은 Owner에게 있다.
+    UPROPERTY()
+    TArray<UInstancedStaticMeshComponent*> DecorationInstancedMeshComponents;
 
     void GenerateClusteredDecorations(FVector origin, float radius, UStaticMesh* decoMesh);
 };

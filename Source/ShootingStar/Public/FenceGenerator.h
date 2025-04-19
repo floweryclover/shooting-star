@@ -23,7 +23,7 @@ public:
     void SetInstancedMeshComponent(UInstancedStaticMeshComponent* InMeshComponent);
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
-    int32 numFences = 20;
+    int32 numFences;
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     float fenceMinDistance = 300.f;

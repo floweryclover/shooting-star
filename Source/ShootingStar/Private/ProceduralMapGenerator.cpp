@@ -27,40 +27,65 @@ UProceduralMapGenerator::UProceduralMapGenerator()
     fenceGenerator = CreateDefaultSubobject<UFenceGenerator>(TEXT("FenceGenerator"));
     resourceGenerator = CreateDefaultSubobject<UResourceGenerator>(TEXT("ResourceGenerator"));
     decorationGenerator = CreateDefaultSubobject<UDecorationGenerator>(TEXT("DecorationGenerator"));
-
-    // InstancedStaticMeshComponents 생성
+    
+    // Fence InstancedMeshComponent 생성
     FenceInstancedMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FenceInstancedMesh"));
-    ResourceInstancedMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("ResourceInstancedMesh"));
-    DecorationInstancedMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("DecorationInstancedMesh"));
 }
 
 void UProceduralMapGenerator::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-    // Begin Play 시에는 Owner가 설정되어 있으므로 여기서 Attachment를 수행
-    if (AActor* Owner = GetOwner())
+    // Owner 존재 여부 확인
+    AActor* Owner = GetOwner();
+    if (!Owner)
     {
-        // 각 Generator 초기화
-        obstacleGenerator->Initialize(this);
-        subObstacleGenerator->Initialize(this);
-        fenceGenerator->Initialize(this);
-        resourceGenerator->Initialize(this);
-        decorationGenerator->Initialize(this);
-
-        if (FenceInstancedMeshComponent)
-        {
-            fenceGenerator->SetInstancedMeshComponent(FenceInstancedMeshComponent);
-            FenceInstancedMeshComponent->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-        }
-        if (ResourceInstancedMeshComponent)
-            ResourceInstancedMeshComponent->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-        if (DecorationInstancedMeshComponent)
-            DecorationInstancedMeshComponent->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-
-        InitializeMapCoordinate(mapHalfSize * 2);
-        GenerateMap();
+        UE_LOG(ProceduralMapGenerator, Error, TEXT("ProceduralMapGenerator: Owner is not valid!"));
+        return;
     }
+
+    // 기존 DecorationInstancedMeshComponents 초기화
+    DecorationInstancedMeshComponents.Empty();
+
+    // Decoration 메시 종류별로 새로운 컴포넌트 생성
+    for (int32 i = 0; i < decoMeshes.Num(); ++i)
+    {
+        FString CompName = FString::Printf(TEXT("DecorationInstancedMesh_%d"), i);
+        UInstancedStaticMeshComponent* NewComp = NewObject<UInstancedStaticMeshComponent>(Owner, *CompName);
+        if (NewComp)
+        {
+            NewComp->RegisterComponent();
+            NewComp->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+            NewComp->SetStaticMesh(decoMeshes[i]);
+            DecorationInstancedMeshComponents.Add(NewComp);
+            UE_LOG(ProceduralMapGenerator, Log, TEXT("Created DecorationInstancedMeshComponent %d with mesh %s"), 
+                i, *decoMeshes[i]->GetName());
+        }
+    }
+
+    // Fence InstancedMeshComponent 초기화 및 설정
+    if (FenceInstancedMeshComponent)
+    {
+        FenceInstancedMeshComponent->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+        if (fenceMesh)
+            FenceInstancedMeshComponent->SetStaticMesh(fenceMesh);
+        else
+            UE_LOG(ProceduralMapGenerator, Error, TEXT("ProceduralMapGenerator: Fence mesh is not set!"));
+        FenceInstancedMeshComponent->RegisterComponent();
+
+        UE_LOG(ProceduralMapGenerator, Log, TEXT("FenceInstancedMeshComponent initialized and registered."));
+    }
+
+    // Generator 초기화를 맨 마지막에 수행
+    obstacleGenerator->Initialize(this);
+    subObstacleGenerator->Initialize(this);
+    fenceGenerator->Initialize(this);
+    resourceGenerator->Initialize(this);
+    decorationGenerator->Initialize(this);
+
+    // Generator 초기화 완료 후 맵 생성 시작
+    InitializeMapCoordinate(mapHalfSize * 2);
+    GenerateMap();
 }
 
 void UProceduralMapGenerator::InitializeMapCoordinate(int32 GridSize)
@@ -218,9 +243,9 @@ bool UProceduralMapGenerator::PlaceObject(FVector Location, UStaticMesh* ObjectM
 
     if (NewActor)
     {
+        NewActor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
         NewActor->GetStaticMeshComponent()->SetStaticMesh(ObjectMesh);
         NewActor->SetActorLocation(Location);
-        NewActor->SetMobility(EComponentMobility::Static);
 
         UE_LOG(ProceduralMapGenerator, Log, TEXT("Placed StaticMeshActor at %s"), *Location.ToString());
         return true;

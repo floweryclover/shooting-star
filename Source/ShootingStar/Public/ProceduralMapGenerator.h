@@ -7,6 +7,7 @@
 #include "Components/ActorComponent.h"
 #include <utility>
 #include "MapEnum.h"
+#include "ResourceGenerator.h"
 #include "ProceduralMapGenerator.generated.h"
 
 class SHOOTINGSTAR_API UObstacleGenerator;
@@ -55,11 +56,14 @@ public:
         return (X + mapHalfSize) + ((Y + mapHalfSize) * mapHalfSize * 2);
     }
 
+    UPROPERTY(EditAnywhere, Category = "Resource Settings")
+    TSubclassOf<class AResourceActor> ResourceActorClass;
+
+    UPROPERTY(EditAnywhere, Category = "Resource Settings")
+    TArray<FResourceSpawnData> ResourceSpawnData;
+
 protected:
 	virtual void BeginPlay() override;
-
-    UPROPERTY(VisibleAnywhere)
-    USceneComponent* RootSceneComponent;
 
 private:
     // 맵의 지름은 100m로 설정
@@ -71,9 +75,9 @@ private:
     UPROPERTY(EditAnywhere, Category = "Map Settings")
     int32 numSubObstacles = 20;
     UPROPERTY(EditAnywhere, Category = "Map Settings")
-    int32 numFences = 20;
+    int32 numFences = 15;
     UPROPERTY(EditAnywhere, Category = "Map Settings")
-    int32 numResources = 30;
+    int32 numResources = 40;
     UPROPERTY(EditAnywhere, Category = "Map Settings")
     int32 numDecos = 30;
 
@@ -112,17 +116,13 @@ private:
     UPROPERTY(EditAnywhere, Category = "Meshes for Generation")
     UStaticMesh* fenceMesh;
     UPROPERTY(EditAnywhere, Category = "Meshes for Generation")
-    TArray<UStaticMesh*> resourceMeshes;
-    UPROPERTY(EditAnywhere, Category = "Meshes for Generation")
     TArray<UStaticMesh*> decoMeshes;
 
     // 반복 생성될 객체를 위한 InstancedStaticMeshComponent
     UPROPERTY(VisibleAnywhere, Category = "Instanced Meshes")
     UInstancedStaticMeshComponent* FenceInstancedMeshComponent;
     UPROPERTY(VisibleAnywhere, Category = "Instanced Meshes")
-    UInstancedStaticMeshComponent* ResourceInstancedMeshComponent;
-    UPROPERTY(VisibleAnywhere, Category = "Instanced Meshes")
-    UInstancedStaticMeshComponent* DecorationInstancedMeshComponent;
+    TArray<UInstancedStaticMeshComponent*> DecorationInstancedMeshComponents;
 
     UPROPERTY(EditAnywhere, Category = "Generators")
     UObstacleGenerator* obstacleGenerator;
