@@ -2,6 +2,8 @@
 
 
 #include "CompetitivePlayerController.h"
+
+#include "ClientComponent.h"
 #include "TeamComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Pawn.h"
@@ -16,10 +18,13 @@
 #include "Blueprint/UserWidget.h"
 #include "InventoryComponent.h"
 #include "ResourceActor.h"
+#include "ServerComponent.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
+	ServerComponent = CreateDefaultSubobject<UServerComponent>(TEXT("ServerComponent"));
+	ClientComponent = CreateDefaultSubobject<UClientComponent>(TEXT("ClientComponent"));
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
 
@@ -29,16 +34,9 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 	{
 		ScoreBoardUIClass = ScoreBoardUIBPFinder.Class;
 	}
-
-	//static ConstructorHelpers::FClassFinder<UUserWidget> InventoryUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_Inventory") };
-	//ensure(InventoryUIBPFinder.Succeeded());
-	//if (InventoryUIBPFinder.Succeeded())
-	//{
-	//	InventoryWidgetClass = InventoryUIBPFinder.Class;
-	//}
-
-	//// Attach Inventory Component
-	//InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	
+	// Attach Inventory Component
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 void ACompetitivePlayerController::BeginPlay()
@@ -46,52 +44,25 @@ void ACompetitivePlayerController::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
-	//if (IsLocalPlayerController())
-	//{
-	//	ensure(ScoreBoardUIClass);
-	//	if (ScoreBoardUIClass)
-	//	{
-	//		ScoreBoardUI = CreateWidget<UUserWidget>(GetWorld(), ScoreBoardUIClass);
-	//		ensure(ScoreBoardUI);
-	//		if (ScoreBoardUI)
-	//		{
-	//			ScoreBoardUI->AddToViewport();
-	//		}
-	//	}
-	//}
+	if (IsLocalPlayerController())
+	{
+		ensure(ScoreBoardUIClass);
+		if (ScoreBoardUIClass)
+		{
+			ScoreBoardUI = CreateWidget<UUserWidget>(GetWorld(), ScoreBoardUIClass);
+			ensure(ScoreBoardUI);
+			if (ScoreBoardUI)
+			{
+				ScoreBoardUI->AddToViewport();
+			}
+		}
+	}
 }
 
 void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	LookMouse();
-}
-
-void ACompetitivePlayerController::Interact_Resources()
-{
-	if (!IsLocalPlayerController())
-		return;
-
-	FVector Start, Direction;
-	FRotator Rotation;
-
-	GetPlayerViewPoint(Start, Rotation);
-	Direction = Rotation.Vector();
-
-	FVector End = Start + Direction * 500.0f;
-
-	FHitResult HitResult;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(GetPawn()); // �ڱ� �ڽ� ����
-
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params))
-	{
-		if (AResourceActor* Resource = Cast<AResourceActor>(HitResult.GetActor()))
-		{
-			// Server 
-			Resource->Harvest(InventoryComponent);
-		}
-	}
 }
 
 void ACompetitivePlayerController::ToggleInventoryWidget()
@@ -104,7 +75,7 @@ void ACompetitivePlayerController::ToggleInventoryWidget()
 	else
 	{
 		if (!InventoryWidgetClass) return;
-
+	
 		InventoryWidget = CreateWidget<UUserWidget>(this, InventoryWidgetClass);
 		if (InventoryWidget)
 		{
@@ -159,18 +130,18 @@ void ACompetitivePlayerController::LookMouse()
 {
 	FHitResult Hit;
 	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
-
-	if (Hit.bBlockingHit)
+	
+	if (Hit.bBlockingHit && IsLocalController())
 	{
 		APawn* const MyPawn = GetPawn();
 		if (MyPawn)
 		{
 			FRotator LookRotation = UKismetMathLibrary::FindLookAtRotation(MyPawn->GetActorLocation(),
 				FVector(Hit.Location.X, Hit.Location.Y, MyPawn->GetActorLocation().Z));
-			MyPawn->SetActorRotation(LookRotation);
+			//MyPawn->SetActorRotation(LookRotation); 동기화 문제때문에 아래 함수로 교체
+			SetControlRotation(LookRotation);
 		}
 	}
-
 }
 
 void ACompetitivePlayerController::Shoot()

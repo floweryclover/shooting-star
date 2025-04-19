@@ -55,7 +55,7 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UUserWidget> InventoryWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> InventoryWidgetClass;
 
 	UFUNCTION(BlueprintCallable)

@@ -5,6 +5,10 @@
 #include "CompetitivePlayerController.h"
 #include "CompetitiveGameState.h"
 #include "CompetitiveSystemComponent.h"
+#include "ClientComponent.h"
+#include "InventoryComponent.h"
+#include "ResourceActor.h"
+#include "ShootingStar/ShootingStar.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
 	: NumPlayers{1} // 호스트 항상 포함
@@ -102,4 +106,49 @@ void ACompetitiveGameMode::SwapPlayerControllers(APlayerController* const OldPC,
 		return;
 	}
 	NewTeamComponent->SetTeam(OldTeamComponent->GetTeam());
+}
+
+void ACompetitiveGameMode::InteractResource(AController* const Controller)
+{
+	if (!IsValid(Controller))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Controller is Invalid!"));
+		return;
+	}
+	APawn* const Pawn = Controller->GetPawn();
+	if (!IsValid(Pawn))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Pawn is Invalid!"));
+		return;
+	}
+
+	UClientComponent* const ClientComponent = Cast<UClientComponent>(Controller->GetComponentByClass(UClientComponent::StaticClass()));
+	UInventoryComponent* const InventoryComponent = Cast<UInventoryComponent>(Controller->GetComponentByClass(UInventoryComponent::StaticClass()));
+	if (!IsValid(ClientComponent) || !IsValid(InventoryComponent))
+	{
+		return;
+	}
+	
+	FVector Start = Pawn->GetActorLocation();
+	Start.Z = 0.f;
+	FRotator Rotation = Pawn->GetActorRotation();
+
+	FVector End = Start + Rotation.Vector() * 100.f;
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+	FHitResult Hit;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
+	{
+		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
+		AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
+
+		// 서버용 자원 획득 함수(TMap은 UPROPERTY(Replicated)미지원)
+		InventoryComponent->AddResource(Resource->ResourceData);
+
+		// 클라이언트용 자원 획득 함수(동기화용)
+		if (!Controller->IsLocalController())
+		{
+			ClientComponent->GainResource(Resource->ResourceData);
+		}
+	}
 }

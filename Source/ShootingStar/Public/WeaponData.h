@@ -4,7 +4,7 @@
 #include "ResourceType.h"
 #include "WeaponData.generated.h"
 
-// π´±‚ µ•¿Ã≈Õ ±∏¡∂√º
+// Î¨¥Í∏∞ Îç∞Ïù¥ÌÑ∞ Íµ¨Ï°∞Ï≤¥
 USTRUCT(BlueprintType)
 struct FWeaponData : public FTableRowBase
 {

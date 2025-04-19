@@ -8,6 +8,8 @@
 #include "InputActionValue.h"
 #include "CompetitivePlayerController.generated.h"
 
+class UClientComponent;
+class UServerComponent;
 class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
@@ -50,10 +52,16 @@ public:
 	{
 		return TeamComponent;
 	}
+	
+	UServerComponent* GetServerComponent() const
+	{
+		return ServerComponent;
+	}
 
-	/** Resource */
-	UFUNCTION(BlueprintCallable)
-	void Interact_Resources();
+	UClientComponent* GetClientComponent() const
+	{
+		return ClientComponent;
+	}
 
 	/** Inventory */
 	UFUNCTION(BlueprintCallable)
@@ -62,7 +70,7 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UUserWidget> InventoryWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> InventoryWidgetClass;
 
 	UFUNCTION(BlueprintCallable)
@@ -73,7 +81,7 @@ public:
 	 * 이 컴포넌트는 게임 동안의 플레이어의 소속 팀을 정의하며, 레벨 이동시 소속 팀 유지를 위해 사용됩니다.
 	 */
 	UPROPERTY(BlueprintReadOnly)
-	UTeamComponent* TeamComponent;
+	TObjectPtr<UTeamComponent> TeamComponent;
 
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
@@ -99,4 +107,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UServerComponent> ServerComponent;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UClientComponent> ClientComponent;
 };

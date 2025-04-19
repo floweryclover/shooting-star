@@ -19,6 +19,10 @@ class ACompetitiveGameMode final : public AGameModeBase
 public:
 	ACompetitiveGameMode();
 
+	//
+	// 오버라이드 함수들
+	//
+	
 	virtual void Tick(float DeltaSeconds) override;
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;
@@ -34,11 +38,21 @@ public:
 		Super::GetNumPlayers();
 		return NumPlayers;
 	}
+
+	//
+	// Getter/Setter
+	//
 	
 	UCompetitiveSystemComponent* GetCompetitiveSystemComponent() const
 	{
 		return CompetitiveSystemComponent;
 	}
+
+	//
+	// 게임 로직 함수들
+	//
+
+	void InteractResource(AController* Controller);
 
 protected:
 	UPROPERTY(BlueprintReadOnly)
