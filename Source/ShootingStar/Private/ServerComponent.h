@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "ServerComponent.generated.h"
 
+struct FWeaponData;
 /**
  * 서버로서 원본 컴퓨터가 처리해야 하는 확정된 RPC 함수들이 작성된 Actor Component입니다.
  * @details
@@ -21,4 +22,7 @@ class UServerComponent final : public UActorComponent
 public:
 	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void RequestInteractResource();
+
+	UFUNCTION(BlueprintCallable, Reliable, Server)
+	void RequestCraftWeapon(const FWeaponData& Weapon, const TArray<int32>& Resources);
 };

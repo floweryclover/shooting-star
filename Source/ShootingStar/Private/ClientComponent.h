@@ -6,7 +6,13 @@
 #include "Components/ActorComponent.h"
 #include "ClientComponent.generated.h"
 
+struct FWeaponData;
 class UResourceDataAsset;
+
+// 서버->클라이언트 무기 제작 완료 통지용 임시 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponGained, const FWeaponData&, Weapon);
+
+
 /**
  * 클라이언트로서 각 원격 컴퓨터가 처리해야 하는 확정된 RPC 함수들이 작성된 Actor Component입니다.
  * @details
@@ -20,6 +26,13 @@ class UClientComponent final : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	// 서버->클라이언트 무기 제작 통지용 임시 델리게이트
+	UPROPERTY(BlueprintAssignable)
+	FWeaponGained OnWeaponGained;
+	
 	UFUNCTION(BlueprintCallable, Reliable, Client)
 	void GainResource(UResourceDataAsset* Resource);
+
+	UFUNCTION(BlueprintCallable, Reliable, Client)
+	void GainWeapon(const FWeaponData& Weapon);
 };

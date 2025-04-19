@@ -52,7 +52,11 @@ public:
 	// 게임 로직 함수들
 	//
 
+	UFUNCTION(BlueprintCallable)
 	void InteractResource(AController* Controller);
+
+	UFUNCTION(BlueprintCallable)
+	void CraftWeapon(AController* Controller, const FWeaponData& Weapon, const TArray<int32>& Resources);
 
 protected:
 	UPROPERTY(BlueprintReadOnly)

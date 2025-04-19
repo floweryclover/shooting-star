@@ -28,7 +28,7 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     FWeaponData Craft_Weapon(const FWeaponData& SelectWeapon, const TArray<int32>& ClickedResources);
-
+    
     // 자원 추가
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void AddResource(UResourceDataAsset* Resource, int32 Amount = 1);

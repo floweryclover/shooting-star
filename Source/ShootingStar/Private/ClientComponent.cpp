@@ -14,3 +14,8 @@ void UClientComponent::GainResource_Implementation(UResourceDataAsset* const Res
 	}
 	PlayerController->GetInventoryComponent()->AddResource(Resource);
 }
+
+void UClientComponent::GainWeapon_Implementation(const FWeaponData& Weapon)
+{
+	OnWeaponGained.Broadcast(Weapon);
+}
