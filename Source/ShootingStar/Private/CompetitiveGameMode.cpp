@@ -5,6 +5,11 @@
 #include "CompetitivePlayerController.h"
 #include "CompetitiveGameState.h"
 #include "CompetitiveSystemComponent.h"
+#include "ClientComponent.h"
+#include "InventoryComponent.h"
+#include "ResourceActor.h"
+#include "WeaponData.h"
+#include "ShootingStar/ShootingStar.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
 	: NumPlayers{1} // 호스트 항상 포함
@@ -21,7 +26,7 @@ ACompetitiveGameMode::ACompetitiveGameMode()
 void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	
+
 	CompetitiveSystemComponent->Update(DeltaSeconds);
 	const ECompetitiveGamePhase CurrentPhase = CompetitiveSystemComponent->GetCurrentPhase();
 	if (CurrentPhase == ECompetitiveGamePhase::WaitingForStart)
@@ -50,8 +55,9 @@ void ACompetitiveGameMode::PostLogin(APlayerController* const NewPlayer)
 	// 로비를 거치지 않고 시작한 경우 등 팀이 없는 경우에는 새로 할당
 	if (TeamComponent->GetTeam() == ETeam::None)
 	{
-		const ETeam TeamToAssign = CompetitiveSystemComponent->GetTeamForNextPlayer(GetGameState<AGameStateBase>()->PlayerArray);
-		
+		const ETeam TeamToAssign = CompetitiveSystemComponent->GetTeamForNextPlayer(
+			GetGameState<AGameStateBase>()->PlayerArray);
+
 		// 혹시 팀 할당에 실패했으면 즉시 게임 종료
 		if (TeamToAssign == ETeam::None)
 		{
@@ -66,7 +72,7 @@ void ACompetitiveGameMode::PreLogin(const FString& Options, const FString& Addre
                                     FString& ErrorMessage)
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
-	
+
 	if (NumPlayers >= CompetitiveSystemComponent->GetMaxPlayersPerTeam() * 2)
 	{
 		ErrorMessage = TEXT("정원이 가득 찼습니다.");
@@ -85,7 +91,7 @@ void ACompetitiveGameMode::Logout(AController* Exiting)
 	{
 		CompetitiveSystemComponent->EndGame();
 	}
-	
+
 	NumPlayers -= 1;
 }
 
@@ -102,4 +108,94 @@ void ACompetitiveGameMode::SwapPlayerControllers(APlayerController* const OldPC,
 		return;
 	}
 	NewTeamComponent->SetTeam(OldTeamComponent->GetTeam());
+}
+
+void ACompetitiveGameMode::InteractResource(AController* const Controller)
+{
+	if (!IsValid(Controller))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Controller is Invalid!"));
+		return;
+	}
+	APawn* const Pawn = Controller->GetPawn();
+	if (!IsValid(Pawn))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Pawn is Invalid!"));
+		return;
+	}
+
+	UClientComponent* const ClientComponent = Cast<UClientComponent>(
+		Controller->GetComponentByClass(UClientComponent::StaticClass()));
+	UInventoryComponent* const InventoryComponent = Cast<UInventoryComponent>(
+		Controller->GetComponentByClass(UInventoryComponent::StaticClass()));
+	if (!IsValid(ClientComponent) || !IsValid(InventoryComponent))
+	{
+		return;
+	}
+
+	FVector Start = Pawn->GetActorLocation();
+	Start.Z = 0.f;
+	FRotator Rotation = Pawn->GetActorRotation();
+
+	FVector End = Start + Rotation.Vector() * 100.f;
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+	FHitResult Hit;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
+	{
+		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
+		AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
+
+		// 서버용 자원 획득 함수(TMap은 UPROPERTY(Replicated)미지원)
+		InventoryComponent->AddResource(Resource->ResourceData);
+
+		// 클라이언트용 자원 획득 함수(동기화용)
+		if (!Controller->IsLocalController())
+		{
+			ClientComponent->GainResource(Resource->ResourceData);
+		}
+	}
+}
+
+void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWeaponData& Weapon,
+                                       const TArray<int32>& Resources)
+{
+	if (!IsValid(Controller))
+	{
+		return;
+	}
+
+	UInventoryComponent* const InventoryComponent = Cast<UInventoryComponent>(
+		Controller->GetComponentByClass(UInventoryComponent::StaticClass()));
+	UClientComponent* const ClientComponent = Cast<UClientComponent>(
+		Controller->GetComponentByClass(UClientComponent::StaticClass()));
+	if (!IsValid(InventoryComponent)
+		|| !IsValid(ClientComponent))
+	{
+		return;
+	}
+
+	// 실제로 자원을 가졌는지 검증
+	const TMap<UResourceDataAsset*, int32>& ResourcesHave = InventoryComponent->GetAllResources();
+	for (int i=0; i<static_cast<int>(EResourceType::End); ++i)
+	{
+		if (Resources[i] <= 0)
+		{
+			continue;
+		}
+		
+		const UResourceDataAsset* ResourceDataAsset = InventoryComponent->GetResourceDataAsset_ByResourceEnum(i);
+		if (!ResourceDataAsset)
+		{
+			return;
+		}
+
+		if (ResourcesHave[ResourceDataAsset] < Resources[i])
+		{
+			return;
+		}
+	}
+	
+	const FWeaponData CraftedWeapon = InventoryComponent->Craft_Weapon(Weapon, Resources);
+	ClientComponent->GainWeapon(CraftedWeapon);
 }

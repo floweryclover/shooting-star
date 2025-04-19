@@ -21,6 +21,11 @@ public:
 	AResourceActor();
 	void Harvest(UInventoryComponent* Inventory);
 
+	const UResourceDataAsset* GetResourceData() const
+	{
+		return ResourceData;
+	}
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void OnConstruction(const FTransform& Transform) override;

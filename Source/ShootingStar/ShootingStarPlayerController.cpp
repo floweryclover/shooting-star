@@ -26,13 +26,6 @@ AShootingStarPlayerController::AShootingStarPlayerController()
 	CachedDestination = FVector::ZeroVector;
 	FollowTime = 0.f;
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> InventoryUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_Inventory") };
-	ensure(InventoryUIBPFinder.Succeeded());
-	if (InventoryUIBPFinder.Succeeded())
-	{
-		InventoryWidgetClass = InventoryUIBPFinder.Class;
-	}
-
 	// Attach Inventory Component
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 }
