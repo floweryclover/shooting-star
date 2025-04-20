@@ -1,10 +1,34 @@
 #include "InventoryComponent.h"
 #include "WeaponData.h"
 #include "WeaponModifier.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 
 void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Init ResourceInventory
+	ResourceInventory.Empty();
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+
+	TArray<FAssetData> AssetList;
+	FName AssetPath = TEXT("/Game/Data/Resources");
+
+	AssetRegistryModule.Get().GetAssetsByPath(AssetPath, AssetList, true);
+
+	for (const FAssetData& Asset : AssetList)
+	{
+		UResourceDataAsset* Resource = Cast<UResourceDataAsset>(Asset.GetAsset());
+		if (Resource)
+		{
+			ResourceInventory.Add({ Resource, 0 });
+		}
+	}
+
+	// Ascending Sort By ResourceType Enum
+	ResourceInventory.Sort([](const FAA& A, const FAA& B) {
+		return static_cast<int>(A.Resource->ResourceType) < static_cast<int>(B.Resource->ResourceType);
+		});
 }
 
 UInventoryComponent::UInventoryComponent()
@@ -23,7 +47,7 @@ FWeaponData UInventoryComponent::Craft_Weapon(const FWeaponData& SelectWeapon, c
 	// Count Clicked Sum
 	FWeaponData Ret = SelectWeapon;
 	int32 Sum{};
-	for (int32 i = 0; i < (int32)EResourceType::End; i++)
+	for (int32 i = 0; i < static_cast<int32>(EResourceType::End); i++)
 	{
 		Ret.UsedResourceCounts[i] = static_cast<uint8>(ClickedResources[i]);
 		Sum += ClickedResources[i];
@@ -71,34 +95,21 @@ void UInventoryComponent::AddResource(UResourceDataAsset* Resource, int32 Amount
 		return;
 	}
 
-	if (ResourceInventory.Contains(Resource))
+	int ResourceIndex = static_cast<int>(Resource->ResourceType);
+	if (ResourceInventory[ResourceIndex].Count + Amount < 0)
 	{
-		if (ResourceInventory[Resource] + Amount < 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Invalid Add Amont in UInventoryComponent::AddResource"));
-			return;
-		}
-
-		ResourceInventory[Resource] += Amount;
+		UE_LOG(LogTemp, Warning, TEXT("Invalid Add Amont in UInventoryComponent::AddResource"));
+		return;
 	}
-	else
-	{
-		if (Amount < 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Negative Initialize in UInventoryComponent::AddResource"));
-			return;
-		}
 
-		ResourceInventory.Add(Resource, Amount);
-	}
+	ResourceInventory[ResourceIndex].Count += Amount;
 }
 
 int32 UInventoryComponent::GetResourceQuantity(UResourceDataAsset* Resource) const
 {
 	if (!Resource) return 0;
 
-	const int32* FoundAmount = ResourceInventory.Find(Resource);
-	return FoundAmount ? *FoundAmount : 0;
+	return ResourceInventory[static_cast<int>(Resource->ResourceType)].Count;
 }
 
 UResourceDataAsset* UInventoryComponent::GetResourceDataAsset_ByResourceEnum(const int32& Enum)
@@ -109,43 +120,23 @@ UResourceDataAsset* UInventoryComponent::GetResourceDataAsset_ByResourceEnum(con
 		return nullptr;
 	}
 
-	for (auto& Pair : ResourceInventory)
-	{
-		if (Pair.Key->ResourceType == static_cast<EResourceType>(Enum))
-			return Pair.Key;
-	}
-
-	return nullptr;
+	return ResourceInventory[Enum].Resource;
 }
 
 void UInventoryComponent::Clear_ZeroResources()
 {
-	TArray<UResourceDataAsset*> KeysToRemove;
-
-	for (auto& Pair : ResourceInventory)
-	{
-		if (Pair.Value == 0)
-			KeysToRemove.Add(Pair.Key);
-	}
-
-	for (auto& Key : KeysToRemove)
-	{
-		ResourceInventory.Remove(Key);
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Call Legacy Code in UInventoryComponent::Clear_ZeroResources"));
+	return;
 }
 
-TArray<UResourceDataAsset*> UInventoryComponent::Get_SortedResources()
+TArray<UResourceDataAsset*> UInventoryComponent::Get_OwnedDataAssets()
 {
 	TArray<UResourceDataAsset*> Ret;
-	for (auto& Pair : ResourceInventory)
+	for (auto& FAA : ResourceInventory)
 	{
-		Ret.Push(Pair.Key);
+		if (FAA.Count > 0)
+			Ret.Push(FAA.Resource);
 	}
-
-	Ret.Sort([](const UResourceDataAsset& A, const UResourceDataAsset& B)
-		{
-			return A.ResourceType < B.ResourceType;
-		});
 
 	return Ret;
 }
