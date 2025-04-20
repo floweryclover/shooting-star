@@ -71,8 +71,8 @@ void ACompetitivePlayerController::SetupInputComponent()
 	{
 		// Setup Move input events
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::Move);
-		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &ACompetitivePlayerController::Shoot);
-
+		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &ACompetitivePlayerController::Attack);
+		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipWeapon);
 	}
 }
 
@@ -115,11 +115,21 @@ void ACompetitivePlayerController::LookMouse()
 
 }
 
-void ACompetitivePlayerController::Shoot()
+void ACompetitivePlayerController::Attack()
 {
 	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
 	if (ControlledCharacter)
 	{
-		ControlledCharacter->PullTrigger();
+		ControlledCharacter->Attack();
+	}
+}
+
+void ACompetitivePlayerController::EquipWeapon()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Trigger EquipWeapon"));
+	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
+	if (ControlledCharacter)
+	{
+		ControlledCharacter->WeaponChange();
 	}
 }

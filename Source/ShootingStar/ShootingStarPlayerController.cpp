@@ -51,7 +51,8 @@ void AShootingStarPlayerController::SetupInputComponent()
 		// Setup Move input events
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AShootingStarPlayerController::Move);
 		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AShootingStarPlayerController::Attack);
-
+		EnhancedInputComponent->BindAction(EquipGunAction, ETriggerEvent::Triggered, this, &AShootingStarPlayerController:: EquipWeapon);
+		EnhancedInputComponent->BindAction(EquipKnifeAction, ETriggerEvent::Triggered, this, &AShootingStarPlayerController::EquipKnifeWeapon);
 	}
 	else
 	{
@@ -103,6 +104,22 @@ void AShootingStarPlayerController::Attack()
 	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
 	if (ControlledCharacter) 
 	{
-		ControlledCharacter->PullTrigger();
+		ControlledCharacter->Attack();
+	}
+}
+void AShootingStarPlayerController::EquipWeapon()
+{
+	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
+	if (ControlledCharacter)
+	{
+		ControlledCharacter->WeaponChange();
+	}
+}
+void AShootingStarPlayerController::EquipKnifeWeapon()
+{
+	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
+	if (ControlledCharacter)
+	{
+		ControlledCharacter->WeaponKnifeChange();
 	}
 }

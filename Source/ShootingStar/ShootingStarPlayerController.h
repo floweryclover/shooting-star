@@ -43,6 +43,10 @@ public:
 	UInputAction* MoveAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ShootAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* EquipGunAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* EquipKnifeAction;
 
 
 protected:
@@ -59,6 +63,8 @@ protected:
 	// Rotation Control
 	void LookMouse();
 	void Attack();
+	void EquipWeapon();
+	void EquipKnifeWeapon();
 
 private:
 	FVector CachedDestination;

@@ -44,6 +44,8 @@ public:
 	UInputAction* MoveAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ShootAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* EquipAction;
 	
 	UTeamComponent* GetTeamComponent() const
 	{
@@ -70,7 +72,8 @@ protected:
 	void Move(const FInputActionValue& Value);
 	// Rotation Control
 	void LookMouse();
-	void Shoot();
+	void Attack();
+	void EquipWeapon();
 
 	// HUD
 	UPROPERTY(BlueprintReadOnly)
