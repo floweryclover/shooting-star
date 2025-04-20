@@ -2,11 +2,14 @@
 #include "WeaponData.h"
 #include "WeaponModifier.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Net/UnrealNetwork.h"
+#include "ShootingStar/ShootingStar.h"
 
 void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	SetIsReplicated(true);
 	// Init ResourceInventory
 	ResourceInventory.Empty();
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
@@ -26,9 +29,16 @@ void UInventoryComponent::BeginPlay()
 	}
 
 	// Ascending Sort By ResourceType Enum
-	ResourceInventory.Sort([](const FAA& A, const FAA& B) {
+	ResourceInventory.Sort([](const FResourceInventoryData& A, const FResourceInventoryData& B) {
 		return static_cast<int>(A.Resource->ResourceType) < static_cast<int>(B.Resource->ResourceType);
 		});
+}
+
+void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UInventoryComponent, ResourceInventory);
 }
 
 UInventoryComponent::UInventoryComponent()
@@ -103,6 +113,13 @@ void UInventoryComponent::AddResource(UResourceDataAsset* Resource, int32 Amount
 	}
 
 	ResourceInventory[ResourceIndex].Count += Amount;
+
+	// 클라이언트의 값을 변경하고 있다면 자동으로 OnRep이 호출되지만,
+	// 서버는 임의로 호출해 주어야 함.
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		OnRep_ResourceInventory();
+	}
 }
 
 int32 UInventoryComponent::GetResourceQuantity(UResourceDataAsset* Resource) const
@@ -139,4 +156,9 @@ TArray<UResourceDataAsset*> UInventoryComponent::Get_OwnedDataAssets()
 	}
 
 	return Ret;
+}
+
+void UInventoryComponent::OnRep_ResourceInventory()
+{
+	OnResourceInventoryUpdated.Broadcast(ResourceInventory);
 }
