@@ -1,7 +1,8 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+Ôªø// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ShootingStarCharacter.h"
 #include "ShootingStar/Public/Gun.h"
+#include "ShootingStar/Public/Knife.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
@@ -18,11 +19,34 @@
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Character_AnimInstance.h"
 
 AShootingStarCharacter::AShootingStarCharacter()
 {
 	// Set size for player capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	GetCapsuleComponent()->SetCollisionProfileName("Pawn");
+
+	GetMesh()->SetCollisionProfileName(TEXT("BodyMesh"));
+	GetMesh()->SetGenerateOverlapEvents(true);
+
+	// PickAxeMesh ÏÉùÏÑ± Î∞è Attach
+	PickAxeMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("PickAxe"));
+	PickAxeMesh->SetupAttachment(GetMesh(), TEXT("Backpack_Socket"));
+
+	// Ï¥àÍ∏∞ Ìä∏ÎûúÏä§Ìèº ÏÑ§Ï†ï
+	PickAxeMesh->SetRelativeLocation(FVector(266.293793f, 79.988396f, -53.498161f)); // ÏõêÌïòÎäî ÏúÑÏπòÎ°ú ÏàòÏ†ï
+	PickAxeMesh->SetRelativeRotation(FRotator(11.f, -35.f, 0.f)); // Roll, Pitch, Yaw
+	PickAxeMesh->SetRelativeScale3D(FVector(0.4f, 0.4f, 0.4f)); // ÌÅ¨Í∏∞ Ï°∞Ï†à
+
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh>PickAxe_SKELETALMESH(TEXT("SkeletalMesh'/Game/lowpoly-mine-assets/source/SKM_Pickaxe.SKM_Pickaxe'"));
+	if (PickAxe_SKELETALMESH.Succeeded())
+	{ // Mesh ÏÑ§Ï†ï
+		PickAxeMesh->SetSkeletalMesh(PickAxe_SKELETALMESH.Object);
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("Pickaxe mesh loading failed."));
+	}
 
 	// Don't rotate character to camera direction
 	bUseControllerRotationPitch = false;
@@ -58,22 +82,11 @@ void AShootingStarCharacter::BeginPlay()
 
 	Health = MaxHealth;
 
-	if (!GunClass)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GunClass is nullptr! Did you forget to set it in the Blueprint?"));
-		return;
-	}
-
-	Gun = GetWorld()->SpawnActor<AGun>(GunClass);
-	if (Gun)
-	{
-		Gun->SetOwner(this);
-	}
 }
-
-bool AShootingStarCharacter::IsDead() const
+void AShootingStarCharacter::PostInitializeComponents()
 {
-	return Health <= 0;
+	Super::PostInitializeComponents();
+	AnimInstance= Cast<UCharacter_AnimInstance>(GetMesh()->GetAnimInstance());
 }
 
 float AShootingStarCharacter::GetHealthPercent() const
@@ -86,28 +99,166 @@ void AShootingStarCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 }
 
-void AShootingStarCharacter::PullTrigger()
+void AShootingStarCharacter::WeaponChange() 
 {
-	if (!Gun)
+	if (!RifleClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Gun is nullptr!"));
+		UE_LOG(LogTemp, Error, TEXT("RifleClass is nullptr! Check the Blueprint setting."));
 		return;
 	}
-	Gun->PullTrigger();
+
+	AGun* SpawnedRifle = GetWorld() -> SpawnActor<AGun>(RifleClass);
+	EquipGun(SpawnedRifle);
+}
+void AShootingStarCharacter::WeaponKnifeChange()
+{
+	if (!KnifeClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("KnifeClass is nullptr! Check the Blueprint setting."));
+		return;
+	}
+
+	AKnife* SpawnedKnife = GetWorld()->SpawnActor<AKnife>(KnifeClass);
+	EquipKnife(SpawnedKnife);
+}
+
+void AShootingStarCharacter::EquipGun(AGun* GunToEquip)
+{
+	AnimInstance->IsGunEquipped=true;
+	AnimInstance->IsKnifeEquipped = false;
+	UnEquipPickAxe();
+	if (EquippedGun)
+    {
+		if (EquippedKnife) {
+			EquippedKnife->Destroy();
+			EquippedKnife = nullptr;
+		}
+        EquippedGun->Destroy();
+        EquippedGun = nullptr;
+    }
+
+    if (GunToEquip)
+    {
+		EquippedGun = GunToEquip;
+
+        if (EquippedGun)
+        {	
+            EquippedGun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Weapon_R_Socket"));
+        }
+    }
+}
+
+void AShootingStarCharacter::EquipKnife(AKnife* KnifeToEquip)
+{
+	AnimInstance->IsGunEquipped = false;
+	AnimInstance->IsKnifeEquipped = true;
+	UnEquipPickAxe();
+	if (EquippedKnife)
+	{
+		if (EquippedGun) {
+			EquippedGun->Destroy();
+			EquippedGun = nullptr;
+		}
+		EquippedKnife->Destroy();
+		EquippedKnife = nullptr;
+	}
+
+	if (KnifeToEquip)
+	{
+		EquippedKnife = KnifeToEquip;
+
+		if (EquippedKnife)
+		{
+			EquippedKnife->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Weapon_R_Socket"));
+		}
+	}
+}
+
+void AShootingStarCharacter::Attack()
+{
+	AnimInstance->IsAttack = true;
+
+	if (EquippedGun == nullptr && EquippedKnife == nullptr)
+	{
+		EquipPickAxe();
+	}
+	else if(EquippedGun)
+	{
+		PullTrigger();
+	}
+	else if (EquippedKnife)
+	{
+		AnimInstance->PlayKnifeAttackMontage();
+	}
+}
+void AShootingStarCharacter::EquipPickAxe()
+{
+	if (PickAxeMesh)
+	{
+		PickAxeMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Weapon_R_Socket"));
+	}
+}
+
+void AShootingStarCharacter::UnEquipPickAxe()
+{
+	if (PickAxeMesh)
+	{
+		PickAxeMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Backpack_Socket"));
+	}
+}
+
+void AShootingStarCharacter::PullTrigger()
+{
+	if (EquippedGun)
+	{
+		// Ï¥ùÏóêÏÑú ÏÜåÏºì ÏúÑÏπòÏôÄ ÌöåÏ†Ñ Í∞ÄÏ†∏Ïò§Í∏∞
+		FVector MuzzleLoc = EquippedGun->BodyMesh->GetSocketLocation("Muzzle");
+		FRotator MuzzleRot = EquippedGun->BodyMesh->GetSocketRotation("Muzzle");
+		FRotator BulletFireRot = MuzzleRot; // Ï¥ùÍµ¨ Î∞©Ìñ• Í∑∏ÎåÄÎ°ú Î∞úÏÇ¨
+
+		AnimInstance->PlayFireMontage();
+		EquippedGun->ProjectileFire(MuzzleLoc, MuzzleRot, MuzzleRot);
+	}
 }
 float AShootingStarCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
-	float DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	DamageToApply = FMath::Min(Health, DamageToApply);
-	Health -= DamageToApply;
-	UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
+	float DamageToApply;
+	if (!IsDead()) {
+		DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+		DamageToApply = FMath::Min(Health, DamageToApply);
+		Health -= DamageToApply;
+		UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
 
-	if (IsDead())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
-		// TODO: ¡◊æ˙¿ª ∂ß √≥∏Æ (øπ: æ÷¥œ∏ﬁ¿Ãº«, ∞‘¿” ø¿πˆ, ∏ÆΩ∫∆˘ µÓ)
-		Destroy(); // ƒ≥∏Ø≈Õ ªË¡¶
+		AnimInstance->PlayHitMontage();
+	}
+	else {
+		PlayDeadAnim();
 	}
 
 	return DamageToApply;
+}
+void AShootingStarCharacter::PlayDeadAnim()
+{
+	UCapsuleComponent* Capsule = GetCapsuleComponent();
+	Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	GetMesh()->SetCollisionProfileName(TEXT("DeadState"));
+	SetActorEnableCollision(true);
+
+	GetMesh()->SetAllBodiesSimulatePhysics(true);
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->WakeAllRigidBodies();
+	GetMesh()->bBlendPhysics = true;
+
+	float MontageLength = AnimInstance->DeadMontage->GetPlayLength();
+	UE_LOG(LogTemp, Warning, TEXT("Dead montage length: %f"), MontageLength);
+
+	AnimInstance->PlayDeadMontage();
+	UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
+	GetWorldTimerManager().SetTimer(timer, this, &AShootingStarCharacter::DestroyCharacter, MontageLength, false);
+}
+void AShootingStarCharacter::DestroyCharacter()
+{
+	Destroy();
 }
