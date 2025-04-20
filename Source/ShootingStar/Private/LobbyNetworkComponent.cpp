@@ -81,7 +81,7 @@ void ULobbyNetworkComponent::StartGame()
 	}
 
 	const FName CompetitiveLevelName = TEXT(
-		"/Game/Levels/TestLevels/CompetitiveRoundSystemTest/CompetitiveRoundSystemTest");
+		"/Game/Levels/Competitive");
 	const FString Options = CompetitiveLevelName.ToString();
 	GetWorld()->ServerTravel(Options);
 }

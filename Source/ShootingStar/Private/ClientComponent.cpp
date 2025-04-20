@@ -2,54 +2,20 @@
 
 
 #include "ClientComponent.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "CompetitivePlayerController.h"
+#include "InventoryComponent.h"
 
-// Sets default values for this component's properties
-UClientComponent::UClientComponent()
+void UClientComponent::GainResource_Implementation(UResourceDataAsset* const Resource)
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
-}
-
-
-// Called when the game starts
-void UClientComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// ...
-}
-
-
-// Called every frame
-void UClientComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                     FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
-}
-
-void UClientComponent::JumpClient_Implementation()
-{
-	if (APlayerController* PlayerController = Cast<APlayerController>(
-		GetOwner()))
+	ACompetitivePlayerController* const PlayerController = Cast<ACompetitivePlayerController>(GetOwner());
+	if (!PlayerController)
 	{
-		if (ACharacter* Character = Cast<ACharacter>(PlayerController->GetPawn()))
-		{
-			Character->Jump();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Character was nullptr."));
-		}
+		return;
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerController was nullptr."));
-	}
+	PlayerController->GetInventoryComponent()->AddResource(Resource);
+}
+
+void UClientComponent::GainWeapon_Implementation(const FWeaponData& Weapon)
+{
+	OnWeaponGained.Broadcast(Weapon);
 }

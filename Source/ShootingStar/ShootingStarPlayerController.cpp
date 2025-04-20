@@ -11,6 +11,11 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+// Debug Codes
+#include "Blueprint/UserWidget.h"
+#include "InventoryComponent.h"
+#include "ResourceActor.h"
+#include "ShootingStar.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -20,6 +25,9 @@ AShootingStarPlayerController::AShootingStarPlayerController()
 	DefaultMouseCursor = EMouseCursor::Default;
 	CachedDestination = FVector::ZeroVector;
 	FollowTime = 0.f;
+
+	// Attach Inventory Component
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 void AShootingStarPlayerController::BeginPlay()
@@ -32,6 +40,59 @@ void AShootingStarPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	LookMouse();
+}
+
+void AShootingStarPlayerController::Interact_Resources()
+{
+	if (!IsLocalPlayerController())
+		return;
+
+	APawn* OwnerPawn = GetPawn();
+	if (!OwnerPawn)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OwnerPawn is nullptr!"));
+		return;
+	}
+
+	FVector Start = OwnerPawn->GetActorLocation();
+	Start.Z = 0.f;
+	FRotator Rotation = OwnerPawn->GetActorRotation();
+
+	FVector End = Start + Rotation.Vector() * 100.f;
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+
+	FHitResult Hit;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
+	{
+		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
+		AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
+
+		// Server 
+		Resource->Harvest(InventoryComponent);
+	}
+}
+
+void AShootingStarPlayerController::ToggleInventoryWidget()
+{
+	if (!IsLocalPlayerController())
+		return;
+
+	if (InventoryWidget && InventoryWidget->IsInViewport())
+	{
+		InventoryWidget->RemoveFromParent();
+		InventoryWidget = nullptr;
+	}
+	else
+	{
+		if (!InventoryWidgetClass) return;
+
+		InventoryWidget = CreateWidget<UUserWidget>(this, InventoryWidgetClass);
+		if (InventoryWidget)
+		{
+			InventoryWidget->AddToViewport();
+		}
+	}
 }
 
 void AShootingStarPlayerController::SetupInputComponent()
@@ -60,7 +121,7 @@ void AShootingStarPlayerController::SetupInputComponent()
 	}
 }
 
-void AShootingStarPlayerController::Move(const FInputActionValue& Value) 
+void AShootingStarPlayerController::Move(const FInputActionValue& Value)
 {
 
 	// input is a Vector2D
@@ -102,7 +163,7 @@ void AShootingStarPlayerController::LookMouse()
 void AShootingStarPlayerController::Attack()
 {
 	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
-	if (ControlledCharacter) 
+	if (ControlledCharacter)
 	{
 		ControlledCharacter->Attack();
 	}

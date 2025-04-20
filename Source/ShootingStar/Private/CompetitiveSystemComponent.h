@@ -38,7 +38,6 @@ public:
 
 	/**
 	 * WaitingForStart 페이즈에서 최초 한 번만 호출되는, 게임을 시작하는 함수입니다.
-	 * 이 함수 호출 이후에는 더 이상 플레이어를 추가로 등록할 수 없습니다.
 	 */
 	UFUNCTION(BlueprintCallable)
 	void StartGame();
@@ -168,4 +167,6 @@ private:
 	void Update_GameEnd();
 	
 	void Update_GameDestroyed();
+
+	void WinTeam(ETeam Team);
 };

@@ -26,4 +26,10 @@ public class WifiDirectCallbacks {
     public static void onServiceFound(String deviceName, String deviceMacAddress) {
         nativeOnServiceFoundFunction(deviceName, deviceMacAddress);
     }
+    
+    public static native void nativeOnP2pStateChangedFunction(boolean isP2pEnabled);
+
+    public static void onP2pStateChanged(boolean isP2pEnabled) {
+        nativeOnP2pStateChangedFunction(isP2pEnabled);
+    }
 }

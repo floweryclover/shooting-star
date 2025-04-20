@@ -12,6 +12,7 @@
 class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
+class UInventoryComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -47,6 +48,25 @@ public:
 	UInputAction* EquipGunAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* EquipKnifeAction;
+
+	/** Debug Codes */
+	UFUNCTION(BlueprintCallable)
+	void Interact_Resources();
+
+	UFUNCTION(BlueprintCallable)
+	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UUserWidget> InventoryWidget;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> InventoryWidgetClass;
+
+	UFUNCTION(BlueprintCallable)
+	void ToggleInventoryWidget();
+
+	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
+	UInventoryComponent* InventoryComponent;
 
 
 protected:

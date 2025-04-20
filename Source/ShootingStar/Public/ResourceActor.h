@@ -9,6 +9,7 @@
 
 class UStaticMeshComponent;
 class UResource;
+class UInventoryComponent;
 
 UCLASS()
 class SHOOTINGSTAR_API AResourceActor : public AActor
@@ -18,15 +19,24 @@ class SHOOTINGSTAR_API AResourceActor : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AResourceActor();
+	void Harvest(UInventoryComponent* Inventory);
+
+	const UResourceDataAsset* GetResourceData() const
+	{
+		return ResourceData;
+	}
+
+	void UpdateVisual();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void OnConstruction(const FTransform& Transform) override;
 
+#if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-
+#endif
+	
 private:
-	void UpdateVisual();
 
 public:
 	UPROPERTY(VisibleAnywhere)
