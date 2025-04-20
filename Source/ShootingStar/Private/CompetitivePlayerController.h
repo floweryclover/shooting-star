@@ -49,6 +49,8 @@ public:
 	UInputAction* ShootAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* EquipAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* EquipKnifeAction;
 	
 	UTeamComponent* GetTeamComponent() const
 	{
@@ -100,6 +102,7 @@ protected:
 	void LookMouse();
 	void Attack();
 	void EquipWeapon();
+	void EquipKnifeWeapon();
 
 	// HUD
 	UPROPERTY(BlueprintReadOnly)

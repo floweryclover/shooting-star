@@ -102,6 +102,7 @@ void ACompetitivePlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::Move);
 		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &ACompetitivePlayerController::Attack);
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipWeapon);
+		EnhancedInputComponent->BindAction(EquipKnifeAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipKnifeWeapon);
 	}
 }
 
@@ -160,5 +161,13 @@ void ACompetitivePlayerController::EquipWeapon()
 	if (ControlledCharacter)
 	{
 		ControlledCharacter->WeaponChange();
+	}
+}
+void ACompetitivePlayerController::EquipKnifeWeapon()
+{
+	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
+	if (ControlledCharacter)
+	{
+		ControlledCharacter->WeaponKnifeChange();
 	}
 }
