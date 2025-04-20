@@ -18,7 +18,7 @@ public:
     UFenceGenerator();
 
     virtual void GenerateObjects() override;
-    virtual void Initialize(class UProceduralMapGenerator* InOwner) override;
+    virtual void Initialize(class ACompetitiveGameMode* InOwner) override;
 
     void SetInstancedMeshComponent(UInstancedStaticMeshComponent* InMeshComponent);
 
@@ -26,13 +26,13 @@ public:
     int32 numFences;
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
-    float fenceMinDistance = 300.f;
+    float fenceMinDistance;
 
     UPROPERTY(EditAnywhere, Category = "Meshes")
     UStaticMesh* fenceMesh;
 private:
     UPROPERTY()
-    UProceduralMapGenerator* Owner;
+    ACompetitiveGameMode* Owner;
 
     // Weak Pointer로 설정한다. 컴포넌트의 소유권은 Owner에게 있다.
     UPROPERTY()

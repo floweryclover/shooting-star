@@ -1,35 +1,31 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "DecorationGenerator.h"
-#include "ProceduralMapGenerator.h"
+#include "CompetitiveGameMode.h"
 
 UDecorationGenerator::UDecorationGenerator()
 {
 }
 
-void UDecorationGenerator::Initialize(UProceduralMapGenerator* InOwner)
+void UDecorationGenerator::Initialize(ACompetitiveGameMode* InOwner)
 {
     Owner = InOwner;
 
     if (Owner)
     {
-        numDecos = Owner->numDecos;
-        decoMinDistance = Owner->decoMinDistance;
-        clusterRadius = Owner->clusterRadius;
-        maxClusterNum = Owner->maxClusterNum;
-        decoMeshes = Owner->decoMeshes;
-
-        // Owner의 컴포넌트들을 로컬 배열로 복사
-        DecorationInstancedMeshComponents = Owner->DecorationInstancedMeshComponents;
+        numDecos = Owner->GetNumDecos();
+        decoMinDistance = Owner->GetDecoMinDistance();
+        clusterRadius = Owner->GetClusterRadius();
+        maxClusterNum = Owner->GetMaxClusterNum();
+        decoMeshes = Owner->GetDecoMeshes();
+        DecorationInstancedMeshComponents = Owner->GetDecorationInstancedMeshComponents();
         
-        // 컴포넌트 설정
-        for (int32 i = 0; i < DecorationInstancedMeshComponents.Num(); ++i)
+        for (UInstancedStaticMeshComponent* Component : DecorationInstancedMeshComponents)
         {
-            if (UInstancedStaticMeshComponent* Component = DecorationInstancedMeshComponents[i])
+            if (Component)
             {
                 Component->SetVisibility(true);
                 Component->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-                UE_LOG(ProceduralMapGenerator, Log, TEXT("(Decoration) InstancedMeshComponent %d set successfully"), i);
             }
         }
     }
@@ -37,16 +33,16 @@ void UDecorationGenerator::Initialize(UProceduralMapGenerator* InOwner)
 
 void UDecorationGenerator::GenerateObjects()
 {
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Decos Started"));
+    UE_LOG(MapGenerator, Log, TEXT("(Deco) Generating Decos Started"));
 
     if (!Owner)
     {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("Owner is not initialized!"));
+        UE_LOG(MapGenerator, Error, TEXT("(Deco) Owner is not initialized!"));
         return;
     }
     if (decoMeshes.Num() == 0)
     {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in deco Mesh array!"));
+        UE_LOG(MapGenerator, Error, TEXT("(Deco) No Static Meshes assigned in deco Mesh array!"));
         return;
     }
 
@@ -77,12 +73,12 @@ void UDecorationGenerator::GenerateObjects()
             }
         }
         else
-            UE_LOG(ProceduralMapGenerator, Error, TEXT("Invalid index selected for Decorations"));
+            UE_LOG(MapGenerator, Error, TEXT("(Deco) Invalid index selected for Decorations"));
 
         SpawnAttempts++;
     }
 
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Decos Completed"));
+    UE_LOG(MapGenerator, Log, TEXT("(Deco) Generating Decos Completed"));
 }
 
 void UDecorationGenerator::GenerateClusteredDecorations(FVector origin, float radius, UStaticMesh* decoMesh)

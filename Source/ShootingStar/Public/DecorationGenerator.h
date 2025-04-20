@@ -16,7 +16,7 @@ public:
     UDecorationGenerator();
 
     virtual void GenerateObjects() override;
-    virtual void Initialize(class UProceduralMapGenerator* InOwner) override;
+    virtual void Initialize(class ACompetitiveGameMode* InOwner) override;
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numDecos = 30;
@@ -35,7 +35,7 @@ public:
 
 private:
     UPROPERTY()
-    UProceduralMapGenerator* Owner;
+    ACompetitiveGameMode* Owner;
 
     // Weak Pointer로 설정한다. 컴포넌트의 소유권은 Owner에게 있다.
     UPROPERTY()
