@@ -16,6 +16,8 @@ AProjectileBase::AProjectileBase()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	InitialLifeSpan = 2.0f;
+
 	BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MESHBODY"));
 	RootComponent = BodyMesh;
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>PROJECTILE_BODY(TEXT("/Script/Engine.StaticMesh'/Engine/BasicShapes/Cone.Cone'"));
@@ -45,6 +47,9 @@ void AProjectileBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	SetLifeSpan(3.0f);
+	UE_LOG(LogTemp, Warning, TEXT("SetLifeSpan called in BeginPlay"));
+
 	UE_LOG(LogTemp, Warning, TEXT("Projectile BodyMesh Collision Profile: %s"),
 		*BodyMesh->GetCollisionProfileName().ToString());
 	UE_LOG(LogTemp, Warning, TEXT("GenerateOverlapEvents: %s"),
@@ -55,7 +60,6 @@ void AProjectileBase::BeginPlay()
 void AProjectileBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void AProjectileBase::ProjectileFire(FVector FireDir, AActor* Onwer)
@@ -70,12 +74,12 @@ void AProjectileBase::SetProjectileVelocity(float Velocity)
 }
 void AProjectileBase::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
+		DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
 
-	UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, nullptr, GetOwner(), nullptr);
-	//UGameplayStatics::ApplyPointDamage(OtherActor, projectileDamage, GetActorForwardVector(), SweepResult, nullptr, GetOwner(), UBullet_DamageType::StaticClass());
-	UE_LOG(LogTemp, Warning, TEXT("Projectil: Player Hit"));
-	//UE_LOG(LogTemp, Warning, TEXT("bulletLoc2: %f, %f, %f"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z);
+		UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, nullptr, GetOwner(), nullptr);
+		//UGameplayStatics::ApplyPointDamage(OtherActor, projectileDamage, GetActorForwardVector(), SweepResult, nullptr, GetOwner(), UBullet_DamageType::StaticClass());
+		UE_LOG(LogTemp, Warning, TEXT("Projectil: Player Hit"));
+		//UE_LOG(LogTemp, Warning, TEXT("bulletLoc2: %f, %f, %f"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z);
 
-	this->Destroy();
+		this->Destroy();
 }
