@@ -1,13 +1,13 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "SubObstacleGenerator.h"
-#include "CompetitiveGameMode.h"
+#include "MapGeneratorComponent.h"
 
 USubObstacleGenerator::USubObstacleGenerator()
 {
 }
 
-void USubObstacleGenerator::Initialize(ACompetitiveGameMode* InOwner)
+void USubObstacleGenerator::Initialize(UMapGeneratorComponent* InOwner)
 {
     Owner = InOwner;
 
