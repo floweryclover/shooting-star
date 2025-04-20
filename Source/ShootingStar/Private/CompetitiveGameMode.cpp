@@ -388,7 +388,7 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 	}
 
 	// 실제로 자원을 가졌는지 검증
-	const TMap<UResourceDataAsset*, int32>& ResourcesHave = InventoryComponent->GetAllResources();
+	const TArray<FAA>& ResourcesHave = InventoryComponent->GetAllResources();
 	for (int i=0; i<static_cast<int>(EResourceType::End); ++i)
 	{
 		if (Resources[i] <= 0)
@@ -396,13 +396,12 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 			continue;
 		}
 		
-		const UResourceDataAsset* ResourceDataAsset = InventoryComponent->GetResourceDataAsset_ByResourceEnum(i);
-		if (!ResourceDataAsset)
+		if (!ResourcesHave[i].Resource)
 		{
 			return;
 		}
 
-		if (ResourcesHave[ResourceDataAsset] < Resources[i])
+		if (ResourcesHave[i].Count < Resources[i])
 		{
 			return;
 		}
