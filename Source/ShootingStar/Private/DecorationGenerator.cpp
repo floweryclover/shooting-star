@@ -1,13 +1,13 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "DecorationGenerator.h"
-#include "CompetitiveGameMode.h"
+#include "MapGeneratorComponent.h"
 
 UDecorationGenerator::UDecorationGenerator()
 {
 }
 
-void UDecorationGenerator::Initialize(ACompetitiveGameMode* InOwner)
+void UDecorationGenerator::Initialize(UMapGeneratorComponent* InOwner)
 {
     Owner = InOwner;
 

@@ -28,7 +28,7 @@ public:
     UResourceGenerator();
 
     virtual void GenerateObjects() override;
-    virtual void Initialize(class ACompetitiveGameMode* InOwner) override;
+    virtual void Initialize(class UMapGeneratorComponent* InOwner) override;
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numResources = 30;
@@ -41,7 +41,7 @@ public:
 
 private:
     UPROPERTY()
-    ACompetitiveGameMode* Owner;
+    UMapGeneratorComponent* Owner;
 
     UResourceDataAsset* SelectResourceDataAsset();
     bool SpawnResourceActor(const FVector& Location, UResourceDataAsset* ResourceData);

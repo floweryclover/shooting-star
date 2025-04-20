@@ -18,5 +18,5 @@ class IObjectGenerator
 
 public:
     virtual void GenerateObjects() = 0;
-    virtual void Initialize(class ACompetitiveGameMode* InOwner) = 0;
+    virtual void Initialize(class UMapGeneratorComponent* InOwner) = 0;
 };

@@ -1,14 +1,14 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "ResourceGenerator.h"
-#include "CompetitiveGameMode.h"
+#include "MapGeneratorComponent.h"
 #include "ResourceActor.h"
 
 UResourceGenerator::UResourceGenerator()
 {
 }
 
-void UResourceGenerator::Initialize(ACompetitiveGameMode* InOwner)
+void UResourceGenerator::Initialize(UMapGeneratorComponent* InOwner)
 {
     Owner = InOwner;
 

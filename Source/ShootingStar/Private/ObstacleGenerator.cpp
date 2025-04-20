@@ -1,13 +1,13 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "ObstacleGenerator.h"
-#include "CompetitiveGameMode.h"
+#include "MapGeneratorComponent.h"
 
 UObstacleGenerator::UObstacleGenerator()
 {
 }
 
-void UObstacleGenerator::Initialize(ACompetitiveGameMode* InOwner)
+void UObstacleGenerator::Initialize(UMapGeneratorComponent* InOwner)
 {
     Owner = InOwner;
 
@@ -50,7 +50,7 @@ void UObstacleGenerator::GenerateObjects()
         if (obstacleMeshes.IsValidIndex(RandomIndex))
         {
             UStaticMesh* RandomMesh = obstacleMeshes[RandomIndex];
-            if (Owner && Owner->PlaceObject(RandomLocation, RandomMesh))  // Owner를 직접 사용
+            if (Owner && Owner->PlaceObject(RandomLocation, RandomMesh))
             {
                 PlacedObjects++;
                 Owner->SetObjectRegion(RandomLocation, RandomMesh, EObjectMask::ObstacleMask);

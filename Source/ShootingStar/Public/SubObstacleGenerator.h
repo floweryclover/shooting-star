@@ -15,7 +15,7 @@ public:
     USubObstacleGenerator();
 
     virtual void GenerateObjects() override;
-    virtual void Initialize(class ACompetitiveGameMode* InOwner) override;
+    virtual void Initialize(class UMapGeneratorComponent* InOwner) override;
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numSubObstacles = 20;
@@ -28,5 +28,5 @@ public:
 
 private:
     UPROPERTY()
-    ACompetitiveGameMode* Owner;
+    UMapGeneratorComponent* Owner;
 };

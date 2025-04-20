@@ -1,13 +1,13 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "FenceGenerator.h"
-#include "CompetitiveGameMode.h"
+#include "MapGeneratorComponent.h"
 
 UFenceGenerator::UFenceGenerator()
 {
 }
 
-void UFenceGenerator::Initialize(ACompetitiveGameMode* InOwner)
+void UFenceGenerator::Initialize(UMapGeneratorComponent* InOwner)
 {
     Owner = InOwner;
 
