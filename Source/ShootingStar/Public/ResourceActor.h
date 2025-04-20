@@ -26,6 +26,8 @@ public:
 		return ResourceData;
 	}
 
+	void UpdateVisual();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void OnConstruction(const FTransform& Transform) override;
@@ -35,7 +37,6 @@ protected:
 #endif
 	
 private:
-	void UpdateVisual();
 
 public:
 	UPROPERTY(VisibleAnywhere)

@@ -1,19 +1,21 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "SubObstacleGenerator.h"
-#include "ProceduralMapGenerator.h"
+#include "CompetitiveGameMode.h"
 
 USubObstacleGenerator::USubObstacleGenerator()
 {
 }
 
-void USubObstacleGenerator::Initialize(UProceduralMapGenerator* InOwner)
+void USubObstacleGenerator::Initialize(ACompetitiveGameMode* InOwner)
 {
     Owner = InOwner;
 
     if (Owner)
     {
-        subObstacleMeshes = Owner->subObstacleMeshes;
+        numSubObstacles = Owner->GetNumSubObstacles();
+        subObstacleMinDistance = Owner->GetSubObstacleMinDistance();
+        subObstacleMeshes = Owner->GetSubObstacleMeshes();
     }
 }
 
@@ -21,12 +23,12 @@ void USubObstacleGenerator::GenerateObjects()
 {
     if (!Owner)
     {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("Owner is not initialized!"));
+        UE_LOG(MapGenerator, Error, TEXT("Owner is not initialized!"));
         return;
     }
     if (subObstacleMeshes.Num() == 0)
     {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in subObstacleMeshes array!"));
+        UE_LOG(MapGenerator, Error, TEXT("No Static Meshes assigned in subObstacleMeshes array!"));
         return;
     }
 
@@ -49,7 +51,7 @@ void USubObstacleGenerator::GenerateObjects()
             {
                 PlacedObjects++;
                 Owner->SetObjectRegion(RandomLocation, RandomMesh, EObjectMask::SubObstacleMask);
-                UE_LOG(ProceduralMapGenerator, Log, TEXT("Generated SubObstacle: %s at %s"), *RandomMesh->GetName(), *RandomLocation.ToString());
+                UE_LOG(MapGenerator, Log, TEXT("Generated SubObstacle: %s at %s"), *RandomMesh->GetName(), *RandomLocation.ToString());
             }
         }
         SpawnAttempts++;

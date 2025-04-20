@@ -5,6 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
+#include "EngineUtils.h"
 
 // Sets default values
 AGun::AGun()
@@ -12,11 +13,16 @@ AGun::AGun()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	SetRootComponent(Root);
+    BodyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BODY"));
+    RootComponent = BodyMesh;
+    BodyMesh->SetIsReplicated(true);
 
-	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
-	Mesh->SetupAttachment(Root);
+    Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("AUDIO"));
+    Sound->SetupAttachment(RootComponent);
+
+    WeaponeLever = WEAPONLEVER::SINGLEFIRE;
+    WeaponeLeverCheck.Init(false, 3);
+
 }
 
 // Called when the game starts or when spawned
@@ -31,6 +37,35 @@ void AGun::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+UClass* AGun::GetStaticClass()
+{
+    return nullptr;
+}
+
+AGun* AGun::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
+{
+    return nullptr;
+}
+
+void AGun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
+{
+}
+void AGun::PlayFireMontage()
+{
+}
+
+void AGun::StopFireMontage()
+{
+}
+
+void AGun::PlayReloadMontage()
+{
+}
+
+void AGun::StopReloadMontage()
+{
 }
 
 void AGun::PullTrigger()

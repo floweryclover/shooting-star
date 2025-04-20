@@ -1,19 +1,30 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "FenceGenerator.h"
-#include "ProceduralMapGenerator.h"
+#include "CompetitiveGameMode.h"
 
 UFenceGenerator::UFenceGenerator()
 {
 }
 
-void UFenceGenerator::Initialize(UProceduralMapGenerator* InOwner)
+void UFenceGenerator::Initialize(ACompetitiveGameMode* InOwner)
 {
     Owner = InOwner;
 
     if (Owner)
     {
-        fenceMesh = Owner->fenceMesh;
+        numFences = Owner->GetNumFences();
+        fenceMinDistance = Owner->GetFenceMinDistance();
+        fenceMesh = Owner->GetFenceMesh();
+
+        // FenceInstancedMeshComponent 가져오기 및 확인
+        if (Owner->GetFenceInstancedMeshComponent())
+        {
+            SetInstancedMeshComponent(Owner->GetFenceInstancedMeshComponent());
+            UE_LOG(MapGenerator, Log, TEXT("(Fence) InstancedMeshComponent set successfully"));
+        }
+        else
+            UE_LOG(MapGenerator, Error, TEXT("(Fence) Failed to get InstancedMeshComponent"));
     }
 }
 
@@ -21,29 +32,30 @@ void UFenceGenerator::SetInstancedMeshComponent(UInstancedStaticMeshComponent* I
 {
     if (!InMeshComponent)
     {
-        UE_LOG(LogTemp, Error, TEXT("FenceGenerator: Invalid InstancedMeshComponent!"));
+        UE_LOG(MapGenerator, Error, TEXT("FenceGenerator: Invalid InstancedMeshComponent!"));
         return;
     }
-    FenceInstancedMeshComponent = InMeshComponent; 
+    FenceInstancedMeshComponent = InMeshComponent;
+
+    FenceInstancedMeshComponent->SetVisibility(true);
+    FenceInstancedMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void UFenceGenerator::GenerateObjects()
 {
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Fences Started"));
+    UE_LOG(MapGenerator, Log, TEXT("(Fence) Generating Fences Started"));
 
-    if (!Owner)
+    if (!Owner || !fenceMesh)
     {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("Owner is not initialized!"));
-        return;
-    }
-    if (!fenceMesh)
-    {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in fenceMesh!"));
+        UE_LOG(MapGenerator, Error, TEXT("(Fence) Owner or fenceMesh is not set!"));
         return;
     }
 
-    if (FenceInstancedMeshComponent)
-        FenceInstancedMeshComponent->SetStaticMesh(fenceMesh);
+    if (!FenceInstancedMeshComponent)
+    {
+        UE_LOG(MapGenerator, Error, TEXT("(Fence) InstancedMeshComponent is not set!"));
+        return;
+    }
 
     int32 SpawnAttempts = 0;
     int32 PlacedObjects = 0;
@@ -73,13 +85,23 @@ void UFenceGenerator::GenerateObjects()
         SpawnAttempts++;
     }
 
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Fences Completed"));
+    UE_LOG(MapGenerator, Log, TEXT("(Fence) Generating Fences Completed"));
 }
 
 // 생성할 펜스의 모양을 랜덤하게 결정하고, 펜스의 위치들을 Fvector 배열에 담아주는 함수
 // 펜스의 모양은 Rectangle, UShape, LShape, Surrounding이 존재하며 생성할 패턴 enum을 인수로 받는다
 void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType PatternType, float Radius, TArray<FFenceData>& OutPositions)
 {
+    // 맵 범위를 벗어나지 않도록 Radius 제한
+    const float MaxRadius = FMath::Min(Radius, Owner->GetMapHalfSize() * 0.8f);
+    
+    // 패턴의 전체 범위가 맵 안에 있는지 확인
+    if (FMath::Abs(Center.X) + MaxRadius >= Owner->GetMapHalfSize() ||
+        FMath::Abs(Center.Y) + MaxRadius >= Owner->GetMapHalfSize())
+    {
+        return;
+    }
+
     switch (PatternType)
     {
         case EPatternType::Rectangle:
@@ -167,7 +189,7 @@ void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType P
             }
             break;
         default:
-            UE_LOG(ProceduralMapGenerator, Warning, TEXT("Invalid PatternType . . ."));
+            UE_LOG(MapGenerator, Warning, TEXT("(Fence) Invalid PatternType . . ."));
             break;
     }
 }
@@ -195,10 +217,11 @@ bool UFenceGenerator::PlaceFencePattern(const TArray<FFenceData>& Positions)
 bool UFenceGenerator::GenerateFenceAroundObstacle()
 {
     TArray<FVector> ObstacleLocations;
+    const int32 MapHalfSize = Owner->GetMapHalfSize(); // mapHalfSize 직접 접근을 getter로 변경
     
-    for (int32 X = -Owner->mapHalfSize; X < Owner->mapHalfSize; X += 100)
+    for (int32 X = -MapHalfSize; X < MapHalfSize; X += 100)
     {
-        for (int32 Y = -Owner->mapHalfSize; Y < Owner->mapHalfSize; Y += 100)
+        for (int32 Y = -MapHalfSize; Y < MapHalfSize; Y += 100)
         {
             if (Owner->HasObjectAtArray(X, Y, EObjectMask::ObstacleMask))
                 ObstacleLocations.Add(FVector(X, Y, 0.f));
@@ -207,7 +230,7 @@ bool UFenceGenerator::GenerateFenceAroundObstacle()
 
     if (ObstacleLocations.Num() == 0)
     {
-        UE_LOG(ProceduralMapGenerator, Warning, TEXT("No obstacles found to generate fence around."));
+        UE_LOG(MapGenerator, Warning, TEXT("(Fence) No obstacles found to generate fence around."));
         return false;
     }
 
@@ -229,6 +252,6 @@ bool UFenceGenerator::GenerateFenceAroundObstacle()
     TArray<FFenceData> FencePositions;
     GenerateFencePattern(TargetLocation, RandomPattern, randomRadius, FencePositions);
 
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating fence pattern around obstacle at %s"), *TargetLocation.ToString());
+    UE_LOG(MapGenerator, Log, TEXT("(Fence) Generating fence pattern around obstacle at %s"), *TargetLocation.ToString());
     return PlaceFencePattern(FencePositions);
 }
