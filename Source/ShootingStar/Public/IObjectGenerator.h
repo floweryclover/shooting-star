@@ -12,11 +12,11 @@ class UObjectGenerator : public UInterface
     GENERATED_BODY()
 };
 
-class SHOOTINGSTAR_API IObjectGenerator
+class IObjectGenerator
 {
     GENERATED_BODY()
 
 public:
     virtual void GenerateObjects() = 0;
-    virtual void Initialize(class UProceduralMapGenerator* InOwner) = 0;
+    virtual void Initialize(class ACompetitiveGameMode* InOwner) = 0;
 };

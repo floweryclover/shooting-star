@@ -1,37 +1,37 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "ObstacleGenerator.h"
-#include "ProceduralMapGenerator.h"
+#include "CompetitiveGameMode.h"
 
 UObstacleGenerator::UObstacleGenerator()
 {
 }
 
-void UObstacleGenerator::Initialize(UProceduralMapGenerator* InOwner)
+void UObstacleGenerator::Initialize(ACompetitiveGameMode* InOwner)
 {
     Owner = InOwner;
 
     if (Owner)
     {
-        numObstacles = Owner->numObstacles;
-        obstacleMinDistance = Owner->obstacleMinDistance;
-        obstacleMeshes = Owner->obstacleMeshes;
+        numObstacles = Owner->GetNumObstacles();
+        obstacleMinDistance = Owner->GetObstacleMinDistance();
+        obstacleMeshes = Owner->GetObstacleMeshes();
     }
 }
 
 // 건물, 큰 바위 등 주요 Obstacles를 생성하는 함수
 void UObstacleGenerator::GenerateObjects()
 {
-    UE_LOG(ProceduralMapGenerator, Log, TEXT("Generating Obstacles Started"));
+    UE_LOG(MapGenerator, Log, TEXT("Generating Obstacles Started"));
 
     if (!Owner)
     {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("Owner is not initialized!"));
+        UE_LOG(MapGenerator, Error, TEXT("Owner is not initialized!"));
         return;
     }
     if (obstacleMeshes.Num() == 0)
     {
-        UE_LOG(ProceduralMapGenerator, Error, TEXT("No Static Meshes assigned in obstacleMeshes array!"));
+        UE_LOG(MapGenerator, Error, TEXT("No Static Meshes assigned in obstacleMeshes array!"));
         return;
     }
 
@@ -50,11 +50,11 @@ void UObstacleGenerator::GenerateObjects()
         if (obstacleMeshes.IsValidIndex(RandomIndex))
         {
             UStaticMesh* RandomMesh = obstacleMeshes[RandomIndex];
-            if (Owner->PlaceObject(RandomLocation, RandomMesh))
+            if (Owner && Owner->PlaceObject(RandomLocation, RandomMesh))  // Owner를 직접 사용
             {
                 PlacedObjects++;
                 Owner->SetObjectRegion(RandomLocation, RandomMesh, EObjectMask::ObstacleMask);
-                UE_LOG(ProceduralMapGenerator, Log, TEXT("Generated Obstacle: %s at %s"), *RandomMesh->GetName(), *RandomLocation.ToString());
+                UE_LOG(MapGenerator, Log, TEXT("Generated Obstacle: %s at %s"), *RandomMesh->GetName(), *RandomLocation.ToString());
             }
         }
         SpawnAttempts++;
