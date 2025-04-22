@@ -30,8 +30,6 @@ void AMapInstancedMeshActor::Initialize(UMapGeneratorComponent* const InOwner)
 	{
 		if (FenceInstancedMeshComponent)
 		{
-			UE_LOG(MapGenerator, Log, TEXT("Set dssssssStatic Mesh"));
-
 			FenceMesh = OwnerMapGeneratorComponent->GetFenceMesh();
 		}
 	}
@@ -67,7 +65,6 @@ void AMapInstancedMeshActor::RefreshFences()
 	FenceInstancedMeshComponent->SetStaticMesh(FenceMesh);
 	for (const FTransform& Transform : FenceTransforms)
 	{
-		UE_LOG(MapGenerator, Log, TEXT("%f, %f, %f"), Transform.GetLocation().X, Transform.GetLocation().Y, Transform.GetLocation().Z);
 		FenceInstancedMeshComponent->AddInstance(Transform);
 	}
 	FenceInstancedMeshComponent->MarkRenderInstancesDirty();
