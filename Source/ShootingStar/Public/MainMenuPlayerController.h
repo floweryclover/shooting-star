@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class AMainMenuPlayerController final : public APlayerController
+class SHOOTINGSTAR_API AMainMenuPlayerController final : public APlayerController
 {
 	GENERATED_BODY()
 

@@ -20,7 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPhaseChanged, ECompetitiveGamePhase
 DECLARE_DYNAMIC_DELEGATE_OneParam(FPhaseChangedHandler, ECompetitiveGamePhase, Value);
 
 UCLASS()
-class ACompetitiveGameState final : public AGameStateBase
+class SHOOTINGSTAR_API ACompetitiveGameState final : public AGameStateBase
 {
 	GENERATED_BODY()
 

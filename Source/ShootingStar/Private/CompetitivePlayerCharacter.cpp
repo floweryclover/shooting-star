@@ -1,8 +1,8 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 ShootingStar. All Rights Reserved.
 
-#include "ShootingStarCharacter.h"
-#include "ShootingStar/Public/Gun.h"
-#include "ShootingStar/Public/Knife.h"
+#include "CompetitivePlayerCharacter.h"
+#include "Gun.h"
+#include "Knife.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
@@ -21,7 +21,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Character_AnimInstance.h"
 
-AShootingStarCharacter::AShootingStarCharacter()
+ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
 	// Set size for player capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -76,30 +76,30 @@ AShootingStarCharacter::AShootingStarCharacter()
 	PrimaryActorTick.bStartWithTickEnabled = true;
 }
 
-void AShootingStarCharacter::BeginPlay()
+void ACompetitivePlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
 	Health = MaxHealth;
 
 }
-void AShootingStarCharacter::PostInitializeComponents()
+void ACompetitivePlayerCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	AnimInstance= Cast<UCharacter_AnimInstance>(GetMesh()->GetAnimInstance());
 }
 
-float AShootingStarCharacter::GetHealthPercent() const
+float ACompetitivePlayerCharacter::GetHealthPercent() const
 {
 	return Health / MaxHealth;
 }
 
-void AShootingStarCharacter::Tick(float DeltaSeconds)
+void ACompetitivePlayerCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 }
 
-void AShootingStarCharacter::WeaponChange() 
+void ACompetitivePlayerCharacter::WeaponChange() 
 {
 	if (!RifleClass)
 	{
@@ -110,7 +110,7 @@ void AShootingStarCharacter::WeaponChange()
 	AGun* SpawnedRifle = GetWorld() -> SpawnActor<AGun>(RifleClass);
 	EquipGun(SpawnedRifle);
 }
-void AShootingStarCharacter::WeaponKnifeChange()
+void ACompetitivePlayerCharacter::WeaponKnifeChange()
 {
 	if (!KnifeClass)
 	{
@@ -122,7 +122,7 @@ void AShootingStarCharacter::WeaponKnifeChange()
 	EquipKnife(SpawnedKnife);
 }
 
-void AShootingStarCharacter::EquipGun(AGun* GunToEquip)
+void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 {
 	AnimInstance->IsGunEquipped=true;
 	AnimInstance->IsKnifeEquipped = false;
@@ -148,7 +148,7 @@ void AShootingStarCharacter::EquipGun(AGun* GunToEquip)
     }
 }
 
-void AShootingStarCharacter::EquipKnife(AKnife* KnifeToEquip)
+void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 {
 	AnimInstance->IsGunEquipped = false;
 	AnimInstance->IsKnifeEquipped = true;
@@ -174,7 +174,7 @@ void AShootingStarCharacter::EquipKnife(AKnife* KnifeToEquip)
 	}
 }
 
-void AShootingStarCharacter::Attack()
+void ACompetitivePlayerCharacter::Attack()
 {
 	AnimInstance->IsAttack = true;
 
@@ -191,7 +191,7 @@ void AShootingStarCharacter::Attack()
 		AnimInstance->PlayKnifeAttackMontage();
 	}
 }
-void AShootingStarCharacter::EquipPickAxe()
+void ACompetitivePlayerCharacter::EquipPickAxe()
 {
 	if (PickAxeMesh)
 	{
@@ -199,7 +199,7 @@ void AShootingStarCharacter::EquipPickAxe()
 	}
 }
 
-void AShootingStarCharacter::UnEquipPickAxe()
+void ACompetitivePlayerCharacter::UnEquipPickAxe()
 {
 	if (PickAxeMesh)
 	{
@@ -207,7 +207,7 @@ void AShootingStarCharacter::UnEquipPickAxe()
 	}
 }
 
-void AShootingStarCharacter::PullTrigger()
+void ACompetitivePlayerCharacter::PullTrigger()
 {
 	if (EquippedGun)
 	{
@@ -220,9 +220,9 @@ void AShootingStarCharacter::PullTrigger()
 		EquippedGun->ProjectileFire(MuzzleLoc, MuzzleRot, MuzzleRot);
 	}
 }
-float AShootingStarCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
-	float DamageToApply;
+	float DamageToApply {0.0f};
 	if (!IsDead()) {
 		DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 		DamageToApply = FMath::Min(Health, DamageToApply);
@@ -237,7 +237,7 @@ float AShootingStarCharacter::TakeDamage(float DamageAmount, struct FDamageEvent
 
 	return DamageToApply;
 }
-void AShootingStarCharacter::PlayDeadAnim()
+void ACompetitivePlayerCharacter::PlayDeadAnim()
 {
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -256,9 +256,9 @@ void AShootingStarCharacter::PlayDeadAnim()
 
 	AnimInstance->PlayDeadMontage();
 	UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
-	GetWorldTimerManager().SetTimer(timer, this, &AShootingStarCharacter::DestroyCharacter, MontageLength, false);
+	GetWorldTimerManager().SetTimer(timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, MontageLength, false);
 }
-void AShootingStarCharacter::DestroyCharacter()
+void ACompetitivePlayerCharacter::DestroyCharacter()
 {
 	Destroy();
 }

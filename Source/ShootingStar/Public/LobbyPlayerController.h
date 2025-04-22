@@ -14,7 +14,7 @@ class UTeamComponent;
  * 
  */
 UCLASS()
-class ALobbyPlayerController final : public APlayerController
+class SHOOTINGSTAR_API ALobbyPlayerController final : public APlayerController
 {
 	GENERATED_BODY()
 

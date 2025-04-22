@@ -11,7 +11,7 @@ class UCompetitiveSystemComponent;
  * 
  */
 UCLASS()
-class ALobbyGameMode final : public AGameModeBase
+class SHOOTINGSTAR_API ALobbyGameMode final : public AGameModeBase
 {
 	GENERATED_BODY()
 

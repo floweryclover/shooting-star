@@ -10,7 +10,7 @@
  * 게임 시작, 나가기 등 로비에서의 멀티플레이어 관련 동작을 담당하는 컴포넌트입니다.
  */
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class ULobbyNetworkComponent : public UActorComponent
+class SHOOTINGSTAR_API ULobbyNetworkComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

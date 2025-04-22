@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class AMainMenuGameMode final : public AGameModeBase
+class SHOOTINGSTAR_API AMainMenuGameMode final : public AGameModeBase
 {
 	GENERATED_BODY()
 

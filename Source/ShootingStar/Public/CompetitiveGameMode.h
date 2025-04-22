@@ -13,7 +13,7 @@ class UMapGeneratorComponent;
  * 2대2 3선승 게임 모드입니다.
  */
 UCLASS()
-class ACompetitiveGameMode final : public AGameModeBase
+class SHOOTINGSTAR_API ACompetitiveGameMode final : public AGameModeBase
 {
 	GENERATED_BODY()
 

@@ -7,17 +7,13 @@
 #include "TeamComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Pawn.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
-#include "NiagaraSystem.h"
-#include "NiagaraFunctionLibrary.h"
-#include "ShootingStar/ShootingStarCharacter.h"
+#include "CompetitivePlayerCharacter.h"
 #include "Engine/World.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "Blueprint/UserWidget.h"
 #include "InventoryComponent.h"
-#include "ResourceActor.h"
 #include "ServerComponent.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
@@ -147,7 +143,7 @@ void ACompetitivePlayerController::LookMouse()
 
 void ACompetitivePlayerController::Attack()
 {
-	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
+	ACompetitivePlayerCharacter* ControlledCharacter = Cast<ACompetitivePlayerCharacter>(GetPawn());
 	if (ControlledCharacter)
 	{
 		ControlledCharacter->Attack();
@@ -157,7 +153,7 @@ void ACompetitivePlayerController::Attack()
 void ACompetitivePlayerController::EquipWeapon()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Trigger EquipWeapon"));
-	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
+	ACompetitivePlayerCharacter* ControlledCharacter = Cast<ACompetitivePlayerCharacter>(GetPawn());
 	if (ControlledCharacter)
 	{
 		ControlledCharacter->WeaponChange();
@@ -165,7 +161,7 @@ void ACompetitivePlayerController::EquipWeapon()
 }
 void ACompetitivePlayerController::EquipKnifeWeapon()
 {
-	AShootingStarCharacter* ControlledCharacter = Cast<AShootingStarCharacter>(GetPawn());
+	ACompetitivePlayerCharacter* ControlledCharacter = Cast<ACompetitivePlayerCharacter>(GetPawn());
 	if (ControlledCharacter)
 	{
 		ControlledCharacter->WeaponKnifeChange();

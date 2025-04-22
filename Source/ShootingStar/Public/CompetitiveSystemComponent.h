@@ -22,7 +22,7 @@ enum class ECompetitiveGamePhase : uint8
 * @details RoundScore는 한 라운드에서 각 팀이 얻은 점수를, GameScore는 승리한 라운드 수를 의미합니다.
 */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class UCompetitiveSystemComponent final : public UActorComponent
+class SHOOTINGSTAR_API UCompetitiveSystemComponent final : public UActorComponent
 {
 	GENERATED_BODY()
 

@@ -15,7 +15,7 @@ struct FWeaponData;
  * 자신이 소유한 Server Component의 RPC 함수를 호출하는 상황입니다.
  */
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UServerComponent final : public UActorComponent
+class SHOOTINGSTAR_API UServerComponent final : public UActorComponent
 {
 	GENERATED_BODY()
 

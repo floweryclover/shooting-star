@@ -39,6 +39,7 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UInventoryComponent, ResourceInventory);
+	DOREPLIFETIME(UInventoryComponent, ModifierDataTable);
 }
 
 UInventoryComponent::UInventoryComponent()
