@@ -18,6 +18,7 @@
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
+
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 	ServerComponent = CreateDefaultSubobject<UServerComponent>(TEXT("ServerComponent"));
 	ClientComponent = CreateDefaultSubobject<UClientComponent>(TEXT("ClientComponent"));

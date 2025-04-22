@@ -27,9 +27,17 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 	GetCapsuleComponent()->SetCollisionProfileName("Pawn");
 
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh>Character_SKELETALMESH(TEXT("SkeletalMesh'/Game/Toon_Soldiers_UE5/Meshes/Characters_Prebuilt/SK_Soldier.SK_Soldier'"));
+	if (Character_SKELETALMESH.Succeeded())
+	{ // Mesh 설정
+		GetMesh()->SetSkeletalMesh(Character_SKELETALMESH.Object);
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("Character mesh loading failed."));
+	}
+
 	GetMesh()->SetCollisionProfileName(TEXT("BodyMesh"));
 	GetMesh()->SetGenerateOverlapEvents(true);
-
 	// PickAxeMesh 생성 및 Attach
 	PickAxeMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("PickAxe"));
 	PickAxeMesh->SetupAttachment(GetMesh(), TEXT("Backpack_Socket"));
