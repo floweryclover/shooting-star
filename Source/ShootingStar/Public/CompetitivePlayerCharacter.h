@@ -1,22 +1,22 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 ShootingStar. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "ShootingStarCharacter.generated.h"
+#include "CompetitivePlayerCharacter.generated.h"
 
 class AGun;
 class AKnife;
 class UInventoryComponent;
 
 UCLASS(Blueprintable)
-class AShootingStarCharacter : public ACharacter
+class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	AShootingStarCharacter();
+	ACompetitivePlayerCharacter();
 
 	// Called every frame.
 	virtual void Tick(float DeltaSeconds) override;

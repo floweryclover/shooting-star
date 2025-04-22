@@ -5,11 +5,13 @@
 #include "Components/StaticMeshComponent.h"
 #include "Resource.h" 
 #include "InventoryComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
 
 // Sets default values
 AResourceActor::AResourceActor()
 {
+    bReplicates = true;
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	RootComponent = MeshComponent;
 
@@ -35,6 +37,7 @@ void AResourceActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
     Super::PostEditChangeProperty(PropertyChangedEvent);
     UpdateVisual();
 }
+
 #endif
 
 void AResourceActor::UpdateVisual()
@@ -44,4 +47,16 @@ void AResourceActor::UpdateVisual()
         MeshComponent->SetStaticMesh(ResourceData->Mesh ? ResourceData->Mesh : nullptr);
         MeshComponent->SetMaterial(0, ResourceData->Material ? ResourceData->Material : nullptr);
     }
+}
+
+void AResourceActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(AResourceActor, ResourceData);
+}
+
+void AResourceActor::OnRep_ResourceData()
+{
+    UpdateVisual();
 }

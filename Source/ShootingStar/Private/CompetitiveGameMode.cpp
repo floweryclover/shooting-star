@@ -154,15 +154,8 @@ void ACompetitiveGameMode::InteractResource(AController* const Controller)
 	{
 		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
 		AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
-
-		// 서버용 자원 획득 함수(TMap은 UPROPERTY(Replicated)미지원)
+		
 		InventoryComponent->AddResource(Resource->ResourceData);
-
-		// 클라이언트용 자원 획득 함수(동기화용)
-		if (!Controller->IsLocalController())
-		{
-			ClientComponent->GainResource(Resource->ResourceData);
-		}
 	}
 }
 
@@ -185,7 +178,7 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 	}
 
 	// 실제로 자원을 가졌는지 검증
-	const TArray<FAA>& ResourcesHave = InventoryComponent->GetAllResources();
+	const TArray<FResourceInventoryData>& ResourcesHave = InventoryComponent->GetAllResources();
 	for (int i=0; i<static_cast<int>(EResourceType::End); ++i)
 	{
 		if (Resources[i] <= 0)

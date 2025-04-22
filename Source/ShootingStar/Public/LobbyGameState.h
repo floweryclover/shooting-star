@@ -13,7 +13,7 @@ DECLARE_DYNAMIC_DELEGATE(FPlayerListChangedHandler);
  * 
  */
 UCLASS()
-class ALobbyGameState final : public AGameStateBase
+class SHOOTINGSTAR_API ALobbyGameState final : public AGameStateBase
 {
 	GENERATED_BODY()
 

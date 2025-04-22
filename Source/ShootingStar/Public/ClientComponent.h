@@ -21,7 +21,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponGained, const FWeaponData&, W
  * 해당 플레이어의 ClientComponent의 함수를 호출하는 상황입니다.
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class UClientComponent final : public UActorComponent
+class SHOOTINGSTAR_API UClientComponent final : public UActorComponent
 {
 	GENERATED_BODY()
 

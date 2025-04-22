@@ -8,7 +8,7 @@
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UJoinOrHostGameComponent : public UActorComponent
+class SHOOTINGSTAR_API UJoinOrHostGameComponent : public UActorComponent
 {
 	GENERATED_BODY()
 

@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright 2025 ShootingStar. All Rights Reserved.
 
 #pragma once
 
@@ -6,23 +6,26 @@
 #include "Templates/SubclassOf.h"
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
-#include "ShootingStarPlayerController.generated.h"
+#include "CompetitivePlayerController.generated.h"
 
-/** Forward declaration to improve compiling times */
+class UClientComponent;
+class UServerComponent;
 class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
+class UTeamComponent;
 class UInventoryComponent;
-
-DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
+/**
+ *
+ */
 
 UCLASS()
-class AShootingStarPlayerController : public APlayerController
+class SHOOTINGSTAR_API ACompetitivePlayerController final : public APlayerController
 {
 	GENERATED_BODY()
 
 public:
-	AShootingStarPlayerController();
+	ACompetitivePlayerController();
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -45,14 +48,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ShootAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* EquipGunAction;
+	UInputAction* EquipAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* EquipKnifeAction;
+	
+	UTeamComponent* GetTeamComponent() const
+	{
+		return TeamComponent;
+	}
+	
+	UServerComponent* GetServerComponent() const
+	{
+		return ServerComponent;
+	}
 
-	/** Debug Codes */
-	UFUNCTION(BlueprintCallable)
-	void Interact_Resources();
+	UClientComponent* GetClientComponent() const
+	{
+		return ClientComponent;
+	}
 
+	/** Inventory */
 	UFUNCTION(BlueprintCallable)
 	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 
@@ -64,10 +79,13 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryWidget();
-
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
-	UInventoryComponent* InventoryComponent;
-
+	
+	/**
+	 * Actor에 부착되어 공격 판정 등에 이용되는 일반적인 TeamComponent와는 달리,
+	 * 이 컴포넌트는 게임 동안의 플레이어의 소속 팀을 정의하며, 레벨 이동시 소속 팀 유지를 위해 사용됩니다.
+	 */
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UTeamComponent> TeamComponent;
 
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
@@ -86,9 +104,19 @@ protected:
 	void EquipWeapon();
 	void EquipKnifeWeapon();
 
-private:
-	FVector CachedDestination;
+	// HUD
+	UPROPERTY(BlueprintReadOnly)
+	TSubclassOf<UUserWidget> ScoreBoardUIClass;
 
-	bool bIsTouch; // Is it a touch device
-	float FollowTime; // For how long it has been pressed
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UUserWidget> ScoreBoardUI;
+
+	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
+	UInventoryComponent* InventoryComponent;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UServerComponent> ServerComponent;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UClientComponent> ClientComponent;
 };

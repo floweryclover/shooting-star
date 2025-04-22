@@ -2,7 +2,6 @@
 
 
 #include "Character_AnimInstance.h"
-#include "../ShootingStarCharacter.h"
 
 UCharacter_AnimInstance::UCharacter_AnimInstance()
 {
@@ -13,7 +12,7 @@ UCharacter_AnimInstance::UCharacter_AnimInstance()
 	if (GetDeadMontage.Succeeded()) DeadMontage = GetDeadMontage.Object;
 	static ConstructorHelpers::FObjectFinder<UAnimMontage>GetAK_FireMontage(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/Akimbo/Character_Fire.Character_Fire'"));
 	if (GetAK_FireMontage.Succeeded()) AK_Fire_Montage = GetAK_FireMontage.Object;
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> GetAK_IdleMontage(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/Akimbo/Character_Gundle.Character_GunIdle'"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> GetAK_IdleMontage(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/Akimbo/Character_GunIdle.Character_GunIdle'"));
 	if (GetAK_IdleMontage.Succeeded()) AK_Idle_Montage = GetAK_IdleMontage.Object;
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> GetKnifeAttackMontage(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/Akimbo/Character_KnifeAttack.Character_KnifeAttack'"));
 	if (GetKnifeAttackMontage.Succeeded()) KnifeAttackMontage = GetKnifeAttackMontage.Object;

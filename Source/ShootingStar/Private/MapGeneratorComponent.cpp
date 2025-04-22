@@ -24,32 +24,12 @@ UMapGeneratorComponent::UMapGeneratorComponent()
 
 void UMapGeneratorComponent::Initialize()
 {
-	// Fence InstancedMeshComponent 초기화 및 생성
-    if (fenceMesh)
-    {
-        FenceInstancedMeshComponent = NewObject<UInstancedStaticMeshComponent>(this, TEXT("FenceInstancedMesh"));
-        if (FenceInstancedMeshComponent)
-        {
-            FenceInstancedMeshComponent->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-            FenceInstancedMeshComponent->SetStaticMesh(fenceMesh);
-			FenceInstancedMeshComponent->RegisterComponent();
-        }
-	}
-
-	// Decoration InstancedMeshComponents 초기화 및 생성
-    DecorationInstancedMeshComponents.Empty();
-    for (int32 i = 0; i < decoMeshes.Num(); ++i)
-    {
-        FString CompName = FString::Printf(TEXT("DecorationInstancedMesh_%d"), i);
-        UInstancedStaticMeshComponent* NewComp = NewObject<UInstancedStaticMeshComponent>(this, *CompName);
-        if (NewComp)
-        {
-            NewComp->RegisterComponent();
-            NewComp->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-            NewComp->SetStaticMesh(decoMeshes[i]);
-            DecorationInstancedMeshComponents.Add(NewComp);
-        }
-    }
+    // Map Instanced Mesh Actor 생성
+    FActorSpawnParameters Params;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    MapInstancedMeshActor = GetWorld()->SpawnActor<AMapInstancedMeshActor>(Params);
+    MapInstancedMeshActor->SetReplicates(true);
+    MapInstancedMeshActor->Initialize(this);
 
 	// Generators 초기화
 	obstacleGenerator->Initialize(this);
@@ -213,6 +193,8 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
 
     if (NewActor)
     {
+        NewActor->SetReplicates(true);
+        NewActor->GetStaticMeshComponent()->SetIsReplicated(true);
         NewActor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
         NewActor->GetStaticMeshComponent()->SetStaticMesh(ObjectMesh);
         NewActor->SetActorLocation(Location);
