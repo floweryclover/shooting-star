@@ -7,6 +7,7 @@
 #include "MapEnum.h"
 #include "ResourceGenerator.h"
 #include "ResourceActor.h"
+#include "MapInstancedMeshActor.h"
 #include "MapGeneratorComponent.generated.h"
 
 // Generators 전방 선언
@@ -44,8 +45,7 @@ public:
 	FORCEINLINE int32 GetNumFences() const { return numFences; }
 	FORCEINLINE float GetFenceMinDistance() const { return fenceMinDistance; }
 	FORCEINLINE UStaticMesh* GetFenceMesh() const { return fenceMesh; }
-	FORCEINLINE UInstancedStaticMeshComponent* GetFenceInstancedMeshComponent() const { return FenceInstancedMeshComponent; }
-	
+
 	FORCEINLINE int32 GetNumResources() const { return numResources; }
 	FORCEINLINE TSubclassOf<AResourceActor> GetResourceActorClass() const { return ResourceActorClass; }
 	FORCEINLINE TArray<FResourceSpawnData> GetResourceSpawnData() const { return ResourceSpawnData; }
@@ -55,11 +55,11 @@ public:
 	FORCEINLINE float GetClusterRadius() const { return clusterRadius; }
 	FORCEINLINE int32 GetMaxClusterNum() const { return maxClusterNum; }
 	FORCEINLINE TArray<UStaticMesh*> GetDecoMeshes() const { return decoMeshes; }
-	FORCEINLINE TArray<UInstancedStaticMeshComponent*> GetDecorationInstancedMeshComponents() const 
-	{ return DecorationInstancedMeshComponents; }
 
 	FORCEINLINE int32 GetMapHalfSize() const { return mapHalfSize; }
 	FORCEINLINE float GetPatternSpacing() const { return patternSpacing; }
+
+	FORCEINLINE AMapInstancedMeshActor* GetMapInstancedMeshActor() const { return MapInstancedMeshActor; }
 
 	// Map Generation Functions
 	void Initialize();
@@ -113,6 +113,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Pattern Settings", meta = (ClampMin = "1", ClampMax = "100"))
 	int32 maxClusterNum = 20;
 
+	// For Instanced Meshes
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Map Instanced Static Meshes")
+	AMapInstancedMeshActor* MapInstancedMeshActor;
+	
 	// Map Coordinate
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map Data")
 	TArray<uint8> mapCoordinate;
@@ -132,12 +136,6 @@ protected:
 	UStaticMesh* fenceMesh;
 	UPROPERTY(EditAnywhere, Category = "Meshes")
 	TArray<UStaticMesh*> decoMeshes;
-
-	// Components
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UInstancedStaticMeshComponent* FenceInstancedMeshComponent;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TArray<UInstancedStaticMeshComponent*> DecorationInstancedMeshComponents;
 
 	// Generators
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Generators")

@@ -6,7 +6,6 @@
 #include "FenceData.h"
 #include "MapEnum.h"
 #include "IObjectGenerator.h"
-#include "Components/InstancedStaticMeshComponent.h"
 #include "FenceGenerator.generated.h"
 
 UCLASS(Blueprintable)
@@ -19,9 +18,7 @@ public:
 
     virtual void GenerateObjects() override;
     virtual void Initialize(class UMapGeneratorComponent* InOwner) override;
-
-    void SetInstancedMeshComponent(UInstancedStaticMeshComponent* InMeshComponent);
-
+    
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numFences;
 
@@ -33,10 +30,6 @@ public:
 private:
     UPROPERTY()
     UMapGeneratorComponent* Owner;
-
-    // Weak Pointer로 설정한다. 컴포넌트의 소유권은 Owner에게 있다.
-    UPROPERTY()
-    UInstancedStaticMeshComponent* FenceInstancedMeshComponent;
 
     void GenerateFencePattern(const FVector& Center, EPatternType PatternType, float Radius, TArray<FFenceData>& OutPositions);
     bool PlaceFencePattern(const TArray<FFenceData>& Positions);

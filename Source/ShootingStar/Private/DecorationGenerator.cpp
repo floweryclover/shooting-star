@@ -18,16 +18,6 @@ void UDecorationGenerator::Initialize(UMapGeneratorComponent* InOwner)
         clusterRadius = Owner->GetClusterRadius();
         maxClusterNum = Owner->GetMaxClusterNum();
         decoMeshes = Owner->GetDecoMeshes();
-        DecorationInstancedMeshComponents = Owner->GetDecorationInstancedMeshComponents();
-        
-        for (UInstancedStaticMeshComponent* Component : DecorationInstancedMeshComponents)
-        {
-            if (Component)
-            {
-                Component->SetVisibility(true);
-                Component->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-            }
-        }
     }
 }
 
