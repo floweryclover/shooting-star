@@ -49,10 +49,18 @@ void UFenceGenerator::GenerateObjects()
 
 			EPatternType RandomPattern = static_cast<EPatternType>(FMath::RandRange(0, 2));
 			TArray<FFenceData> FencePositions;
-			GenerateFencePattern(RandomLocation, RandomPattern, FMath::RandRange(400.f, 800.f), FencePositions);
+			GenerateFencePattern(RandomLocation, RandomPattern, GetRandomFenceRadius(600.f, 1200.f), FencePositions);
 
-			if (PlaceFencePattern(FencePositions))
+			if (FencePositions.Num() == 0)
+			{
+				UE_LOG(MapGenerator, Warning, TEXT("(Fence) No fence positions generated."));
+			}
+			else
+			{
+				PlaceFence(FencePositions);
 				PlacedObjects++;
+			}
+				
 		}
 		SpawnAttempts++;
 	}
@@ -65,113 +73,120 @@ void UFenceGenerator::GenerateObjects()
 void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType PatternType, float Radius,
                                            TArray<FFenceData>& OutPositions)
 {
-	// 맵 범위를 벗어나지 않도록 Radius 제한
-	const float MaxRadius = FMath::Min(Radius, Owner->GetMapHalfSize() * 0.8f);
+// fence의 위치를 조정하기 위한 offset
+// fence의 위치를 조정하기 위한 offset
+    float fenceDistOffset = fenceMinDistance * 0.5f;
+    EPatternDirection direction = static_cast<EPatternDirection>(FMath::RandRange(0, 3));
+    
+    switch (PatternType)
+    {
+    case EPatternType::Rectangle:
+        {
+            // 세로 방향 펜스
+            for (float X = -Radius; X <= Radius; X += fenceMinDistance)
+            {
+                OutPositions.Add(FFenceData(
+                    FVector(Center.X + X, Center.Y + Radius + fenceDistOffset, 0.f),
+                    FRotator(0.f, 0.f, 0.f)
+                ));
+                OutPositions.Add(FFenceData(
+                    FVector(Center.X + X, Center.Y - Radius - fenceDistOffset, 0.f),
+                    FRotator(0.f, 0.f, 0.f)
+                ));
+            }
+            // 가로 방향 펜스
+            for (float Y = -Radius; Y <= Radius; Y += fenceMinDistance)
+            {
+                OutPositions.Add(FFenceData(
+                    FVector(Center.X + Radius + fenceDistOffset, Center.Y + Y, 0.f),
+                    FRotator(0.f, 90.f, 0.f)
+                ));
+                OutPositions.Add(FFenceData(
+                    FVector(Center.X - Radius - fenceDistOffset, Center.Y + Y, 0.f),
+                    FRotator(0.f, 90.f, 0.f)
+                ));
+            }
+        }
+        break;
+    case EPatternType::UShape:
+        {
+            const int32 UWidth = FMath::RandRange(2, 4);
+            const int32 UHeight = FMath::RandRange(2, 4);
+            
+            // 회전된 위치 계산을 위한 변환 행렬
+            FRotator BaseRotation(0.f, 0.f, 0.f);
+            switch (direction)
+            {
+                case EPatternDirection::South: BaseRotation.Yaw = 180.f; break;
+                case EPatternDirection::East: BaseRotation.Yaw = 90.f; break;
+                case EPatternDirection::West: BaseRotation.Yaw = -90.f; break;
+                default: break;
+            }
 
-	// 패턴의 전체 범위가 맵 안에 있는지 확인
-	if (FMath::Abs(Center.X) + MaxRadius >= Owner->GetMapHalfSize() ||
-		FMath::Abs(Center.Y) + MaxRadius >= Owner->GetMapHalfSize())
-	{
-		return;
-	}
+            for (int32 x = -UWidth; x <= UWidth; ++x)
+            {
+                for (int32 y = -UHeight; y <= UHeight; ++y)
+                {
+                    if (y == -UHeight && FMath::RandRange(0, 10) > 1) // 90% 확률로 생성
+                    {
+                        FVector LocalPos(x * fenceMinDistance, y * fenceMinDistance - fenceDistOffset, 0.f);
+                        FVector WorldPos = BaseRotation.RotateVector(LocalPos) + Center;
+                        OutPositions.Add(FFenceData(WorldPos, BaseRotation));
+                    }
+                    else if ((x == -UWidth || x == UWidth) && y != UHeight && FMath::RandRange(0, 10) > 2) // 80% 확률로 생성
+                    {
+                        FVector LocalPos(x * fenceMinDistance, y * fenceMinDistance + (x / FMath::Abs(x) * fenceDistOffset), 0.f);
+                        FVector WorldPos = BaseRotation.RotateVector(LocalPos) + Center;
+                        FRotator Rotation = BaseRotation + FRotator(0.f, 90.f, 0.f);
+                        OutPositions.Add(FFenceData(WorldPos, Rotation));
+                    }
+                }
+            }
+        }
+        break;
+    case EPatternType::LShape:
+        {
+            const int32 LWidth = FMath::RandRange(2, 4);
+            const int32 LHeight = FMath::RandRange(2, 4);
+            
+            FRotator BaseRotation(0.f, 0.f, 0.f);
+            switch (direction)
+            {
+                case EPatternDirection::South: BaseRotation.Yaw = 180.f; break;
+                case EPatternDirection::East: BaseRotation.Yaw = 90.f; break;
+                case EPatternDirection::West: BaseRotation.Yaw = -90.f; break;
+                default: break;
+            }
 
-	switch (PatternType)
-	{
-	case EPatternType::Rectangle:
-		{
-			// 세로 방향 펜스
-			for (float X = -Radius; X < Radius; X += fenceMinDistance)
-			{
-				OutPositions.Add(FFenceData(
-					FVector(Center.X + X, Center.Y + Radius, 0.f),
-					FRotator(0.f, 0.f, 0.f)
-				));
-				OutPositions.Add(FFenceData(
-					FVector(Center.X + X, Center.Y - Radius, 0.f),
-					FRotator(0.f, 0.f, 0.f)
-				));
-			}
-			// 가로 방향 펜스
-			for (float Y = -Radius; Y < Radius; Y += fenceMinDistance)
-			{
-				OutPositions.Add(FFenceData(
-					FVector(Center.X + Radius, Center.Y + Y, 0.f),
-					FRotator(0.f, 90.f, 0.f)
-				));
-				OutPositions.Add(FFenceData(
-					FVector(Center.X - Radius, Center.Y + Y, 0.f),
-					FRotator(0.f, 90.f, 0.f)
-				));
-			}
-		}
-		break;
-	case EPatternType::UShape:
-		{
-			const int32 UWidth = 2;
-			const int32 UHeight = 2;
-			for (int32 x = -UWidth; x <= UWidth; ++x)
-			{
-				for (int32 y = -UHeight; y <= UHeight; ++y)
-				{
-					if (y == -UHeight)
-					{
-						// U자 아래쪽 가로 방향
-						OutPositions.Add(FFenceData(
-							FVector(Center.X + x * fenceMinDistance, Center.Y + y * fenceMinDistance, 0.f),
-							FRotator(0.f, 0.f, 0.f)
-						));
-					}
-					else if ((x == -UWidth || x == UWidth) && y != UHeight)
-					{
-						// U자 양쪽 세로 방향
-						OutPositions.Add(FFenceData(
-							FVector(Center.X + x * fenceMinDistance, Center.Y + y * fenceMinDistance, 0.f),
-							FRotator(0.f, 90.f, 0.f)
-						));
-					}
-				}
-			}
-		}
-		break;
-	case EPatternType::LShape:
-		{
-			const int32 LWidth = 2;
-			const int32 LHeight = 2;
-			for (int32 x = -LWidth; x <= LWidth; ++x)
-			{
-				for (int32 y = -LHeight; y <= LHeight; ++y)
-				{
-					if (y == -LHeight)
-					{
-						// L자 아래쪽 가로 방향
-						OutPositions.Add(FFenceData(
-							FVector(Center.X + x * fenceMinDistance, Center.Y + y * fenceMinDistance, 0.f),
-							FRotator(0.f, 0.f, 0.f)
-						));
-					}
-					else if (x == -LWidth && y != LHeight)
-					{
-						// L자 왼쪽 세로 방향
-						OutPositions.Add(FFenceData(
-							FVector(Center.X + x * fenceMinDistance, Center.Y + y * fenceMinDistance, 0.f),
-							FRotator(0.f, 90.f, 0.f)
-						));
-					}
-				}
-			}
-		}
-		break;
-	default:
-		UE_LOG(MapGenerator, Warning, TEXT("(Fence) Invalid PatternType . . ."));
-		break;
-	}
+            for (int32 x = -LWidth; x <= LWidth; ++x)
+            {
+                for (int32 y = -LHeight; y <= LHeight; ++y)
+                {
+                    if (y == -LHeight && FMath::RandRange(0, 10) > 1) // 90% 확률로 생성
+                    {
+                        FVector LocalPos(x * fenceMinDistance, y * fenceMinDistance - fenceDistOffset, 0.f);
+                        FVector WorldPos = BaseRotation.RotateVector(LocalPos) + Center;
+                        OutPositions.Add(FFenceData(WorldPos, BaseRotation));
+                    }
+                    else if (x == -LWidth && y != LHeight && FMath::RandRange(0, 10) > 2) // 80% 확률로 생성
+                    {
+                        FVector LocalPos(x * fenceMinDistance - fenceDistOffset, y * fenceMinDistance, 0.f);
+                        FVector WorldPos = BaseRotation.RotateVector(LocalPos) + Center;
+                        FRotator Rotation = BaseRotation + FRotator(0.f, 90.f, 0.f);
+                        OutPositions.Add(FFenceData(WorldPos, Rotation));
+                    }
+                }
+            }
+        }
+        break;
+    default:
+        UE_LOG(MapGenerator, Warning, TEXT("(Fence) Invalid PatternType . . ."));
+        break;
+    }
 }
 
-bool UFenceGenerator::PlaceFencePattern(const TArray<FFenceData>& Positions)
+void UFenceGenerator::PlaceFence(const TArray<FFenceData>& Positions)
 {
-	if (Positions.Num() == 0) return false;
-
-	bool bPlacedAny = false;
 	TArray<FTransform> FenceTransforms;
 	for (const FFenceData& FenceData : Positions)
 	{
@@ -179,12 +194,9 @@ bool UFenceGenerator::PlaceFencePattern(const TArray<FFenceData>& Positions)
 		{
 			FenceTransforms.Add(FTransform{FenceData.Rotation, FenceData.Location});
 			Owner->SetObjectRegion(FenceData.Location, fenceMesh, EObjectMask::FenceMask);
-			bPlacedAny = true;
 		}
 	}
 	Owner->GetMapInstancedMeshActor()->SetFenceInstances(FenceTransforms);
-	
-	return bPlacedAny;
 }
 
 // 현재 맵에 생성되어 있는 Obstacle를 탐색하고, 그중 하나를 선택하여 주변에 펜스를 생성하는 함수
@@ -213,20 +225,26 @@ bool UFenceGenerator::GenerateFenceAroundObstacle()
 
 	// 패턴 랜덤 선택 및 생성
 	EPatternType RandomPattern = static_cast<EPatternType>(FMath::RandRange(0, 2));
-
-	float randomTemp = FMath::FRandRange(0.f, 1.f);
-	float randomRadius = 0.f;
-	if (randomTemp <= 0.33f)
-		randomRadius = 900.f;
-	else if (randomTemp <= 0.66f)
-		randomRadius = 1200.f;
-	else
-		randomRadius = 1500.f;
-
 	TArray<FFenceData> FencePositions;
-	GenerateFencePattern(TargetLocation, RandomPattern, randomRadius, FencePositions);
+	GenerateFencePattern(TargetLocation, RandomPattern, GetRandomFenceRadius(900.f, 1500.f), FencePositions);
 
-	UE_LOG(MapGenerator, Log, TEXT("(Fence) Generating fence pattern around obstacle at %s"),
+	if (FencePositions.Num() == 0)
+	{
+		UE_LOG(MapGenerator, Warning, TEXT("(Fence) AroundObstacles - No fence positions generated."));
+		return false;
+	}
+	else
+	{
+		PlaceFence(FencePositions);
+		UE_LOG(MapGenerator, Log, TEXT("(Fence) Generating fence pattern around obstacle at %s"),
 	       *TargetLocation.ToString());
-	return PlaceFencePattern(FencePositions);
+		return true;
+	}
+}
+
+float UFenceGenerator::GetRandomFenceRadius(float minRadius, float maxRadius) const
+{
+	int32 n = (int32)((maxRadius - minRadius) / fenceMinDistance);
+	float randomRadius = minRadius + FMath::RandRange(0, n) * fenceMinDistance;
+	return randomRadius;
 }

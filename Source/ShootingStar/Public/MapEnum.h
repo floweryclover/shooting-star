@@ -19,3 +19,12 @@ enum class EPatternType : uint8
     UShape,
     LShape
 };
+
+UENUM()
+enum class EPatternDirection : uint8
+{
+    North,
+    South,
+    East,
+    West
+};
