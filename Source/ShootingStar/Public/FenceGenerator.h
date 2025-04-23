@@ -32,6 +32,7 @@ private:
     UMapGeneratorComponent* Owner;
 
     void GenerateFencePattern(const FVector& Center, EPatternType PatternType, float Radius, TArray<FFenceData>& OutPositions);
-    bool PlaceFencePattern(const TArray<FFenceData>& Positions);
+    void PlaceFence(const TArray<FFenceData>& Positions);
     bool GenerateFenceAroundObstacle();
+    float GetRandomFenceRadius(float minRadius, float maxRadius) const;
 };

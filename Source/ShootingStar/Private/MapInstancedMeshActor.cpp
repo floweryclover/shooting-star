@@ -37,7 +37,7 @@ void AMapInstancedMeshActor::Initialize(UMapGeneratorComponent* const InOwner)
 
 void AMapInstancedMeshActor::SetFenceInstances(const TArray<FTransform>& InFenceTransforms)
 {
-	FenceTransforms = InFenceTransforms;
+	FenceTransforms.Append(InFenceTransforms);
 	OnRep_FenceTransforms();
 }
 
