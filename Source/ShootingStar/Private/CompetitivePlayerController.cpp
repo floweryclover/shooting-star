@@ -4,6 +4,7 @@
 #include "CompetitivePlayerController.h"
 
 #include "ClientComponent.h"
+#include "CompetitiveGameMode.h"
 #include "TeamComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Pawn.h"
@@ -15,10 +16,11 @@
 #include "Blueprint/UserWidget.h"
 #include "InventoryComponent.h"
 #include "ServerComponent.h"
+#include "GameFramework/GameModeBase.h"
+#include "ShootingStar/ShootingStar.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
-
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 	ServerComponent = CreateDefaultSubobject<UServerComponent>(TEXT("ServerComponent"));
 	ClientComponent = CreateDefaultSubobject<UClientComponent>(TEXT("ClientComponent"));
@@ -60,6 +62,22 @@ void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	LookMouse();
+}
+
+void ACompetitivePlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	Cast<ACompetitivePlayerCharacter>(InPawn)->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
+}
+
+void ACompetitivePlayerController::OnUnPossess()
+{
+	Super::OnUnPossess();
 }
 
 void ACompetitivePlayerController::ToggleInventoryWidget()
@@ -105,7 +123,8 @@ void ACompetitivePlayerController::SetupInputComponent()
 
 void ACompetitivePlayerController::Move(const FInputActionValue& Value)
 {
-
+    // 자신에게 할당된 캐릭터에 대한 이동 입력은 자동 동기화, 즉시 이 함수에서 진행
+	
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -126,6 +145,8 @@ void ACompetitivePlayerController::Move(const FInputActionValue& Value)
 
 void ACompetitivePlayerController::LookMouse()
 {
+	// Move와 마찬가지로 회전 입력은 리플리케이션 없이 즉시 반영
+	
 	FHitResult Hit;
 	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
 	
@@ -144,27 +165,14 @@ void ACompetitivePlayerController::LookMouse()
 
 void ACompetitivePlayerController::Attack()
 {
-	ACompetitivePlayerCharacter* ControlledCharacter = Cast<ACompetitivePlayerCharacter>(GetPawn());
-	if (ControlledCharacter)
-	{
-		ControlledCharacter->Attack();
-	}
+	ServerComponent->RequestAttack();
 }
 
 void ACompetitivePlayerController::EquipWeapon()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Trigger EquipWeapon"));
-	ACompetitivePlayerCharacter* ControlledCharacter = Cast<ACompetitivePlayerCharacter>(GetPawn());
-	if (ControlledCharacter)
-	{
-		ControlledCharacter->WeaponChange();
-	}
+	ServerComponent->RequestEquipWeapon();
 }
 void ACompetitivePlayerController::EquipKnifeWeapon()
 {
-	ACompetitivePlayerCharacter* ControlledCharacter = Cast<ACompetitivePlayerCharacter>(GetPawn());
-	if (ControlledCharacter)
-	{
-		ControlledCharacter->WeaponKnifeChange();
-	}
+	ServerComponent->RequestEquipKnifeWeapon();
 }

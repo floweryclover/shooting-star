@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "CompetitivePlayerCharacter.generated.h"
 
+class UTeamComponent;
+class UCharacter_AnimInstance;
 class AGun;
 class AKnife;
 class UInventoryComponent;
@@ -58,12 +60,26 @@ public:
 	// �ڿ� ��ȣ �ۿ�
 	void OnInteract();
 
+	UCharacter_AnimInstance* GetAnimInstance() const
+	{
+		return AnimInstance;
+	}
+
+	UTeamComponent* GetTeamComponent() const
+	{
+		return TeamComponent;
+	}
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
-
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	UPROPERTY()
 	class UCharacter_AnimInstance* AnimInstance = nullptr;
+
+	UPROPERTY(BlueprintReadOnly)
+	UTeamComponent* TeamComponent;
 
 private:
 
@@ -74,7 +90,6 @@ private:
 	/** Camera boom positioning the camera above the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
-	// 
 
 	FTimerHandle timer;
 
@@ -84,8 +99,6 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	float Health;
 
-
-
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AGun> GunClass;
 
@@ -94,9 +107,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AKnife> KnifeClass;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedGun)
 	AGun* EquippedGun;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedKnife)
 	AKnife* EquippedKnife;
 
 	UPROPERTY(EditDefaultsOnly)
@@ -107,6 +120,39 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
+
+	// 애니메이션 동기화용 카운트. 값 변경시켜 클라이언트에서 감지하는 것 이외에는 값에 의미 없음
+	UPROPERTY(ReplicatedUsing=OnRep_FireCount)
+	int32 FireCount;
+
+	UPROPERTY(ReplicatedUsing=OnRep_KnifeAttackCount)
+	int32 KnifeAttackCount;
 	
+	UPROPERTY(ReplicatedUsing=OnRep_HitCount)
+	int32 HitCount;
+	
+	UPROPERTY(ReplicatedUsing=OnRep_bDeadNotify)
+	bool bDeadNotify;
+	
+	UFUNCTION()
+	void OnRep_EquippedGun();
+
+	UFUNCTION()
+	void OnRep_EquippedKnife();
+
+	UFUNCTION()
+	void OnRep_FireCount();
+
+	UFUNCTION()
+	void OnRep_KnifeAttackCount();
+
+	UFUNCTION()
+	void OnRep_HitCount();
+
+	UFUNCTION()
+	void OnRep_bDeadNotify();
+	
+	void RefreshAnimInstance();
 };
+
 

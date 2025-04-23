@@ -25,4 +25,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void RequestCraftWeapon(const FWeaponData& Weapon, const TArray<int32>& Resources);
+
+	UFUNCTION(BlueprintCallable, Reliable, Server)
+	void RequestAttack();
+
+	UFUNCTION(BlueprintCallable, Reliable, Server)
+	void RequestEquipWeapon();
+
+	UFUNCTION(BlueprintCallable, Reliable, Server)
+	void RequestEquipKnifeWeapon();
 };

@@ -56,6 +56,7 @@ void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 
 	auto projectile = GetWorld()->SpawnActor<ARifle_Projectile>(ARifle_Projectile::StaticClass(), loc, rot, spawnParameter);
 	if (projectile) {
+		projectile->SetReplicates(true);
 		projectile->SetProjectileVelocity(3000.0f);
 		projectile->ProjectileFire(bulletRot.Vector(), GetOwner());
 	}

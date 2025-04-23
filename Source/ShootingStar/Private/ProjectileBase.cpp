@@ -47,6 +47,11 @@ void AProjectileBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	SetLifeSpan(3.0f);
 	UE_LOG(LogTemp, Warning, TEXT("SetLifeSpan called in BeginPlay"));
 
@@ -60,26 +65,46 @@ void AProjectileBase::BeginPlay()
 void AProjectileBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (!HasAuthority())
+	{
+		return;
+	}
 }
 
 void AProjectileBase::ProjectileFire(FVector FireDir, AActor* Onwer)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
 	UE_LOG(LogTemp, Warning, TEXT("ProjectileFire"));
 	Movement->Velocity = FireDir * Movement->InitialSpeed;
 }
 
 void AProjectileBase::SetProjectileVelocity(float Velocity)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
 	Movement->InitialSpeed = Velocity;
 }
 void AProjectileBase::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-		DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
+	DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
 
-		UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, nullptr, GetOwner(), nullptr);
-		//UGameplayStatics::ApplyPointDamage(OtherActor, projectileDamage, GetActorForwardVector(), SweepResult, nullptr, GetOwner(), UBullet_DamageType::StaticClass());
-		UE_LOG(LogTemp, Warning, TEXT("Projectil: Player Hit"));
-		//UE_LOG(LogTemp, Warning, TEXT("bulletLoc2: %f, %f, %f"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z);
+	UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, nullptr, GetOwner(), nullptr);
+	//UGameplayStatics::ApplyPointDamage(OtherActor, projectileDamage, GetActorForwardVector(), SweepResult, nullptr, GetOwner(), UBullet_DamageType::StaticClass());
+	UE_LOG(LogTemp, Warning, TEXT("Projectil: Player Hit"));
+	//UE_LOG(LogTemp, Warning, TEXT("bulletLoc2: %f, %f, %f"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z);
 
-		this->Destroy();
+	this->Destroy();
 }

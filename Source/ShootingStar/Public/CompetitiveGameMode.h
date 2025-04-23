@@ -30,6 +30,8 @@ public:
 
 	virtual void SwapPlayerControllers(APlayerController* OldPC, APlayerController* NewPC) override;
 
+	void RespawnPlayer(AController* Player);
+	
 	virtual int32 GetNumPlayers() override
 	{
 		Super::GetNumPlayers();

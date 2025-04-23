@@ -119,6 +119,16 @@ void ACompetitiveGameMode::SwapPlayerControllers(APlayerController* const OldPC,
 	NewTeamComponent->SetTeam(OldTeamComponent->GetTeam());
 }
 
+void ACompetitiveGameMode::RespawnPlayer(AController* const Player)
+{
+	FActorSpawnParameters Params;
+	Params.Owner = Player;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
+	APawn* NewPawn = GetWorld()->SpawnActor<APawn>(DefaultPawnClass, {1000.0f, 0.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, Params);
+	Player->Possess(NewPawn);
+}
+
 void ACompetitiveGameMode::InteractResource(AController* const Controller)
 {
 	if (!IsValid(Controller))

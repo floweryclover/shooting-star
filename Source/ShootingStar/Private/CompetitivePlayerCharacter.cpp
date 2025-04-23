@@ -20,9 +20,16 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Character_AnimInstance.h"
+#include "ClientComponent.h"
+#include "CompetitiveGameMode.h"
+#include "CompetitivePlayerController.h"
+#include "TeamComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "ShootingStar/ShootingStar.h"
 
 ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
+	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 	// Set size for player capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 	GetCapsuleComponent()->SetCollisionProfileName("Pawn");
@@ -57,9 +64,9 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 	}
 
 	// Don't rotate character to camera direction
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
+	// bUseControllerRotationPitch = false;
+	// bUseControllerRotationYaw = false;
+	// bUseControllerRotationRoll = false;
 
 	// Configure character movement
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f);
@@ -97,6 +104,18 @@ void ACompetitivePlayerCharacter::PostInitializeComponents()
 	AnimInstance= Cast<UCharacter_AnimInstance>(GetMesh()->GetAnimInstance());
 }
 
+void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ACompetitivePlayerCharacter, EquippedGun);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, EquippedKnife);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, KnifeAttackCount);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, FireCount);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, HitCount);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, bDeadNotify);
+}
+
 float ACompetitivePlayerCharacter::GetHealthPercent() const
 {
 	return Health / MaxHealth;
@@ -116,6 +135,7 @@ void ACompetitivePlayerCharacter::WeaponChange()
 	}
 
 	AGun* SpawnedRifle = GetWorld() -> SpawnActor<AGun>(RifleClass);
+	SpawnedRifle->SetReplicates(true);
 	EquipGun(SpawnedRifle);
 }
 void ACompetitivePlayerCharacter::WeaponKnifeChange()
@@ -127,13 +147,12 @@ void ACompetitivePlayerCharacter::WeaponKnifeChange()
 	}
 
 	AKnife* SpawnedKnife = GetWorld()->SpawnActor<AKnife>(KnifeClass);
+	SpawnedKnife->SetReplicates(true);
 	EquipKnife(SpawnedKnife);
 }
 
 void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 {
-	AnimInstance->IsGunEquipped=true;
-	AnimInstance->IsKnifeEquipped = false;
 	UnEquipPickAxe();
 	if (EquippedGun)
     {
@@ -154,12 +173,13 @@ void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
             EquippedGun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Weapon_R_Socket"));
         }
     }
+
+	ForceNetUpdate();
+	RefreshAnimInstance();
 }
 
 void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 {
-	AnimInstance->IsGunEquipped = false;
-	AnimInstance->IsKnifeEquipped = true;
 	UnEquipPickAxe();
 	if (EquippedKnife)
 	{
@@ -180,6 +200,9 @@ void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 			EquippedKnife->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Weapon_R_Socket"));
 		}
 	}
+	
+	ForceNetUpdate();
+	RefreshAnimInstance();
 }
 
 void ACompetitivePlayerCharacter::Attack()
@@ -196,7 +219,8 @@ void ACompetitivePlayerCharacter::Attack()
 	}
 	else if (EquippedKnife)
 	{
-		AnimInstance->PlayKnifeAttackMontage();
+		OnRep_KnifeAttackCount();
+		KnifeAttackCount += 1;
 	}
 }
 void ACompetitivePlayerCharacter::EquipPickAxe()
@@ -224,8 +248,10 @@ void ACompetitivePlayerCharacter::PullTrigger()
 		FRotator MuzzleRot = EquippedGun->BodyMesh->GetSocketRotation("Muzzle");
 		FRotator BulletFireRot = MuzzleRot; // 총구 방향 그대로 발사
 
-		AnimInstance->PlayFireMontage();
 		EquippedGun->ProjectileFire(MuzzleLoc, MuzzleRot, MuzzleRot);
+
+		FireCount += 1;
+		OnRep_FireCount();
 	}
 }
 float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
@@ -236,8 +262,8 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		DamageToApply = FMath::Min(Health, DamageToApply);
 		Health -= DamageToApply;
 		UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
-
-		AnimInstance->PlayHitMontage();
+		HitCount += 1;
+		OnRep_HitCount();
 	}
 	else {
 		PlayDeadAnim();
@@ -262,11 +288,59 @@ void ACompetitivePlayerCharacter::PlayDeadAnim()
 	float MontageLength = AnimInstance->DeadMontage->GetPlayLength();
 	UE_LOG(LogTemp, Warning, TEXT("Dead montage length: %f"), MontageLength);
 
-	AnimInstance->PlayDeadMontage();
+	bDeadNotify = true;
+	OnRep_bDeadNotify();
+
 	UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
 	GetWorldTimerManager().SetTimer(timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, MontageLength, false);
 }
 void ACompetitivePlayerCharacter::DestroyCharacter()
 {
+	Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode())->RespawnPlayer(GetController());
 	Destroy();
+}
+
+void ACompetitivePlayerCharacter::OnRep_EquippedGun()
+{
+	RefreshAnimInstance();
+}
+
+void ACompetitivePlayerCharacter::OnRep_EquippedKnife()
+{
+	RefreshAnimInstance();
+}
+
+void ACompetitivePlayerCharacter::OnRep_FireCount()
+{
+	AnimInstance->PlayFireMontage();
+}
+
+void ACompetitivePlayerCharacter::OnRep_KnifeAttackCount()
+{
+	AnimInstance->PlayKnifeAttackMontage();
+}
+
+void ACompetitivePlayerCharacter::OnRep_HitCount()
+{
+	if (HasAuthority())
+	{
+		UE_LOG(LogShootingStar, Log, TEXT("Authority"));
+		
+	}
+	else
+	{
+		UE_LOG(LogShootingStar, Log, TEXT("Remote"));
+	}
+	AnimInstance->PlayHitMontage();
+}
+
+void ACompetitivePlayerCharacter::OnRep_bDeadNotify()
+{
+	AnimInstance->PlayDeadMontage();
+}
+
+void ACompetitivePlayerCharacter::RefreshAnimInstance()
+{
+	AnimInstance->IsKnifeEquipped = IsValid(EquippedKnife);
+	AnimInstance->IsGunEquipped = IsValid(EquippedGun);
 }
