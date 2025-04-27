@@ -48,7 +48,7 @@ public:
 
 	//무기 관련
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	FWeaponData CurrentWeapon;
+	FWeaponData CurrentWeapon{};
 
 	UPROPERTY(EditDefaultsOnly)
 	float Armor = 100;
@@ -63,7 +63,10 @@ public:
 
 	// 외부에서 무기 데이터를 세팅하는 함수
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void GetWeaponData(const FWeaponData& NewWeaponData);
+	void SetWeaponData(const FWeaponData& NewWeaponData);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	FWeaponData GetWeaponData();
 
 	UFUNCTION()
 	FORCEINLINE void AddWeaponToList(AGun* Weapon) { WeaponList.Add(Weapon); }

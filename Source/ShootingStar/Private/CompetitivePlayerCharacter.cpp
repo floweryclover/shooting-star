@@ -360,7 +360,7 @@ void ACompetitivePlayerCharacter::DashEnd()
 	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
 }
 
-void ACompetitivePlayerCharacter::GetWeaponData(const FWeaponData& NewWeaponData)
+void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData)
 {
 	CurrentWeapon = NewWeaponData;
 	FString WeaponNameStr = CurrentWeapon.WeaponName.ToString();
@@ -413,6 +413,11 @@ void ACompetitivePlayerCharacter::GetWeaponData(const FWeaponData& NewWeaponData
 	{
 		UE_LOG(LogTemp, Warning, TEXT("알 수 없는 무기입니다: %s"), *WeaponNameStr);
 	}
+}
+
+FWeaponData ACompetitivePlayerCharacter::GetWeaponData()
+{
+	return CurrentWeapon;
 }
 
 void ACompetitivePlayerCharacter::KnifeAttackStart()
