@@ -1,6 +1,7 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "CompetitivePlayerCharacter.h"
+#include "PickAxe.h"
 #include "Gun.h"
 #include "Knife.h"
 #include "UObject/ConstructorHelpers.h"
@@ -45,23 +46,6 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 
 	GetMesh()->SetCollisionProfileName(TEXT("BodyMesh"));
 	GetMesh()->SetGenerateOverlapEvents(true);
-	// PickAxeMesh 생성 및 Attach
-	PickAxeMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("PickAxe"));
-	PickAxeMesh->SetupAttachment(GetMesh(), TEXT("Backpack_Socket"));
-
-	// 초기 트랜스폼 설정
-	PickAxeMesh->SetRelativeLocation(FVector(266.293793f, 79.988396f, -53.498161f)); // 원하는 위치로 수정
-	PickAxeMesh->SetRelativeRotation(FRotator(11.f, -35.f, 0.f)); // Roll, Pitch, Yaw
-	PickAxeMesh->SetRelativeScale3D(FVector(0.4f, 0.4f, 0.4f)); // 크기 조절
-
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh>PickAxe_SKELETALMESH(TEXT("SkeletalMesh'/Game/lowpoly-mine-assets/source/SKM_Pickaxe.SKM_Pickaxe'"));
-	if (PickAxe_SKELETALMESH.Succeeded())
-	{ // Mesh 설정
-		PickAxeMesh->SetSkeletalMesh(PickAxe_SKELETALMESH.Object);
-	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("Pickaxe mesh loading failed."));
-	}
 
 	// Don't rotate character to camera direction
 	// bUseControllerRotationPitch = false;
@@ -94,6 +78,8 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 void ACompetitivePlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	SpawnPickAxe();
 
 	Health = MaxHealth;
 
@@ -198,6 +184,7 @@ void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 		if (EquippedKnife)
 		{
 			EquippedKnife->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Weapon_R_Socket"));
+			EquippedKnife->SetknifeDamage(EquippedKnife->GetknifeDamage() * IncreasedDamage);
 		}
 	}
 	
@@ -212,6 +199,8 @@ void ACompetitivePlayerCharacter::Attack()
 	if (EquippedGun == nullptr && EquippedKnife == nullptr)
 	{
 		EquipPickAxe();
+		OnRep_KnifeAttackCount();
+		KnifeAttackCount += 1;
 	}
 	else if(EquippedGun)
 	{
@@ -219,23 +208,68 @@ void ACompetitivePlayerCharacter::Attack()
 	}
 	else if (EquippedKnife)
 	{
+		if (!bCanKnifeAttack)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Knife attack is on cooldown!"));
+			return; // 쿨타임이 끝나지 않으면 공격하지 않음
+		}
+		bCanKnifeAttack = false;
+		GetWorld()->GetTimerManager().SetTimer(KnifeAttackCoolDownTimer, this, &ACompetitivePlayerCharacter::ResetKnifeAttackCooldown, KnifeAttackCooldown, false);
 		OnRep_KnifeAttackCount();
 		KnifeAttackCount += 1;
 	}
 }
+void ACompetitivePlayerCharacter::SpawnPickAxe()
+{
+	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
+	SpawnedPickAxe->SetReplicates(true);
+
+	FVector NewLocationOffset(-250.293793f / 2, -70.988396f / 2, 56.498161f / 2);
+	SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Backpack_Socket"));
+	SpawnedPickAxe->SetActorRelativeLocation(NewLocationOffset);
+
+}
 void ACompetitivePlayerCharacter::EquipPickAxe()
 {
-	if (PickAxeMesh)
+	if (SpawnedPickAxe)
 	{
-		PickAxeMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Weapon_R_Socket"));
+		SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Weapon_R_Socket"));
+	}
+	else
+	{
+		// If the pickaxe hasn't been spawned yet, spawn it and then attach it.
+		if (PickAxeClass)
+		{
+			SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
+			if (SpawnedPickAxe)
+			{
+				FVector NewLocationOffset(-250.293793f / 2, -70.988396f / 2, 56.498161f / 2);
+				SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Weapon_R_Socket"));
+				SpawnedPickAxe->SetActorRelativeLocation(NewLocationOffset);
+			}
+		}
 	}
 }
 
 void ACompetitivePlayerCharacter::UnEquipPickAxe()
 {
-	if (PickAxeMesh)
+	if (SpawnedPickAxe)
 	{
-		PickAxeMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Backpack_Socket"));
+		SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Backpack_Socket"));
+	}
+	else
+	{
+		// If the pickaxe hasn't been spawned yet, spawn it and then attach it.
+		if (PickAxeClass)
+		{
+			SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
+			if (SpawnedPickAxe)
+			{
+				FVector NewLocationOffset(-250.293793f / 2, -70.988396f / 2, 56.498161f / 2);
+				SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Backpack_Socket"));
+				SpawnedPickAxe->SetActorRelativeLocation(NewLocationOffset);
+			}
+		}
 	}
 }
 
@@ -260,7 +294,7 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 	if (!IsDead()) {
 		DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 		DamageToApply = FMath::Min(Health, DamageToApply);
-		Health -= DamageToApply;
+		Health -= DamageToApply * 100 / Armor;
 		UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
 		HitCount += 1;
 		OnRep_HitCount();
@@ -299,8 +333,111 @@ void ACompetitivePlayerCharacter::DestroyCharacter()
 	Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode())->RespawnPlayer(GetController());
 	Destroy();
 }
+void ACompetitivePlayerCharacter::DashStart()
+{
+	FVector Velocity = GetVelocity();
 
-void ACompetitivePlayerCharacter::OnRep_EquippedGun()
+	FVector DashDirection = FVector(Velocity.X, Velocity.Y, 0.f);
+
+	// 움직이고 있는 방향이 있다면, 그 방향으로 대쉬
+	if (DashDirection.SizeSquared() > KINDA_SMALL_NUMBER)
+	{
+		DashDirection.Normalize();
+	}
+	else
+	{
+		// 움직이고 있지 않다면, 캐릭터 앞 방향으로 대쉬
+		DashDirection = GetActorForwardVector();
+	}
+
+	GetCharacterMovement()->BrakingFrictionFactor = 0.f;
+	LaunchCharacter(DashDirection * 5000.f, true, true);
+	GetWorldTimerManager().SetTimer(DashTimer, this, &ACompetitivePlayerCharacter::DashEnd, 0.1f, false);
+}
+void ACompetitivePlayerCharacter::DashEnd()
+{
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
+}
+
+void ACompetitivePlayerCharacter::GetWeaponData(const FWeaponData& NewWeaponData)
+{
+	CurrentWeapon = NewWeaponData;
+	FString WeaponNameStr = CurrentWeapon.WeaponName.ToString();
+
+	for (uint8 i = 0; i < static_cast<uint8>(EResourceType::End); ++i)
+	{
+		// 현재 리소스 타입
+		EResourceType ResourceType = static_cast<EResourceType>(i);
+
+		// 유효한 인덱스 체크
+		if (CurrentWeapon.UsedResourceCounts.IsValidIndex(i))
+		{
+			uint8 UsedCount = CurrentWeapon.UsedResourceCounts[i];
+
+			// UsedCount를 이용해 능력치를 수정
+			if (UsedCount > 0)
+			{
+				// 예시: 리소스당 공격력 +2
+				switch (ResourceType)
+				{
+				case EResourceType::Wood:
+					GetCharacterMovement()->MaxWalkSpeed *= 1.1f * UsedCount;
+					UE_LOG(LogTemp, Log, TEXT("Wood used, speed increased by 10%% per count. New MaxWalkSpeed: %f"), GetCharacterMovement()->MaxWalkSpeed);
+					break;
+				case EResourceType::Stone:
+					Armor *= 1.1f * UsedCount;
+					UE_LOG(LogTemp, Log, TEXT("Stone used, defense increased by 10%% per count. New defense: %f"), Armor);
+					break;
+				case EResourceType::Iron:
+					IncreasedDamage *= 1.2f * UsedCount;
+					break;
+				case EResourceType::Uranium:
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	}
+	if (WeaponNameStr == TEXT("총"))
+	{
+		WeaponChange();
+	}
+	else if (WeaponNameStr == TEXT("칼"))
+	{
+		// 칼 장착 로직
+		WeaponKnifeChange();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("알 수 없는 무기입니다: %s"), *WeaponNameStr);
+	}
+}
+
+void ACompetitivePlayerCharacter::KnifeAttackStart()
+{
+
+	if (EquippedKnife)
+	{
+		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(true);
+		
+	}
+}
+
+void ACompetitivePlayerCharacter::KnifeAttackEnd()
+{
+	if (EquippedKnife)
+	{
+		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(false);
+	}
+}
+void ACompetitivePlayerCharacter::ResetKnifeAttackCooldown()
+{
+	bCanKnifeAttack = true;
+	UE_LOG(LogTemp, Log, TEXT("Knife attack cooldown reset."));
+}
+void ACompetitivePlayerCharacter::OnRep_EquippedGun() 
 {
 	RefreshAnimInstance();
 }

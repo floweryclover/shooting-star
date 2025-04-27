@@ -36,6 +36,7 @@ public:
 	void ProjectileFire(FVector FireDir, AActor* Onwer);
 	void SetProjectileVelocity(float Velocity);
 	float GetProjectileDamage() { return projectileDamage; };
+	void SetProjectileDamage(float Damage) { projectileDamage = Damage; };
 
 	UFUNCTION()
 	virtual void OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp,

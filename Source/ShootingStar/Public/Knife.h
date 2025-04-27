@@ -5,9 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/AudioComponent.h"
+#include "Components/BoxComponent.h"
 #include "Knife.generated.h"
 
-UCLASS()
+UCLASS(Blueprintable)
 class SHOOTINGSTAR_API AKnife : public AActor
 {
 	GENERATED_BODY()
@@ -15,8 +16,6 @@ class SHOOTINGSTAR_API AKnife : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AKnife();
-
-	float knifeDamage = 50.0f;
 
 	UFUNCTION()
 	virtual void OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, 
@@ -30,7 +29,18 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	class UAudioComponent* Sound;
-
+	float knifeDamage = 30.0f;
+	float GetknifeDamage() { return knifeDamage; };
+	void SetknifeDamage(float Damage) { knifeDamage = Damage; };
+	bool bIsAttacking;
+	UPROPERTY(VisibleAnywhere)
+	bool bHitBoxActive;
+	UPROPERTY(VisibleAnywhere)
+	UBoxComponent* AttackHitBox;
+	bool bHasDamaged = false;
+	void ResetDamageFlag();
+	FTimerHandle ResetDamageFlagHandle;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

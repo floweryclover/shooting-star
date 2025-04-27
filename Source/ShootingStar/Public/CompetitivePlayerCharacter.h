@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Components/BoxComponent.h"
+#include "WeaponData.h"
+#include "ResourceType.h"
 #include "CompetitivePlayerCharacter.generated.h"
 
 class UTeamComponent;
@@ -11,6 +14,10 @@ class UCharacter_AnimInstance;
 class AGun;
 class AKnife;
 class UInventoryComponent;
+class APickAxe;
+
+struct FWeaponData;
+enum class EResourceType :uint8;
 
 UCLASS(Blueprintable)
 class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
@@ -23,9 +30,6 @@ public:
 	// Called every frame.
 	virtual void Tick(float DeltaSeconds) override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AloowPrivateAccess = "true"))
-	USkeletalMeshComponent* PickAxeMesh;
-
 	/** Returns TopDownCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
 	/** Returns CameraBoom subobject **/
@@ -37,6 +41,30 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TArray<AGun*> WeaponList;
 
+	//대쉬 관련
+	FTimerHandle DashTimer;
+	void DashStart();
+	void DashEnd();
+
+	//무기 관련
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FWeaponData CurrentWeapon;
+
+	UPROPERTY(EditDefaultsOnly)
+	float Armor = 100;
+
+	UPROPERTY(EditDefaultsOnly)
+	float IncreasedDamage = 1;
+
+	FTimerHandle KnifeAttackCoolDownTimer;
+	float KnifeAttackCooldown = 1.0f;
+	bool bCanKnifeAttack = true;
+	void ResetKnifeAttackCooldown();
+
+	// 외부에서 무기 데이터를 세팅하는 함수
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void GetWeaponData(const FWeaponData& NewWeaponData);
+
 	UFUNCTION()
 	FORCEINLINE void AddWeaponToList(AGun* Weapon) { WeaponList.Add(Weapon); }
 
@@ -47,6 +75,7 @@ public:
 
 	FORCEINLINE bool IsDead() { return Health == 0; }
 	void Attack();
+	void SpawnPickAxe();
 	void EquipPickAxe();
 	void UnEquipPickAxe();
 	void PullTrigger();
@@ -59,7 +88,11 @@ public:
 	void DestroyCharacter();
 	// �ڿ� ��ȣ �ۿ�
 	void OnInteract();
-
+	bool bIsKnifeAttacking;
+	UFUNCTION()
+	void KnifeAttackStart();
+	UFUNCTION()
+	void KnifeAttackEnd();
 	UCharacter_AnimInstance* GetAnimInstance() const
 	{
 		return AnimInstance;
@@ -99,6 +132,8 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	float Health;
 
+
+
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AGun> GunClass;
 
@@ -106,7 +141,10 @@ private:
 	TSubclassOf<AGun> RifleClass;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AKnife> KnifeClass;
-
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	TSubclassOf<APickAxe> PickAxeClass;
+	UPROPERTY(VisibleAnywhere)
+	APickAxe* SpawnedPickAxe;
 	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedGun)
 	AGun* EquippedGun;
 	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedKnife)

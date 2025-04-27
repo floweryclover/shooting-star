@@ -118,6 +118,9 @@ void ACompetitivePlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &ACompetitivePlayerController::Attack);
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipWeapon);
 		EnhancedInputComponent->BindAction(EquipKnifeAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipKnifeWeapon);
+		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::Dash);
+		EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::ToggleInventoryWidget);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::InteractResource);
 	}
 }
 
@@ -161,6 +164,22 @@ void ACompetitivePlayerController::LookMouse()
 			SetControlRotation(LookRotation);
 		}
 	}
+}
+void ACompetitivePlayerController::Dash()
+{
+	ACharacter* MyCharacter = GetCharacter();
+	if (MyCharacter)
+	{
+		ACompetitivePlayerCharacter* PlayerCharacter = Cast<ACompetitivePlayerCharacter>(MyCharacter);
+		if (PlayerCharacter)
+		{
+			PlayerCharacter->DashStart();
+		}
+	}
+}
+void ACompetitivePlayerController::InteractResource()
+{
+	ServerComponent->RequestInteractResource();
 }
 
 void ACompetitivePlayerController::Attack()
