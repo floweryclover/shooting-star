@@ -33,6 +33,13 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 	{
 		ScoreBoardUIClass = ScoreBoardUIBPFinder.Class;
 	}
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> InventoryWidgetBPFinder(TEXT("/Game/Blueprints/UI/BP_InventoryUI"));
+	ensure(InventoryWidgetBPFinder.Succeeded());
+	if (InventoryWidgetBPFinder.Succeeded())
+	{
+		InventoryWidgetClass = InventoryWidgetBPFinder.Class;
+	}
 	
 	// Attach Inventory Component
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
