@@ -24,8 +24,12 @@ AKnife::AKnife()
     }
     BodyMesh->SetIsReplicated(true);
     BodyMesh->SetCollisionProfileName("Knife");
-    BodyMesh->SetGenerateOverlapEvents(true);
-    BodyMesh->OnComponentBeginOverlap.AddDynamic(this, &AKnife::OnOverlapBegin_Body);
+    BodyMesh->SetGenerateOverlapEvents(false);
+
+    AttackHitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
+    AttackHitBox->SetupAttachment(BodyMesh);
+    AttackHitBox->SetGenerateOverlapEvents(false);
+    AttackHitBox->OnComponentBeginOverlap.AddDynamic(this, &AKnife::OnOverlapBegin_Body);
 
     Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("AUDIO"));
     Sound->SetupAttachment(RootComponent);
@@ -48,11 +52,21 @@ void AKnife::Tick(float DeltaTime)
 
 void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
+    if (OtherActor != GetOwner() && !bHasDamaged)
+    {
 
-    UGameplayStatics::ApplyDamage(OtherActor, knifeDamage, nullptr, GetOwner(), nullptr);
-    //UGameplayStatics::ApplyPointDamage(OtherActor, projectileDamage, GetActorForwardVector(), SweepResult, nullptr, GetOwner(), UBullet_DamageType::StaticClass());
-    UE_LOG(LogTemp, Warning, TEXT("Projectil: Player Hit"));
-    //UE_LOG(LogTemp, Warning, TEXT("bulletLoc2: %f, %f, %f"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z);
+        DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
+
+        UGameplayStatics::ApplyDamage(OtherActor, knifeDamage, nullptr, GetOwner(), nullptr);
+        //UGameplayStatics::ApplyPointDamage(OtherActor, projectileDamage, GetActorForwardVector(), SweepResult, nullptr, GetOwner(), UBullet_DamageType::StaticClass());
+        UE_LOG(LogTemp, Warning, TEXT("Projectil: Player Hit"));
+        //UE_LOG(LogTemp, Warning, TEXT("bulletLoc2: %f, %f, %f"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z);
+
+        GetWorld()->GetTimerManager().SetTimer(ResetDamageFlagHandle, this, &AKnife::ResetDamageFlag, 1.f, false);
+        bHasDamaged = true;
+    }
 }
-
+void AKnife::ResetDamageFlag()
+{
+    bHasDamaged = false;
+}

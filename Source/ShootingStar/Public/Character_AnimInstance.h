@@ -9,6 +9,7 @@
 /**
  * 
  */
+
 UCLASS()
 class SHOOTINGSTAR_API UCharacter_AnimInstance : public UAnimInstance
 {
@@ -26,6 +27,10 @@ public:
 
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
+	UFUNCTION()
+	void AnimNotify_AttackStart();
+	UFUNCTION()
+	void AnimNotify_AttackEnd();
 
 	void PlayHitMontage();
 	void PlayDeadMontage();

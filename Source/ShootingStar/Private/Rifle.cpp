@@ -2,6 +2,7 @@
 
 
 #include "Rifle.h"
+#include "CompetitivePlayerCharacter.h"
 #include "Rifle_Projectile.h"
 
 ARifle::ARifle()
@@ -58,6 +59,17 @@ void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 	if (projectile) {
 		projectile->SetReplicates(true);
 		projectile->SetProjectileVelocity(3000.0f);
-		projectile->ProjectileFire(bulletRot.Vector(), GetOwner());
+
+		FVector FireDirection = bulletRot.Vector();
+		FireDirection.Z = 0; // Z 방향 제거
+		FireDirection.Normalize();
+
+		if (ACompetitivePlayerCharacter* OwnerCharacter = Cast<ACompetitivePlayerCharacter>(GetOwner())) {
+			// 캐릭터의 공격력을 총알에 전달
+			float NewDamage = OwnerCharacter->IncreasedDamage * projectile->GetProjectileDamage();
+			projectile->SetProjectileDamage(NewDamage);
+		}
+
+		projectile->ProjectileFire(FireDirection, GetOwner());
 	}
 }

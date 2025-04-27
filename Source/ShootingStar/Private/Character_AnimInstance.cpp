@@ -2,6 +2,7 @@
 
 
 #include "Character_AnimInstance.h"
+#include "CompetitivePlayerCharacter.h"
 
 UCharacter_AnimInstance::UCharacter_AnimInstance()
 {
@@ -57,5 +58,21 @@ void UCharacter_AnimInstance::StopAKIdleMontage()
 	if (AK_Idle_Montage && Montage_IsPlaying(AK_Idle_Montage))
 	{
 		Montage_Stop(0.2f, AK_Idle_Montage);
+	}
+}
+void UCharacter_AnimInstance::AnimNotify_AttackStart()
+{
+	ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(TryGetPawnOwner());
+	if (Character)
+	{
+		Character->KnifeAttackStart();
+	}
+}
+void UCharacter_AnimInstance::AnimNotify_AttackEnd()
+{
+	ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(TryGetPawnOwner());
+	if (Character)
+	{
+		Character->KnifeAttackEnd();
 	}
 }
