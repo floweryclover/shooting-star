@@ -19,6 +19,8 @@ class APickAxe;
 struct FWeaponData;
 enum class EResourceType :uint8;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponData);
+
 UCLASS(Blueprintable)
 class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
 {
@@ -47,7 +49,7 @@ public:
 	void DashEnd();
 
 	//무기 관련
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_CurrentWeapon, Category = "Weapon")
 	FWeaponData CurrentWeapon{};
 
 	UPROPERTY(EditDefaultsOnly)
@@ -56,6 +58,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	float IncreasedDamage = 1;
 
+	UPROPERTY(BlueprintAssignable)
+	FWeaponChanged OnWeaponChanged;
+	
 	FTimerHandle KnifeAttackCoolDownTimer;
 	float KnifeAttackCooldown = 1.0f;
 	bool bCanKnifeAttack = true;
@@ -192,6 +197,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_bDeadNotify();
+
+	UFUNCTION()
+	void OnRep_CurrentWeapon();
 	
 	void RefreshAnimInstance();
 };

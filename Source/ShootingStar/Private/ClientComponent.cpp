@@ -2,6 +2,7 @@
 
 
 #include "ClientComponent.h"
+
 #include "CompetitivePlayerController.h"
 #include "InventoryComponent.h"
 
@@ -13,9 +14,4 @@ void UClientComponent::GainResource_Implementation(UResourceDataAsset* const Res
 		return;
 	}
 	PlayerController->GetInventoryComponent()->AddResource(Resource);
-}
-
-void UClientComponent::GainWeapon_Implementation(const FWeaponData& Weapon)
-{
-	OnWeaponGained.Broadcast(Weapon);
 }

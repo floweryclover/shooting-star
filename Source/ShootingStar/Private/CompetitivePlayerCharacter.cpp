@@ -100,6 +100,7 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, FireCount);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, HitCount);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, bDeadNotify);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, CurrentWeapon);
 }
 
 float ACompetitivePlayerCharacter::GetHealthPercent() const
@@ -363,6 +364,8 @@ void ACompetitivePlayerCharacter::DashEnd()
 void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData)
 {
 	CurrentWeapon = NewWeaponData;
+	OnRep_CurrentWeapon();
+	
 	FString WeaponNameStr = CurrentWeapon.WeaponName.ToString();
 
 	for (uint8 i = 0; i < static_cast<uint8>(EResourceType::End); ++i)
@@ -464,21 +467,17 @@ void ACompetitivePlayerCharacter::OnRep_KnifeAttackCount()
 
 void ACompetitivePlayerCharacter::OnRep_HitCount()
 {
-	if (HasAuthority())
-	{
-		UE_LOG(LogShootingStar, Log, TEXT("Authority"));
-		
-	}
-	else
-	{
-		UE_LOG(LogShootingStar, Log, TEXT("Remote"));
-	}
 	AnimInstance->PlayHitMontage();
 }
 
 void ACompetitivePlayerCharacter::OnRep_bDeadNotify()
 {
 	AnimInstance->PlayDeadMontage();
+}
+
+void ACompetitivePlayerCharacter::OnRep_CurrentWeapon()
+{
+	OnWeaponChanged.Broadcast(CurrentWeapon);
 }
 
 void ACompetitivePlayerCharacter::RefreshAnimInstance()

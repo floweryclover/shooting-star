@@ -5,6 +5,7 @@
 #include "CompetitiveGameState.h"
 #include "CompetitiveSystemComponent.h"
 #include "ClientComponent.h"
+#include "CompetitivePlayerCharacter.h"
 #include "InventoryComponent.h"
 #include "WeaponData.h"
 #include "Engine/World.h"
@@ -181,8 +182,10 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 		Controller->GetComponentByClass(UInventoryComponent::StaticClass()));
 	UClientComponent* const ClientComponent = Cast<UClientComponent>(
 		Controller->GetComponentByClass(UClientComponent::StaticClass()));
+	ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(Controller->GetCharacter());
 	if (!IsValid(InventoryComponent)
-		|| !IsValid(ClientComponent))
+		|| !IsValid(ClientComponent)
+		|| !IsValid(Character))
 	{
 		return;
 	}
@@ -208,5 +211,5 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 	}
 	
 	const FWeaponData CraftedWeapon = InventoryComponent->Craft_Weapon(Weapon, Resources);
-	ClientComponent->GainWeapon(CraftedWeapon);
+	Character->SetWeaponData(CraftedWeapon);
 }
