@@ -174,15 +174,7 @@ void ACompetitivePlayerController::LookMouse()
 }
 void ACompetitivePlayerController::Dash()
 {
-	ACharacter* MyCharacter = GetCharacter();
-	if (MyCharacter)
-	{
-		ACompetitivePlayerCharacter* PlayerCharacter = Cast<ACompetitivePlayerCharacter>(MyCharacter);
-		if (PlayerCharacter)
-		{
-			PlayerCharacter->DashStart();
-		}
-	}
+	ServerComponent->RequestDash();
 }
 void ACompetitivePlayerController::InteractResource()
 {

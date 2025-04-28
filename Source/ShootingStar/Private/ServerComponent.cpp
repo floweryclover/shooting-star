@@ -45,3 +45,8 @@ void UServerComponent::RequestEquipKnifeWeapon_Implementation()
 {
 	ExecuteOnControlledCharacter<&ACompetitivePlayerCharacter::WeaponKnifeChange>(GetOwner());
 }
+
+void UServerComponent::RequestDash_Implementation()
+{
+	ExecuteOnControlledCharacter<&ACompetitivePlayerCharacter::DashStart>(GetOwner());
+}
