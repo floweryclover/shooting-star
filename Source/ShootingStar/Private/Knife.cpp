@@ -14,8 +14,6 @@ AKnife::AKnife()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-    PrimaryActorTick.bCanEverTick = true;
-
     BodyMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("BODY"));
     RootComponent = BodyMesh;
     static ConstructorHelpers::FObjectFinder<USkeletalMesh>SKELETALKNIFE(TEXT("SkeletalMesh'/Game/Toon_Soldiers_UE5/Meshes/Weapons/SKM_weapon_knife.SKM_weapon_knife'"));
@@ -23,6 +21,8 @@ AKnife::AKnife()
         BodyMesh->SetSkeletalMesh(SKELETALKNIFE.Object);
     }
     BodyMesh->SetIsReplicated(true);
+    
+    SetActorEnableCollision(false); // 기본적으로 끄고 서버에서만 별도로 킴
     BodyMesh->SetCollisionProfileName("Knife");
     BodyMesh->SetGenerateOverlapEvents(false);
 
@@ -54,7 +54,6 @@ void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* Ot
 {
     if (OtherActor != GetOwner() && !bHasDamaged)
     {
-
         DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
 
         UGameplayStatics::ApplyDamage(OtherActor, knifeDamage, nullptr, GetOwner(), nullptr);

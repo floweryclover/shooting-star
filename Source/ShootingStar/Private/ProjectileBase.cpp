@@ -24,6 +24,9 @@ AProjectileBase::AProjectileBase()
 	if (PROJECTILE_BODY.Succeeded()) {
 		BodyMesh->SetStaticMesh(PROJECTILE_BODY.Object);
 	}
+
+	SetActorEnableCollision(false); // 기본적으로 끄고 서버에서만 키도록
+	
 	BodyMesh->SetRelativeScale3D(FVector(2.0f, 0.025f, 0.025f));
 	BodyMesh->SetCollisionProfileName("Projectile");
 	BodyMesh->SetGenerateOverlapEvents(true);
