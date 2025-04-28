@@ -130,6 +130,38 @@ void ACompetitiveGameMode::RespawnPlayer(AController* const Player)
 	Player->Possess(NewPawn);
 }
 
+void ACompetitiveGameMode::Kill(AActor* const Killer, AActor* const Killee)
+{
+	if (!IsValid(Killer) || !IsValid(Killee))
+	{
+		UE_LOG(LogShootingStar, Log, TEXT("Case 1"));
+		return;
+	}
+
+	// 지금 게임 중인지 검증
+	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
+	{
+		UE_LOG(LogShootingStar, Log, TEXT("Case 2"));
+
+		return;
+	}
+
+	// 팀이 유효한지 검증
+	UTeamComponent* const TeamComponent_Killer = Cast<UTeamComponent>(Killer->GetComponentByClass(UTeamComponent::StaticClass()));
+	UTeamComponent* const TeamComponent_Killee = Cast<UTeamComponent>(Killee->GetComponentByClass(UTeamComponent::StaticClass()));
+	if (!IsValid(TeamComponent_Killer) || !IsValid(TeamComponent_Killee)
+		|| TeamComponent_Killer->GetTeam() == ETeam::None || TeamComponent_Killee->GetTeam() == ETeam::None
+		|| TeamComponent_Killer->GetTeam() == TeamComponent_Killee->GetTeam())
+	{
+		UE_LOG(LogShootingStar, Log, TEXT("Case 3"));
+
+		return;
+	}
+	
+	const ETeam Team_Attacker = TeamComponent_Killer->GetTeam();
+	CompetitiveSystemComponent->GiveRoundScoreForTeam(Team_Attacker, CompetitiveSystemComponent->GetRoundWinningScore() / 4);
+}
+
 void ACompetitiveGameMode::InteractResource(AController* const Controller)
 {
 	if (!IsValid(Controller))
