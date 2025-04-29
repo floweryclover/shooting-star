@@ -52,6 +52,7 @@ void ACompetitivePlayerController::BeginPlay()
 
 	if (IsLocalPlayerController())
 	{
+		SetInputMode(FInputModeGameOnly());
 		ensure(ScoreBoardUIClass);
 		if (ScoreBoardUIClass)
 		{
