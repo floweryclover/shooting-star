@@ -120,6 +120,22 @@ void ACompetitiveGameMode::SwapPlayerControllers(APlayerController* const OldPC,
 	NewTeamComponent->SetTeam(OldTeamComponent->GetTeam());
 }
 
+APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer,
+	const FTransform& SpawnTransform)
+{
+	if (!DefaultPawnClass)
+	{
+		return nullptr;
+	}
+
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.Instigator = nullptr;
+	SpawnInfo.Owner = NewPlayer;
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // 충돌 무시하고 스폰
+
+	return GetWorld()->SpawnActor<APawn>(DefaultPawnClass, SpawnTransform, SpawnInfo);
+}
+
 void ACompetitiveGameMode::RespawnPlayer(AController* const Player)
 {
 	FActorSpawnParameters Params;
