@@ -22,7 +22,6 @@ ALobbyGameMode::ALobbyGameMode()
 int32 ALobbyGameMode::GetNumPlayers()
 {
 	Super::GetNumPlayers();
-
 	return NumPlayers;
 }
 

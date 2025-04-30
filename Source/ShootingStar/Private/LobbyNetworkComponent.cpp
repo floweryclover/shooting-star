@@ -4,6 +4,7 @@
 #include "LobbyNetworkComponent.h"
 #include "WifiDirectInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "ShootingStar/ShootingStar.h"
 
 ULobbyNetworkComponent::ULobbyNetworkComponent()
 	: bIsP2pSession{false},
@@ -90,4 +91,16 @@ void ULobbyNetworkComponent::LeaveGame()
 {
 	FWorldContext* const WorldContext = GetWorld()->GetGameInstance()->GetWorldContext();
 	GEngine->BrowseToDefaultMap(*WorldContext);
+}
+
+void ULobbyNetworkComponent::SetNickname_Implementation(const FString& NewNickname)
+{
+	APlayerController* const PlayerController = Cast<APlayerController>(GetOwner());
+	if (!IsValid(PlayerController))
+	{
+		return;
+	}
+
+	UE_LOG(LogShootingStar, Log, TEXT("Set %s"), *NewNickname);
+	PlayerController->SetName(NewNickname);
 }
