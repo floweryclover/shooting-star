@@ -104,6 +104,7 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, HitCount);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, bDeadNotify);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, CurrentWeapon);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, PlayerName);
 }
 
 float ACompetitivePlayerCharacter::GetHealthPercent() const
@@ -466,6 +467,17 @@ void ACompetitivePlayerCharacter::KnifeAttackEnd()
 	}
 }
 
+void ACompetitivePlayerCharacter::SetPlayerName(const FString& Name)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	PlayerName = Name;
+	OnRep_PlayerName();
+}
+
 void ACompetitivePlayerCharacter::ResetKnifeAttackCooldown()
 {
 	bCanKnifeAttack = true;
@@ -505,6 +517,11 @@ void ACompetitivePlayerCharacter::OnRep_bDeadNotify()
 void ACompetitivePlayerCharacter::OnRep_CurrentWeapon()
 {
 	OnWeaponChanged.Broadcast(CurrentWeapon);
+}
+
+void ACompetitivePlayerCharacter::OnRep_PlayerName()
+{
+	OnPlayerNameChanged.Broadcast(PlayerName);
 }
 
 void ACompetitivePlayerCharacter::RefreshAnimInstance()

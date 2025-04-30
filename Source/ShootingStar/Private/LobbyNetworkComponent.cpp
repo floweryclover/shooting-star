@@ -101,6 +101,5 @@ void ULobbyNetworkComponent::SetNickname_Implementation(const FString& NewNickna
 		return;
 	}
 
-	UE_LOG(LogShootingStar, Log, TEXT("Set %s"), *NewNickname);
 	PlayerController->SetName(NewNickname);
 }

@@ -10,6 +10,7 @@
 #include "WeaponData.h"
 #include "Engine/World.h"
 #include "MapGeneratorComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "ShootingStar/ShootingStar.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
@@ -133,7 +134,12 @@ APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AControl
 	SpawnInfo.Owner = NewPlayer;
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // 충돌 무시하고 스폰
 
-	return GetWorld()->SpawnActor<APawn>(DefaultPawnClass, SpawnTransform, SpawnInfo);
+	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = GetWorld()->SpawnActor<ACompetitivePlayerCharacter>(DefaultPawnClass, SpawnTransform, SpawnInfo);;
+
+	UTeamComponent* const TeamComponent = Cast<ACompetitivePlayerController>(NewPlayer)->GetTeamComponent();
+	CompetitivePlayerCharacter->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
+	CompetitivePlayerCharacter->SetPlayerName(NewPlayer->GetPlayerState<APlayerState>()->GetPlayerName());
+	return CompetitivePlayerCharacter;
 }
 
 void ACompetitiveGameMode::RespawnPlayer(AController* const Player)

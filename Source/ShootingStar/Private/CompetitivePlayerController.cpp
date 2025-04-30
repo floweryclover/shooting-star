@@ -17,6 +17,7 @@
 #include "InventoryComponent.h"
 #include "ServerComponent.h"
 #include "GameFramework/GameModeBase.h"
+#include "GameFramework/PlayerState.h"
 #include "ShootingStar/ShootingStar.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
@@ -70,22 +71,6 @@ void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	LookMouse();
-}
-
-void ACompetitivePlayerController::OnPossess(APawn* InPawn)
-{
-	Super::OnPossess(InPawn);
-	if (!HasAuthority())
-	{
-		return;
-	}
-
-	Cast<ACompetitivePlayerCharacter>(InPawn)->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
-}
-
-void ACompetitivePlayerController::OnUnPossess()
-{
-	Super::OnUnPossess();
 }
 
 void ACompetitivePlayerController::ToggleInventoryWidget()

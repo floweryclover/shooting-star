@@ -29,7 +29,7 @@ public:
 	virtual void Logout(AController* Exiting) override;
 
 	virtual void SwapPlayerControllers(APlayerController* OldPC, APlayerController* NewPC) override;
-
+	
 	virtual APawn* SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform) override;
 	
 	void RespawnPlayer(AController* Player);

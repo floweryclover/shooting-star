@@ -20,6 +20,7 @@ struct FWeaponData;
 enum class EResourceType :uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPlayerNameChanged, const FString&, PlayerName);
 
 UCLASS(Blueprintable)
 class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
@@ -60,6 +61,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FWeaponChanged OnWeaponChanged;
+
+	UPROPERTY(BlueprintAssignable)
+	FPlayerNameChanged OnPlayerNameChanged;
 	
 	FTimerHandle KnifeAttackCoolDownTimer;
 	float KnifeAttackCooldown = 1.0f;
@@ -101,6 +105,14 @@ public:
 	void KnifeAttackStart();
 	UFUNCTION()
 	void KnifeAttackEnd();
+
+	//
+	// Getter, Setter
+	//
+
+	UFUNCTION(BlueprintCallable)
+	void SetPlayerName(const FString& Name);
+	
 	UCharacter_AnimInstance* GetAnimInstance() const
 	{
 		return AnimInstance;
@@ -120,7 +132,10 @@ protected:
 	class UCharacter_AnimInstance* AnimInstance = nullptr;
 
 	UPROPERTY(BlueprintReadOnly)
-	UTeamComponent* TeamComponent;
+	TObjectPtr<UTeamComponent> TeamComponent;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_PlayerName)
+	FString PlayerName;
 
 private:
 
@@ -200,6 +215,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_CurrentWeapon();
+
+	UFUNCTION()
+	void OnRep_PlayerName();
 	
 	void RefreshAnimInstance();
 };
