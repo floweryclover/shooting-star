@@ -3,6 +3,7 @@
 
 #include "Rifle.h"
 #include "CompetitivePlayerCharacter.h"
+#include "TeamComponent.h"
 #include "Rifle_Projectile.h"
 
 ARifle::ARifle()
@@ -60,6 +61,12 @@ void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 		projectile->SetReplicates(true);
 		projectile->SetActorEnableCollision(true);
 		projectile->SetProjectileVelocity(3000.0f);
+
+		AActor* Shooter = GetAttachParentActor(); // Shooter = 캐릭터
+		if (UTeamComponent* TeamComp = Shooter->FindComponentByClass<UTeamComponent>())
+		{
+			projectile->ShooterTeam = TeamComp->GetTeam(); // 발사자의 팀 정보를 저장
+		}
 
 		FVector FireDirection = bulletRot.Vector();
 		FireDirection.Z = 0; // Z 방향 제거

@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "ProjectileBase.generated.h"
 
+enum class ETeam :uint8;
+
 UCLASS()
 class SHOOTINGSTAR_API AProjectileBase : public AActor
 {
@@ -21,6 +23,9 @@ public:
 	class USphereComponent* Sphere;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base")
 	class UProjectileMovementComponent* Movement;
+
+	UPROPERTY()
+	ETeam ShooterTeam;
 
 protected:
 	// Called when the game starts or when spawned

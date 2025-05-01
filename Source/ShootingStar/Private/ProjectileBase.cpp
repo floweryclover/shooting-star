@@ -7,6 +7,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/DecalComponent.h"
+#include "TeamComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Bullet_DamageType.h"
 
@@ -101,13 +102,19 @@ void AProjectileBase::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, A
 	{
 		return;
 	}
-	
-	DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
+	if (OtherActor != GetAttachParentActor())
+	{
+		UTeamComponent* OtherTeamComponent = OtherActor->FindComponentByClass<UTeamComponent>();
 
-	UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, nullptr, GetOwner(), nullptr);
-	//UGameplayStatics::ApplyPointDamage(OtherActor, projectileDamage, GetActorForwardVector(), SweepResult, nullptr, GetOwner(), UBullet_DamageType::StaticClass());
-	UE_LOG(LogTemp, Warning, TEXT("Projectil: Player Hit"));
-	//UE_LOG(LogTemp, Warning, TEXT("bulletLoc2: %f, %f, %f"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z);
+		if (ShooterTeam != OtherTeamComponent->GetTeam())
+		{
+			DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
 
+			UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, nullptr, GetOwner(), nullptr);
+			//UGameplayStatics::ApplyPointDamage(OtherActor, projectileDamage, GetActorForwardVector(), SweepResult, nullptr, GetOwner(), UBullet_DamageType::StaticClass());
+			UE_LOG(LogTemp, Warning, TEXT("Projectil: Player Hit"));
+			//UE_LOG(LogTemp, Warning, TEXT("bulletLoc2: %f, %f, %f"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z);
+		}
+	}
 	this->Destroy();
 }
