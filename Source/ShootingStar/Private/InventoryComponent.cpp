@@ -62,6 +62,7 @@ FWeaponData UInventoryComponent::Craft_Weapon(const FWeaponData& SelectWeapon, c
 	{
 		Ret.UsedResourceCounts[i] = static_cast<uint8>(ClickedResources[i]);
 		Sum += ClickedResources[i];
+		AddResource(GetResourceDataAsset_ByResourceEnum(i), -ClickedResources[i]);
 	}
 
 	//  Determine Type of Weapon
