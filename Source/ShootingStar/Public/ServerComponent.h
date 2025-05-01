@@ -34,4 +34,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void RequestEquipKnifeWeapon();
+
+	UFUNCTION(BlueprintCallable, Reliable, Server)
+	void RequestDash();
 };

@@ -34,7 +34,7 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 		ScoreBoardUIClass = ScoreBoardUIBPFinder.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> InventoryWidgetBPFinder(TEXT("/Game/Blueprints/UI/BP_InventoryUI"));
+	static ConstructorHelpers::FClassFinder<UUserWidget> InventoryWidgetBPFinder(TEXT("/Game/Blueprints/UI/BP_Inventory"));
 	ensure(InventoryWidgetBPFinder.Succeeded());
 	if (InventoryWidgetBPFinder.Succeeded())
 	{
@@ -174,15 +174,7 @@ void ACompetitivePlayerController::LookMouse()
 }
 void ACompetitivePlayerController::Dash()
 {
-	ACharacter* MyCharacter = GetCharacter();
-	if (MyCharacter)
-	{
-		ACompetitivePlayerCharacter* PlayerCharacter = Cast<ACompetitivePlayerCharacter>(MyCharacter);
-		if (PlayerCharacter)
-		{
-			PlayerCharacter->DashStart();
-		}
-	}
+	ServerComponent->RequestDash();
 }
 void ACompetitivePlayerController::InteractResource()
 {

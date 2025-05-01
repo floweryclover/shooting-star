@@ -19,6 +19,8 @@ class APickAxe;
 struct FWeaponData;
 enum class EResourceType :uint8;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponData);
+
 UCLASS(Blueprintable)
 class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
 {
@@ -47,8 +49,8 @@ public:
 	void DashEnd();
 
 	//무기 관련
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	FWeaponData CurrentWeapon;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_CurrentWeapon, Category = "Weapon")
+	FWeaponData CurrentWeapon{};
 
 	UPROPERTY(EditDefaultsOnly)
 	float Armor = 100;
@@ -56,6 +58,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	float IncreasedDamage = 1;
 
+	UPROPERTY(BlueprintAssignable)
+	FWeaponChanged OnWeaponChanged;
+	
 	FTimerHandle KnifeAttackCoolDownTimer;
 	float KnifeAttackCooldown = 1.0f;
 	bool bCanKnifeAttack = true;
@@ -63,7 +68,10 @@ public:
 
 	// 외부에서 무기 데이터를 세팅하는 함수
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void GetWeaponData(const FWeaponData& NewWeaponData);
+	void SetWeaponData(const FWeaponData& NewWeaponData);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	FWeaponData GetWeaponData();
 
 	UFUNCTION()
 	FORCEINLINE void AddWeaponToList(AGun* Weapon) { WeaponList.Add(Weapon); }
@@ -189,6 +197,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_bDeadNotify();
+
+	UFUNCTION()
+	void OnRep_CurrentWeapon();
 	
 	void RefreshAnimInstance();
 };
