@@ -85,6 +85,11 @@ void ACompetitivePlayerCharacter::BeginPlay()
 	SpawnPickAxe();
 
 	Health = MaxHealth;
+	if (TeamComponent)
+	{
+		PlayerTeam = TeamComponent->GetTeam();
+		SetTeamMaterial(PlayerTeam);
+	}
 }
 
 void ACompetitivePlayerCharacter::PostInitializeComponents()
@@ -105,7 +110,25 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, bDeadNotify);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, CurrentWeapon);
 }
-
+void ACompetitivePlayerCharacter::SetTeamMaterial(ETeam Team)
+{
+	switch (Team)
+	{
+	case ETeam::Blue:
+		TeamColor = BlueTeamMaterial;
+		break;
+	case ETeam::Red:
+		TeamColor = RedTeamMaterial;
+		break;
+	default:
+		TeamColor = DefaultMaterial;
+		break;
+	}
+	if (TeamColor)
+	{
+		GetMesh()->SetMaterial(0, TeamColor);
+	}
+}
 float ACompetitivePlayerCharacter::GetHealthPercent() const
 {
 	return Health / MaxHealth;
@@ -145,6 +168,7 @@ void ACompetitivePlayerCharacter::WeaponKnifeChange()
 
 void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 {
+	UE_LOG(LogTemp, Warning, TEXT("PlayerTeam: %d"), (int32)PlayerTeam);
 	UnEquipPickAxe();
 	if (EquippedGun)
 	{
@@ -167,7 +191,6 @@ void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 			                               TEXT("Weapon_R_Socket"));
 		}
 	}
-
 	ForceNetUpdate();
 	RefreshAnimInstance();
 }
@@ -311,17 +334,15 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
                                               class AController* EventInstigator, AActor* DamageCauser)
 {
 	float DamageToApply{0.0f};
-	if (!IsDead())
-	{
-		DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-		DamageToApply = FMath::Min(Health, DamageToApply);
-		Health -= DamageToApply * 100 / Armor;
-		UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
-		HitCount += 1;
-		OnRep_HitCount();
-	}
-	else
-	{
+
+	DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	DamageToApply = FMath::Min(Health, DamageToApply);
+	Health -= DamageToApply * 100 / Armor;
+	UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
+	HitCount += 1;
+	OnRep_HitCount();
+	
+	if (IsDead()) {
 		PlayDeadAnim();
 	}
 
@@ -354,6 +375,18 @@ void ACompetitivePlayerCharacter::PlayDeadAnim()
 
 void ACompetitivePlayerCharacter::DestroyCharacter()
 {
+	if (SpawnedPickAxe) 
+	{
+		SpawnedPickAxe->Destroy();
+	}
+	if (EquippedGun)
+	{
+		EquippedGun->Destroy();
+	}
+	if (EquippedKnife)
+	{
+		EquippedKnife->Destroy();
+	}
 	Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode())->RespawnPlayer(GetController());
 	Destroy();
 }

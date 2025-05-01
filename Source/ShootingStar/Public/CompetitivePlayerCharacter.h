@@ -16,6 +16,7 @@ class AKnife;
 class UInventoryComponent;
 class APickAxe;
 
+enum class ETeam :uint8;
 struct FWeaponData;
 enum class EResourceType :uint8;
 
@@ -43,6 +44,19 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TArray<AGun*> WeaponList;
 
+	// 팀 관련
+	ETeam PlayerTeam;
+	UFUNCTION()
+	void SetTeamMaterial(ETeam Team);
+	UMaterialInterface* TeamColor = nullptr;
+	UPROPERTY(EditDefaultsOnly, Category = "Team")
+	UMaterialInterface* RedTeamMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Team")
+	UMaterialInterface* BlueTeamMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Team")
+	UMaterialInterface* DefaultMaterial;
 	//대쉬 관련
 	FTimerHandle DashTimer;
 	void DashStart();

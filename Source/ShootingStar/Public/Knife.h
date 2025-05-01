@@ -8,6 +8,8 @@
 #include "Components/BoxComponent.h"
 #include "Knife.generated.h"
 
+class ACompetitivePlayerCharacter;
+
 UCLASS(Blueprintable)
 class SHOOTINGSTAR_API AKnife : public AActor
 {
