@@ -37,9 +37,6 @@ void ALobbyPlayerController::BeginPlay()
 	// 오직 내 컴퓨터에서 지금 조종중인 컨트롤러에서 UI를 생성하도록 반드시 검증해야 합니다.
 	if (IsLocalPlayerController())
 	{
-		bShowMouseCursor = true;
-		SetInputMode(FInputModeUIOnly());
-
 		ensure(LobbyUIClass);
 		if (LobbyUIClass)
 		{
@@ -50,6 +47,11 @@ void ALobbyPlayerController::BeginPlay()
 				LobbyUI->AddToViewport();
 			}
 		}
+		bShowMouseCursor = true;
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(LobbyUI->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
 	}
 }
 
