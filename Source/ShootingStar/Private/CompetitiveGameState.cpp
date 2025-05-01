@@ -34,70 +34,26 @@ void ACompetitiveGameState::Tick(float DeltaSeconds)
 		return;
 	}
 
-	if (AssignIfDifferent(BlueTeamRoundScore, CompetitiveSystem->GetBlueTeamRoundScore()))
-	{
-		OnRep_BlueTeamRoundScore();
-	}
-	if (AssignIfDifferent(RedTeamRoundScore, CompetitiveSystem->GetRedTeamRoundScore()))
-	{
-		OnRep_RedTeamRoundScore();
-	}
-	if (AssignIfDifferent(BlueTeamGameScore, CompetitiveSystem->GetBlueTeamGameScore()))
-	{
-		OnRep_BlueTeamGameScore();
-	}
-	if (AssignIfDifferent(RedTeamGameScore, CompetitiveSystem->GetRedTeamGameScore()))
-	{
-		OnRep_RedTeamGameScore();
-	}
-	if (AssignIfDifferent(Phase, CompetitiveSystem->GetCurrentPhase()))
-	{
-		OnRep_Phase();
-	}
-	if (AssignIfDifferent(PhaseTime, CompetitiveSystem->GetCurrentPhaseTime()))
-	{
-		OnRep_PhaseTime();
-	}
+	BlueTeamKills = CompetitiveSystem->GetBlueTeamKillScore();
+	RedTeamKills = CompetitiveSystem->GetRedTeamKillScore();
+	BlueTeamWinRounds = CompetitiveSystem->GetBlueTeamGameScore();
+	RedTeamWinRounds = CompetitiveSystem->GetRedTeamGameScore();
+	Phase = CompetitiveSystem->GetCurrentPhase();
+	PhaseTime = CompetitiveSystem->GetCurrentPhaseTime();
+	bIsGoldenKillTime = CompetitiveSystem->IsGoldenKillTime();
+	RemainingGameTime = CompetitiveSystem->GetRemainingGameTime();
 }
 
 void ACompetitiveGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ACompetitiveGameState, BlueTeamRoundScore);
-	DOREPLIFETIME(ACompetitiveGameState, RedTeamRoundScore);
-	DOREPLIFETIME(ACompetitiveGameState, BlueTeamGameScore);
-	DOREPLIFETIME(ACompetitiveGameState, RedTeamGameScore);
+	DOREPLIFETIME(ACompetitiveGameState, BlueTeamKills);
+	DOREPLIFETIME(ACompetitiveGameState, RedTeamKills);
+	DOREPLIFETIME(ACompetitiveGameState, BlueTeamWinRounds);
+	DOREPLIFETIME(ACompetitiveGameState, RedTeamWinRounds);
 	DOREPLIFETIME(ACompetitiveGameState, Phase);
 	DOREPLIFETIME(ACompetitiveGameState, PhaseTime);
-}
-
-void ACompetitiveGameState::OnRep_BlueTeamRoundScore()
-{
-	OnBlueTeamRoundScoreChanged.Broadcast(BlueTeamRoundScore);
-}
-
-void ACompetitiveGameState::OnRep_RedTeamRoundScore()
-{
-	OnRedTeamRoundScoreChanged.Broadcast(RedTeamRoundScore);
-}
-
-void ACompetitiveGameState::OnRep_BlueTeamGameScore()
-{
-	OnBlueTeamGameScoreChanged.Broadcast(BlueTeamGameScore);
-}
-
-void ACompetitiveGameState::OnRep_RedTeamGameScore()
-{
-	OnRedTeamGameScoreChanged.Broadcast(RedTeamGameScore);
-}
-
-void ACompetitiveGameState::OnRep_PhaseTime()
-{
-	OnPhaseTimeChanged.Broadcast(PhaseTime);
-}
-
-void ACompetitiveGameState::OnRep_Phase()
-{
-	OnPhaseChanged.Broadcast(Phase);
+	DOREPLIFETIME(ACompetitiveGameState, bIsGoldenKillTime);
+	DOREPLIFETIME(ACompetitiveGameState, RemainingGameTime);
 }

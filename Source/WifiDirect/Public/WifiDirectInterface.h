@@ -88,6 +88,9 @@ public:
 	UFUNCTION(Blueprintable)
 	void CheckAndRequestPermissions();
 
+	UFUNCTION(BlueprintCallable)
+	void CancelConnect();
+
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	static UWifiDirectInterface* GetWifiDirectInterface();
 	
@@ -149,8 +152,6 @@ protected:
 	float GroupUpdateElapsed;
 
 private:
-	void CancelConnect();
-	
 	void RefreshGroupInfo();
 
 	void RefreshServiceDiscovery();

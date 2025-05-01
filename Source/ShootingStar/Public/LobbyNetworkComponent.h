@@ -40,6 +40,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LeaveGame();
 
+	UFUNCTION(BlueprintCallable, Reliable, Server)
+	void SetNickname(const FString& NewNickname);
+
 private:
 	bool bIsLocalComponent;
 

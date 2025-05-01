@@ -7,8 +7,8 @@
 #include "ShootingStar/ShootingStar.h"
 
 UCompetitiveSystemComponent::UCompetitiveSystemComponent()
-	: BlueTeamRoundScore{0},
-	  RedTeamRoundScore{0},
+	: BlueTeamKillScore{0},
+	  RedTeamKillScore{0},
 	  BlueTeamGameScore{0},
 	  RedTeamGameScore{0},
 	  CurrentPhaseTime{0.0f},
@@ -59,18 +59,18 @@ void UCompetitiveSystemComponent::EndGame()
 	CurrentPhaseTime = 0.0f;
 }
 
-void UCompetitiveSystemComponent::GiveRoundScoreForTeam(const ETeam Team, const int Score)
+void UCompetitiveSystemComponent::GiveKillScoreForTeam(const ETeam Team)
 {
 	if (Team == ETeam::None || CurrentPhase != ECompetitiveGamePhase::Game)
 	{
 		return;
 	}
 
-	int& TeamScore = Team == ETeam::Blue ? BlueTeamRoundScore : RedTeamRoundScore;
-	TeamScore += Score;
+	int& TeamKillScore = Team == ETeam::Blue ? BlueTeamKillScore : RedTeamKillScore;
+	TeamKillScore += 1;
 	
-	// 골든 스코어(점수를 얻는 팀이 즉시 승리)인지?
-	if (CurrentPhaseTime >= RoundTime)
+	// 골든 킬(점수를 얻는 팀이 즉시 승리)인지?
+	if (IsGoldenKillTime())
 	{
 		WinTeam(Team);
 	}
@@ -126,9 +126,9 @@ void UCompetitiveSystemComponent::Update_Game()
 	}
 	
 	// 승리 팀 결정됨
-	if (BlueTeamRoundScore >= RoundWinningScore || RedTeamRoundScore >= RoundWinningScore)
+	if (BlueTeamKillScore >= RoundWinningKillScore || RedTeamKillScore >= RoundWinningKillScore)
 	{
-		const ETeam Team = BlueTeamRoundScore >= RoundWinningScore ? ETeam::Blue : ETeam::Red;
+		const ETeam Team = BlueTeamKillScore >= RoundWinningKillScore ? ETeam::Blue : ETeam::Red;
 
 		WinTeam(Team);
 	}
@@ -139,8 +139,8 @@ void UCompetitiveSystemComponent::Update_RoundEnd()
 	if (CurrentPhaseTime >= RoundEndTime)
 	{
 		CurrentPhase = ECompetitiveGamePhase::Game;
-		BlueTeamRoundScore = 0;
-		RedTeamRoundScore = 0;
+		BlueTeamKillScore = 0;
+		RedTeamKillScore = 0;
 		CurrentPhaseTime = 0.0f;
 	}
 }

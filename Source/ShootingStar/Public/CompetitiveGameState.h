@@ -7,18 +7,6 @@
 #include "GameFramework/GameStateBase.h"
 #include "CompetitiveGameState.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FIntChanged, int, Value);
-
-DECLARE_DYNAMIC_DELEGATE_OneParam(FIntChangedHandler, int, Value);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFloatChanged, float, Value);
-
-DECLARE_DYNAMIC_DELEGATE_OneParam(FFloatChangedHandler, float, Value);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPhaseChanged, ECompetitiveGamePhase, Value);
-
-DECLARE_DYNAMIC_DELEGATE_OneParam(FPhaseChangedHandler, ECompetitiveGamePhase, Value);
-
 UCLASS()
 class SHOOTINGSTAR_API ACompetitiveGameState final : public AGameStateBase
 {
@@ -29,24 +17,29 @@ public:
 	
 	virtual void Tick(float DeltaSeconds) override;
 
-	int GetBlueTeamRoundScore() const
+	int GetBlueTeamKills() const
 	{
-		return BlueTeamRoundScore;
+		return BlueTeamKills;
 	}
 
-	int GetRedTeamRoundScore() const
+	int GetRedTeamKills() const
 	{
-		return RedTeamRoundScore;
+		return RedTeamKills;
 	}
 
-	int GetBlueTeamGameScore() const
+	int GetBlueTeamWinRounds() const
 	{
-		return BlueTeamGameScore;
+		return BlueTeamWinRounds;
 	}
 
-	int GetRedTeamGameScore() const
+	int GetRedTeamWinRounds() const
 	{
-		return RedTeamGameScore;
+		return RedTeamWinRounds;
+	}
+
+	bool IsGoldenKillTime() const
+	{
+		return bIsGoldenKillTime;
 	}
 
 	float GetPhaseTime() const
@@ -59,104 +52,30 @@ public:
 		return Phase;
 	}
 
-	void BindOnBlueTeamRoundScoreChanged(const FIntChangedHandler& Delegate)
-	{
-		OnBlueTeamRoundScoreChanged.Add(Delegate);
-	}
-	
-	void BindOnRedTeamRoundScoreChanged(const FIntChangedHandler& Delegate)
-	{
-		OnRedTeamRoundScoreChanged.Add(Delegate);
-	}
-
-	void BindOnBlueTeamGameScoreChanged(const FIntChangedHandler& Delegate)
-	{
-		OnRedTeamGameScoreChanged.Add(Delegate);
-	}
-
-	void BindOnRedTeamGameScoreChanged(const FIntChangedHandler& Delegate)
-	{
-		OnBlueTeamGameScoreChanged.Add(Delegate);
-	}
-
-	void BindOnPhaseChanged(const FPhaseChangedHandler& Delegate)
-	{
-		OnPhaseChanged.Add(Delegate);
-	}
-
-	void BindOnPhaseTimeChanged(const FFloatChangedHandler& Delegate)
-	{
-		OnPhaseTimeChanged.Add(Delegate);
-	}
-
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
-	UPROPERTY(ReplicatedUsing=OnRep_BlueTeamRoundScore, BlueprintReadOnly)
-	int BlueTeamRoundScore;
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	int BlueTeamKills;
 
-	UPROPERTY(ReplicatedUsing=OnRep_RedTeamRoundScore, BlueprintReadOnly)
-	int RedTeamRoundScore;
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	int RedTeamKills;
 
-	UPROPERTY(ReplicatedUsing=OnRep_BlueTeamGameScore, BlueprintReadOnly)
-	int BlueTeamGameScore;
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	int BlueTeamWinRounds;
 
-	UPROPERTY(ReplicatedUsing=OnRep_RedTeamGameScore, BlueprintReadOnly)
-	int RedTeamGameScore;
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	int RedTeamWinRounds;
 
-	UPROPERTY(ReplicatedUsing=OnRep_PhaseTime, BlueprintReadOnly)
+	UPROPERTY(Replicated, BlueprintReadOnly)
 	float PhaseTime;
 
-	UPROPERTY(ReplicatedUsing=OnRep_Phase, BlueprintReadOnly)
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	float RemainingGameTime;
+
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	bool bIsGoldenKillTime;
+
+	UPROPERTY(Replicated, BlueprintReadOnly)
 	ECompetitiveGamePhase Phase;
-
-	UPROPERTY(BlueprintAssignable)
-	FIntChanged OnBlueTeamRoundScoreChanged;
-
-	UPROPERTY(BlueprintAssignable)
-	FIntChanged OnRedTeamRoundScoreChanged;
-
-	UPROPERTY(BlueprintAssignable)
-	FIntChanged OnBlueTeamGameScoreChanged;
-
-	UPROPERTY(BlueprintAssignable)
-	FIntChanged OnRedTeamGameScoreChanged;
-
-	UPROPERTY(BlueprintAssignable)
-	FPhaseChanged OnPhaseChanged;
-
-	UPROPERTY(BlueprintAssignable)
-	FFloatChanged OnPhaseTimeChanged;
-	
-private:
-
-	UFUNCTION()
-	void OnRep_BlueTeamRoundScore();
-
-	UFUNCTION()
-	void OnRep_RedTeamRoundScore();
-
-	UFUNCTION()
-	void OnRep_BlueTeamGameScore();
-
-	UFUNCTION()
-	void OnRep_RedTeamGameScore();
-
-	UFUNCTION()
-	void OnRep_PhaseTime();
-
-	UFUNCTION()
-	void OnRep_Phase();
-
-	template <typename T>
-	static bool AssignIfDifferent(T& InOutVariable, const T& InCompare)
-	{
-		if (InOutVariable != InCompare)
-		{
-			InOutVariable = InCompare;
-			return true;
-		}
-
-		return false;
-	}
 };

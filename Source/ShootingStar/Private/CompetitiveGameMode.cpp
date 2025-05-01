@@ -10,6 +10,7 @@
 #include "WeaponData.h"
 #include "Engine/World.h"
 #include "MapGeneratorComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "ShootingStar/ShootingStar.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
@@ -120,13 +121,30 @@ void ACompetitiveGameMode::SwapPlayerControllers(APlayerController* const OldPC,
 	NewTeamComponent->SetTeam(OldTeamComponent->GetTeam());
 }
 
+APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer,
+	const FTransform& SpawnTransform)
+{
+	if (!DefaultPawnClass)
+	{
+		return nullptr;
+	}
+
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.Instigator = nullptr;
+	SpawnInfo.Owner = NewPlayer;
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // 충돌 무시하고 스폰
+
+	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = GetWorld()->SpawnActor<ACompetitivePlayerCharacter>(DefaultPawnClass, SpawnTransform, SpawnInfo);;
+
+	UTeamComponent* const TeamComponent = Cast<ACompetitivePlayerController>(NewPlayer)->GetTeamComponent();
+	CompetitivePlayerCharacter->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
+	CompetitivePlayerCharacter->SetPlayerName(NewPlayer->GetPlayerState<APlayerState>()->GetPlayerName());
+	return CompetitivePlayerCharacter;
+}
+
 void ACompetitiveGameMode::RespawnPlayer(AController* const Player)
 {
-	FActorSpawnParameters Params;
-	Params.Owner = Player;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	
-	APawn* NewPawn = GetWorld()->SpawnActor<APawn>(DefaultPawnClass, {1000.0f, 0.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, Params);
+	APawn* NewPawn = SpawnDefaultPawnAtTransform(Player, FTransform{FRotator{0.0f, 0.0f, 0.0f}, FVector{1000.0f, 0.0f, 1000.0f}, });
 	Player->Possess(NewPawn);
 }
 
@@ -134,15 +152,12 @@ void ACompetitiveGameMode::Kill(AActor* const Killer, AActor* const Killee)
 {
 	if (!IsValid(Killer) || !IsValid(Killee))
 	{
-		UE_LOG(LogShootingStar, Log, TEXT("Case 1"));
 		return;
 	}
 
 	// 지금 게임 중인지 검증
 	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
 	{
-		UE_LOG(LogShootingStar, Log, TEXT("Case 2"));
-
 		return;
 	}
 
@@ -153,13 +168,11 @@ void ACompetitiveGameMode::Kill(AActor* const Killer, AActor* const Killee)
 		|| TeamComponent_Killer->GetTeam() == ETeam::None || TeamComponent_Killee->GetTeam() == ETeam::None
 		|| TeamComponent_Killer->GetTeam() == TeamComponent_Killee->GetTeam())
 	{
-		UE_LOG(LogShootingStar, Log, TEXT("Case 3"));
-
 		return;
 	}
 	
 	const ETeam Team_Attacker = TeamComponent_Killer->GetTeam();
-	CompetitiveSystemComponent->GiveRoundScoreForTeam(Team_Attacker, CompetitiveSystemComponent->GetRoundWinningScore() / 4);
+	CompetitiveSystemComponent->GiveKillScoreForTeam(Team_Attacker);
 }
 
 void ACompetitiveGameMode::InteractResource(AController* const Controller)

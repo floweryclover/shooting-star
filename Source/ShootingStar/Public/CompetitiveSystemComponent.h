@@ -49,7 +49,7 @@ public:
 	void EndGame();
 
 	UFUNCTION(BlueprintCallable)
-	void GiveRoundScoreForTeam(ETeam Team, int Score);
+	void GiveKillScoreForTeam(ETeam Team);
 
 	/**
 	 * 플레이어에게 할당해 줄 수 있는 팀을 계산합니다.
@@ -65,9 +65,9 @@ public:
 		return MaxPlayersPerTeam;
 	}
 	
-	int GetRoundWinningScore() const
+	int GetRoundWinningKillScore() const
 	{
-		return RoundWinningScore;
+		return RoundWinningKillScore;
 	}
 
 	int GetGameWinningScore() const
@@ -77,7 +77,7 @@ public:
 
 	float GetRoundTime() const
 	{
-		return RoundTime;
+		return GameTime;
 	}
 
 	float GetRoundEndTime() const
@@ -90,14 +90,14 @@ public:
 		return CurrentPhaseTime;
 	}
 
-	int GetBlueTeamRoundScore() const
+	int GetBlueTeamKillScore() const
 	{
-		return BlueTeamRoundScore;
+		return BlueTeamKillScore;
 	}
 
-	int GetRedTeamRoundScore() const
+	int GetRedTeamKillScore() const
 	{
-		return RedTeamRoundScore;
+		return RedTeamKillScore;
 	}
 
 	int GetBlueTeamGameScore() const
@@ -115,18 +115,36 @@ public:
 		return CurrentPhase;
 	}
 
+	bool IsGoldenKillTime() const
+	{
+		return CurrentPhase == ECompetitiveGamePhase::Game && CurrentPhaseTime > GameTime;
+	}
+
+	float GetRemainingGameTime() const
+	{
+		if (CurrentPhase != ECompetitiveGamePhase::Game)
+		{
+			return 0.0f;
+		}
+
+		return IsGoldenKillTime() ? 0.0f : GameTime - CurrentPhaseTime;
+	}
+
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	int MaxPlayersPerTeam = 2;
 	
 	UPROPERTY(BlueprintReadOnly)
-	int RoundWinningScore = 100;
+	int RoundWinningKillScore = 5;
 
 	UPROPERTY(BlueprintReadOnly)
 	int GameWinningScore = 3;
 
+	/**
+	 * 한 라운드 타임입니다.
+	 */
 	UPROPERTY(BlueprintReadOnly)
-	float RoundTime = 180.0f;
+	float GameTime = 180.0f;
 
 	// GameEnd에서 GameDestroyed 상태로 전이까지 필요한 시간
 	UPROPERTY(BlueprintReadOnly)
@@ -140,10 +158,10 @@ protected:
 	float RoundEndTime = 5.0f;
 
 	UPROPERTY(BlueprintReadOnly)
-	int BlueTeamRoundScore;
+	int BlueTeamKillScore;
 
 	UPROPERTY(BlueprintReadOnly)
-	int RedTeamRoundScore;
+	int RedTeamKillScore;
 
 	UPROPERTY(BlueprintReadOnly)
 	int BlueTeamGameScore;

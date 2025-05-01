@@ -33,7 +33,10 @@ void AMainMenuPlayerController::BeginPlay()
 	}
 
 	bShowMouseCursor = true;
-	SetInputMode(FInputModeUIOnly());
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(MainMenuUI->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
 
 	UWifiDirectInterface* const Interface = UWifiDirectInterface::GetWifiDirectInterface();
 	Interface->Clear();
