@@ -24,12 +24,18 @@ void AWifiDirectDiscoverPC::BeginPlay()
 	Super::BeginPlay();
 
 	UWifiDirectInterface::GetWifiDirectInterface()->RegisterService();
-	
+
 	check(IsValid(WifiDirectDiscoverUIClass));
 	WifiDirectDiscoverUI = CreateWidget<UUserWidget>(
 		GetWorld(), WifiDirectDiscoverUIClass);
 	check(IsValid(WifiDirectDiscoverUI));
 	WifiDirectDiscoverUI->AddToViewport();
+
+	bShowMouseCursor = true;
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(WifiDirectDiscoverUI->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
 }
 
 void AWifiDirectDiscoverPC::Tick(const float DeltaSeconds)
@@ -46,7 +52,7 @@ void AWifiDirectDiscoverPC::Tick(const float DeltaSeconds)
 			return;
 		}
 		bOpenLevelRequested = true;
-		
+
 		if (Interface->IsP2pGroupOwner())
 		{
 			const FName LobbyLevelName = TEXT("/Game/Levels/Lobby");

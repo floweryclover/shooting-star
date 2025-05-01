@@ -130,6 +130,10 @@ void UWifiDirectInterface::CheckAndRequestPermissions()
 
 void UWifiDirectInterface::CancelConnect()
 {
+	if (!bIsConnecting)
+	{
+		return;
+	}
 	bIsConnecting = false;
 	ConnectingElapsed = 0.0f;
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
