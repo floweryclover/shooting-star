@@ -21,7 +21,7 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 	// Set size for player capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(70.f, 96.0f);
 	GetCapsuleComponent()->SetCollisionProfileName("Pawn");
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> Character_SKELETALMESH(
