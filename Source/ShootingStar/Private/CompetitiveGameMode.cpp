@@ -133,7 +133,7 @@ APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AControl
 	FActorSpawnParameters SpawnInfo;
 	SpawnInfo.Instigator = nullptr;
 	SpawnInfo.Owner = NewPlayer;
-	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // 충돌 무시하고 스폰
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn; // 충돌 무시하고 스폰
 
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = GetWorld()->SpawnActor<ACompetitivePlayerCharacter>(
 		DefaultPawnClass, SpawnTransform, SpawnInfo);;
