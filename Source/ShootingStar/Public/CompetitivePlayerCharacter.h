@@ -20,6 +20,7 @@ enum class EResourceType :uint8;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponData);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPlayerNameChanged, const FString&, PlayerName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FKilled, AActor*, Killer, AActor*, Killee);
 
 UCLASS(Blueprintable)
 class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
@@ -42,6 +43,12 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	TArray<AGun*> WeaponList;
+
+	UPROPERTY(BlueprintAssignable)
+	FPlayerNameChanged OnPlayerNameChanged;
+
+	UPROPERTY(BlueprintAssignable)
+	FKilled OnKilled;
 
 	// 팀 관련
 	ETeam PlayerTeam;
@@ -73,9 +80,6 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FWeaponChanged OnWeaponChanged;
-
-	UPROPERTY(BlueprintAssignable)
-	FPlayerNameChanged OnPlayerNameChanged;
 	
 	FTimerHandle KnifeAttackCoolDownTimer;
 	float KnifeAttackCooldown = 1.0f;

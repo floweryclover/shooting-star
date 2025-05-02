@@ -54,7 +54,7 @@ void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
 	FActorSpawnParameters spawnParameter;
 	spawnParameter.Owner = GetOwner();
-	//spawnParameter.Instigator = GetInstigator();
+	spawnParameter.Instigator = GetInstigator();
 
 	auto projectile = GetWorld()->SpawnActor<ARifle_Projectile>(ARifle_Projectile::StaticClass(), loc, rot, spawnParameter);
 	if (projectile) {

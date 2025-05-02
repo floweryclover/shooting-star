@@ -38,7 +38,7 @@ void ACompetitiveGameMode::BeginPlay()
 void ACompetitiveGameMode::AssignTeamIfNone(APlayerController* Player)
 {
 	UTeamComponent* const TeamComponent = Cast<UTeamComponent>(
-	Player->GetComponentByClass(UTeamComponent::StaticClass()));
+		Player->GetComponentByClass(UTeamComponent::StaticClass()));
 	check(IsValid(TeamComponent));
 
 	// 로비를 거치지 않고 시작한 경우 등 팀이 없는 경우에는 새로 할당
@@ -133,7 +133,8 @@ APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AControl
 	FActorSpawnParameters SpawnInfo;
 	SpawnInfo.Instigator = nullptr;
 	SpawnInfo.Owner = NewPlayer;
-	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn; // 충돌 무시하고 스폰
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	// 충돌 무시하고 스폰
 
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = GetWorld()->SpawnActor<ACompetitivePlayerCharacter>(
 		DefaultPawnClass, SpawnTransform, SpawnInfo);;
@@ -141,6 +142,9 @@ APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AControl
 	UTeamComponent* const TeamComponent = Cast<ACompetitivePlayerController>(NewPlayer)->GetTeamComponent();
 	CompetitivePlayerCharacter->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
 	CompetitivePlayerCharacter->SetPlayerName(NewPlayer->GetPlayerState<APlayerState>()->GetPlayerName());
+
+	CompetitivePlayerCharacter->OnKilled.AddDynamic(this, &ACompetitiveGameMode::HandleKill);
+
 	return CompetitivePlayerCharacter;
 }
 
@@ -152,16 +156,22 @@ void ACompetitiveGameMode::RespawnPlayer(AController* const Player)
 	Player->Possess(NewPawn);
 }
 
-void ACompetitiveGameMode::Kill(AActor* const Killer, AActor* const Killee)
+void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee)
 {
-	if (!IsValid(Killer) || !IsValid(Killee))
-	{
-		return;
-	}
-
 	// 지금 게임 중인지 검증
 	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
 	{
+		return;
+	}
+	
+	if (!IsValid(Killer))
+	{
+		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - Killer is invalid."));
+		return;
+	}
+	if (!IsValid(Killee))
+	{
+		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - Killee is invalid."));
 		return;
 	}
 
@@ -174,11 +184,13 @@ void ACompetitiveGameMode::Kill(AActor* const Killer, AActor* const Killee)
 		|| TeamComponent_Killer->GetTeam() == ETeam::None || TeamComponent_Killee->GetTeam() == ETeam::None
 		|| TeamComponent_Killer->GetTeam() == TeamComponent_Killee->GetTeam())
 	{
+		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - One or more TeamComponent is invalid or None."));
 		return;
 	}
 
 	const ETeam Team_Attacker = TeamComponent_Killer->GetTeam();
 	CompetitiveSystemComponent->GiveKillScoreForTeam(Team_Attacker);
+	UE_LOG(LogShootingStar, Log, TEXT("Gain!"));
 }
 
 void ACompetitiveGameMode::InteractResource(AController* const Controller)

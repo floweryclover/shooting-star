@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "CompetitiveGameMode.generated.h"
 
+class ACompetitivePlayerCharacter;
 class UCompetitiveSystemComponent;
 class UMapGeneratorComponent;
 
@@ -37,7 +38,8 @@ public:
 	 * @param Killer 
 	 * @param Killee 
 	 */
-	void Kill(AActor* Killer, AActor* Killee);
+	UFUNCTION(BlueprintCallable)
+	void HandleKill(AActor* Killer, AActor* Killee);
 	
 	virtual int32 GetNumPlayers() override
 	{

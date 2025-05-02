@@ -70,17 +70,17 @@ void AGun::StopReloadMontage()
 
 void AGun::PullTrigger()
 {
-    APawn* OwnerPawn = Cast<APawn>(GetOwner());
-    if (!OwnerPawn)
-    {
-        UE_LOG(LogTemp, Error, TEXT("OwnerPawn is nullptr!"));
-        return;
-    }
-
-    AController* OwnerController = OwnerPawn->GetController();
-    if (!OwnerController)
+    APlayerController* const OwnerController = Cast<APlayerController>(GetOwner());
+    if (!IsValid(OwnerController))
     {
         UE_LOG(LogTemp, Error, TEXT("OwnerController is nullptr!"));
+        return;
+    }
+    
+    APawn* const OwnerPawn = OwnerController->GetPawn();
+    if (!IsValid(OwnerPawn))
+    {
+        UE_LOG(LogTemp, Error, TEXT("OwnerPawn is nullptr!"));
         return;
     }
 

@@ -111,6 +111,7 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, CurrentWeapon);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, PlayerName);
 }
+
 void ACompetitivePlayerCharacter::SetTeamMaterial(ETeam Team)
 {
 	switch (Team)
@@ -130,6 +131,7 @@ void ACompetitivePlayerCharacter::SetTeamMaterial(ETeam Team)
 		GetMesh()->SetMaterial(0, TeamColor);
 	}
 }
+
 float ACompetitivePlayerCharacter::GetHealthPercent() const
 {
 	return Health / MaxHealth;
@@ -148,7 +150,10 @@ void ACompetitivePlayerCharacter::WeaponChange()
 		return;
 	}
 
-	AGun* SpawnedRifle = GetWorld()->SpawnActor<AGun>(RifleClass);
+	FActorSpawnParameters Params;
+	Params.Owner = GetController();
+	Params.Instigator = this;
+	AGun* SpawnedRifle = GetWorld()->SpawnActor<AGun>(RifleClass, Params);
 	SpawnedRifle->SetReplicates(true);
 	EquipGun(SpawnedRifle);
 }
@@ -161,7 +166,10 @@ void ACompetitivePlayerCharacter::WeaponKnifeChange()
 		return;
 	}
 
-	AKnife* SpawnedKnife = GetWorld()->SpawnActor<AKnife>(KnifeClass);
+	FActorSpawnParameters Params;
+	Params.Owner = GetController();
+	Params.Instigator = this;
+	AKnife* SpawnedKnife = GetWorld()->SpawnActor<AKnife>(KnifeClass, Params);
 	SpawnedKnife->SetReplicates(true);
 	SpawnedKnife->SetActorEnableCollision(true);
 	EquipKnife(SpawnedKnife);
@@ -334,7 +342,19 @@ void ACompetitivePlayerCharacter::PullTrigger()
 float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
                                               class AController* EventInstigator, AActor* DamageCauser)
 {
+	if (!IsValid(EventInstigator))
+	{
+		UE_LOG(LogShootingStar, Error, TEXT("EventInstigator is invalid!"));
+		return 0.0f;
+	}
+	if (!IsValid(DamageCauser))
+	{
+		UE_LOG(LogShootingStar, Error, TEXT("DamageCauser is invalid!"));
+		return 0.0f;
+	}
 	float DamageToApply{0.0f};
+
+	const bool bWasAlreadyDead = IsDead();
 
 	DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	DamageToApply = FMath::Min(Health, DamageToApply);
@@ -342,9 +362,11 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 	UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
 	HitCount += 1;
 	OnRep_HitCount();
-	
-	if (IsDead()) {
+
+	if (!bWasAlreadyDead && IsDead())
+	{
 		PlayDeadAnim();
+		OnKilled.Broadcast(EventInstigator, GetController());
 	}
 
 	return DamageToApply;
@@ -376,7 +398,7 @@ void ACompetitivePlayerCharacter::PlayDeadAnim()
 
 void ACompetitivePlayerCharacter::DestroyCharacter()
 {
-	if (SpawnedPickAxe) 
+	if (SpawnedPickAxe)
 	{
 		SpawnedPickAxe->Destroy();
 	}
