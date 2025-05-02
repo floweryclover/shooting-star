@@ -24,7 +24,6 @@
 #include "ClientComponent.h"
 #include "CompetitiveGameMode.h"
 #include "CompetitivePlayerController.h"
-#include "TeamComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
 
@@ -89,6 +88,7 @@ void ACompetitivePlayerCharacter::BeginPlay()
 	{
 		PlayerTeam = TeamComponent->GetTeam();
 		SetTeamMaterial(PlayerTeam);
+		TeamComponent->OnTeamChanged.AddDynamic(this, &ACompetitivePlayerCharacter::OnTeamChanged);
 	}
 }
 
@@ -555,6 +555,11 @@ void ACompetitivePlayerCharacter::OnRep_CurrentWeapon()
 void ACompetitivePlayerCharacter::OnRep_PlayerName()
 {
 	OnPlayerNameChanged.Broadcast(PlayerName);
+}
+
+void ACompetitivePlayerCharacter::OnTeamChanged(const ETeam Team)
+{
+	SetTeamMaterial(Team);
 }
 
 void ACompetitivePlayerCharacter::RefreshAnimInstance()

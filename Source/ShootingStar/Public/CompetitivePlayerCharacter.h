@@ -4,12 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Components/BoxComponent.h"
+#include "TeamComponent.h"
 #include "WeaponData.h"
-#include "ResourceType.h"
 #include "CompetitivePlayerCharacter.generated.h"
 
-class UTeamComponent;
 class UCharacter_AnimInstance;
 class AGun;
 class AKnife;
@@ -232,6 +230,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_PlayerName();
+
+	UFUNCTION()
+	void OnTeamChanged(ETeam Team);
 	
 	void RefreshAnimInstance();
 };
