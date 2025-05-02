@@ -127,7 +127,8 @@ void UCompetitiveSystemComponent::Update_Game()
 	}
 	
 	// 승리 팀 결정됨
-	if (BlueTeamKillScore >= RoundWinningKillScore || RedTeamKillScore >= RoundWinningKillScore)
+	if (BlueTeamKillScore >= RoundWinningKillScore || RedTeamKillScore >= RoundWinningKillScore // 점수 기준을 넘겼거나
+	|| (CurrentPhaseTime >= GameTime && (BlueTeamKillScore > RedTeamKillScore || RedTeamKillScore > BlueTeamKillScore))) // 시간이 다 되었을 때 앞선 팀이 있다면
 	{
 		const ETeam Team = BlueTeamKillScore >= RoundWinningKillScore ? ETeam::Blue : ETeam::Red;
 

@@ -291,6 +291,17 @@ void ACompetitiveGameMode::OnGameStarted()
 	for (APlayerState* const PlayerState : GameState->PlayerArray)
 	{
 		APlayerController* const Player = PlayerState->GetPlayerController();
+		if (!IsValid(Player))
+		{
+			continue;
+		}
+
+		if (APawn* const Pawn = Player->GetPawn(); IsValid(Pawn))
+		{
+			Player->UnPossess();
+			Pawn->Destroy();
+		}
+		
 		RestartPlayer(Player);
 	}
 }
