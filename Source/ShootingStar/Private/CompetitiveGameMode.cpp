@@ -21,17 +21,40 @@ ACompetitiveGameMode::ACompetitiveGameMode()
 	bUseSeamlessTravel = true;
 	PlayerControllerClass = ACompetitivePlayerController::StaticClass();
 	GameStateClass = ACompetitiveGameState::StaticClass();
-	
-	CompetitiveSystemComponent = CreateDefaultSubobject<UCompetitiveSystemComponent>(TEXT("CompetitiveSystemComponent"));
+
+	CompetitiveSystemComponent = CreateDefaultSubobject<
+		UCompetitiveSystemComponent>(TEXT("CompetitiveSystemComponent"));
 	MapGeneratorComponent = CreateDefaultSubobject<UMapGeneratorComponent>(TEXT("MapGeneratorComponent"));
 }
 
 void ACompetitiveGameMode::BeginPlay()
 {
-    Super::BeginPlay();
+	Super::BeginPlay();
 
-    // MapGeneratorComponent 초기화
-    MapGeneratorComponent->Initialize();
+	// MapGeneratorComponent 초기화
+	MapGeneratorComponent->Initialize();
+}
+
+void ACompetitiveGameMode::AssignTeamIfNone(APlayerController* Player)
+{
+	UTeamComponent* const TeamComponent = Cast<UTeamComponent>(
+	Player->GetComponentByClass(UTeamComponent::StaticClass()));
+	check(IsValid(TeamComponent));
+
+	// 로비를 거치지 않고 시작한 경우 등 팀이 없는 경우에는 새로 할당
+	if (TeamComponent->GetTeam() == ETeam::None)
+	{
+		const ETeam TeamToAssign = CompetitiveSystemComponent->GetTeamForNextPlayer(
+			GetGameState<AGameStateBase>()->PlayerArray);
+
+		// 혹시 팀 할당에 실패했으면 즉시 게임 종료
+		if (TeamToAssign == ETeam::None)
+		{
+			CompetitiveSystemComponent->EndGame();
+			return;
+		}
+		TeamComponent->SetTeam(TeamToAssign);
+	}
 }
 
 void ACompetitiveGameMode::Tick(const float DeltaSeconds)
@@ -52,30 +75,6 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 	else if (CurrentPhase == ECompetitiveGamePhase::GameDestroyed)
 	{
 		GetWorld()->ServerTravel(ExitLevel.ToString());
-	}
-}
-
-void ACompetitiveGameMode::PostLogin(APlayerController* const NewPlayer)
-{
-	Super::PostLogin(NewPlayer);
-
-	UTeamComponent* const TeamComponent = Cast<UTeamComponent>(
-		NewPlayer->GetComponentByClass(UTeamComponent::StaticClass()));
-	check(TeamComponent != nullptr);
-
-	// 로비를 거치지 않고 시작한 경우 등 팀이 없는 경우에는 새로 할당
-	if (TeamComponent->GetTeam() == ETeam::None)
-	{
-		const ETeam TeamToAssign = CompetitiveSystemComponent->GetTeamForNextPlayer(
-			GetGameState<AGameStateBase>()->PlayerArray);
-
-		// 혹시 팀 할당에 실패했으면 즉시 게임 종료
-		if (TeamToAssign == ETeam::None)
-		{
-			CompetitiveSystemComponent->EndGame();
-			return;
-		}
-		TeamComponent->SetTeam(TeamToAssign);
 	}
 }
 
@@ -122,19 +121,22 @@ void ACompetitiveGameMode::SwapPlayerControllers(APlayerController* const OldPC,
 }
 
 APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer,
-	const FTransform& SpawnTransform)
+                                                                        const FTransform& SpawnTransform)
 {
 	if (!DefaultPawnClass)
 	{
 		return nullptr;
 	}
 
+	AssignTeamIfNone(Cast<APlayerController>(NewPlayer));
+
 	FActorSpawnParameters SpawnInfo;
 	SpawnInfo.Instigator = nullptr;
 	SpawnInfo.Owner = NewPlayer;
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // 충돌 무시하고 스폰
 
-	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = GetWorld()->SpawnActor<ACompetitivePlayerCharacter>(DefaultPawnClass, SpawnTransform, SpawnInfo);;
+	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = GetWorld()->SpawnActor<ACompetitivePlayerCharacter>(
+		DefaultPawnClass, SpawnTransform, SpawnInfo);;
 
 	UTeamComponent* const TeamComponent = Cast<ACompetitivePlayerController>(NewPlayer)->GetTeamComponent();
 	CompetitivePlayerCharacter->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
@@ -144,7 +146,9 @@ APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AControl
 
 void ACompetitiveGameMode::RespawnPlayer(AController* const Player)
 {
-	APawn* NewPawn = SpawnDefaultPawnAtTransform(Player, FTransform{FRotator{0.0f, 0.0f, 0.0f}, FVector{1000.0f, 0.0f, 1000.0f}, });
+	APawn* NewPawn = SpawnDefaultPawnAtTransform(Player, FTransform{
+		                                             FRotator{0.0f, 0.0f, 0.0f}, FVector{1000.0f, 0.0f, 1000.0f},
+	                                             });
 	Player->Possess(NewPawn);
 }
 
@@ -162,15 +166,17 @@ void ACompetitiveGameMode::Kill(AActor* const Killer, AActor* const Killee)
 	}
 
 	// 팀이 유효한지 검증
-	UTeamComponent* const TeamComponent_Killer = Cast<UTeamComponent>(Killer->GetComponentByClass(UTeamComponent::StaticClass()));
-	UTeamComponent* const TeamComponent_Killee = Cast<UTeamComponent>(Killee->GetComponentByClass(UTeamComponent::StaticClass()));
+	UTeamComponent* const TeamComponent_Killer = Cast<UTeamComponent>(
+		Killer->GetComponentByClass(UTeamComponent::StaticClass()));
+	UTeamComponent* const TeamComponent_Killee = Cast<UTeamComponent>(
+		Killee->GetComponentByClass(UTeamComponent::StaticClass()));
 	if (!IsValid(TeamComponent_Killer) || !IsValid(TeamComponent_Killee)
 		|| TeamComponent_Killer->GetTeam() == ETeam::None || TeamComponent_Killee->GetTeam() == ETeam::None
 		|| TeamComponent_Killer->GetTeam() == TeamComponent_Killee->GetTeam())
 	{
 		return;
 	}
-	
+
 	const ETeam Team_Attacker = TeamComponent_Killer->GetTeam();
 	CompetitiveSystemComponent->GiveKillScoreForTeam(Team_Attacker);
 }
@@ -210,7 +216,7 @@ void ACompetitiveGameMode::InteractResource(AController* const Controller)
 	{
 		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
 		AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
-		
+
 		InventoryComponent->AddResource(Resource->ResourceData);
 	}
 }
@@ -237,13 +243,13 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 
 	// 실제로 자원을 가졌는지 검증
 	const TArray<FResourceInventoryData>& ResourcesHave = InventoryComponent->GetAllResources();
-	for (int i=0; i<static_cast<int>(EResourceType::End); ++i)
+	for (int i = 0; i < static_cast<int>(EResourceType::End); ++i)
 	{
 		if (Resources[i] <= 0)
 		{
 			continue;
 		}
-		
+
 		if (!ResourcesHave[i].Resource)
 		{
 			return;
@@ -254,7 +260,7 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 			return;
 		}
 	}
-	
+
 	const FWeaponData CraftedWeapon = InventoryComponent->Craft_Weapon(Weapon, Resources);
 	Character->SetWeaponData(CraftedWeapon);
 }

@@ -22,8 +22,6 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
-	virtual void PostLogin(APlayerController* NewPlayer) override;
-
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 
 	virtual void Logout(AController* Exiting) override;
@@ -84,4 +82,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UMapGeneratorComponent> MapGeneratorComponent;
+
+private:
+	void AssignTeamIfNone(APlayerController* Player);
 };
