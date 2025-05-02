@@ -143,6 +143,8 @@ void ACompetitivePlayerCharacter::WeaponChange()
 	FActorSpawnParameters Params;
 	Params.Owner = GetController();
 	Params.Instigator = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
 	AGun* SpawnedRifle = GetWorld()->SpawnActor<AGun>(RifleClass, Params);
 	SpawnedRifle->SetReplicates(true);
 	EquipGun(SpawnedRifle);
@@ -159,6 +161,8 @@ void ACompetitivePlayerCharacter::WeaponKnifeChange()
 	FActorSpawnParameters Params;
 	Params.Owner = GetController();
 	Params.Instigator = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
 	AKnife* SpawnedKnife = GetWorld()->SpawnActor<AKnife>(KnifeClass, Params);
 	SpawnedKnife->SetReplicates(true);
 	SpawnedKnife->SetActorEnableCollision(true);
@@ -169,59 +173,44 @@ void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 {
 	UE_LOG(LogTemp, Warning, TEXT("PlayerTeam: %d"), (int32)PlayerTeam);
 	UnEquipPickAxe();
-	if (EquippedGun)
+	if (IsValid(EquippedKnife))
 	{
-		if (EquippedKnife)
-		{
-			EquippedKnife->Destroy();
-			EquippedKnife = nullptr;
-		}
+		EquippedKnife->Destroy();
+		EquippedKnife = nullptr;
+	}
+	
+	if (IsValid(EquippedGun))
+	{
 		EquippedGun->Destroy();
-		EquippedGun = nullptr;
 	}
 
-	if (GunToEquip)
-	{
-		EquippedGun = GunToEquip;
-
-		if (EquippedGun)
-		{
-			EquippedGun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-			                               TEXT("Weapon_R_Socket"));
-		}
-	}
-	ForceNetUpdate();
-	RefreshAnimInstance();
+	EquippedGun = GunToEquip;
+	OnRep_EquippedGun();
+	OnRep_EquippedKnife();
 }
 
 void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 {
 	UnEquipPickAxe();
-	if (EquippedKnife)
+	if (IsValid(EquippedGun))
 	{
-		if (EquippedGun)
-		{
-			EquippedGun->Destroy();
-			EquippedGun = nullptr;
-		}
+		EquippedGun->Destroy();
+		EquippedGun = nullptr;
+	}
+	
+	if (IsValid(EquippedKnife))
+	{
 		EquippedKnife->Destroy();
-		EquippedKnife = nullptr;
 	}
 
-	if (KnifeToEquip)
+	if (IsValid(KnifeToEquip))
 	{
-		EquippedKnife = KnifeToEquip;
-
-		if (EquippedKnife)
-		{
-			EquippedKnife->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-			                                 TEXT("Weapon_R_Socket"));
-			EquippedKnife->SetknifeDamage(EquippedKnife->GetknifeDamage() * IncreasedDamage);
-		}
+		KnifeToEquip->SetknifeDamage(KnifeToEquip->GetknifeDamage() * IncreasedDamage);
 	}
 
-	ForceNetUpdate();
-	RefreshAnimInstance();
+	EquippedKnife = KnifeToEquip;
+	OnRep_EquippedKnife();
+	OnRep_EquippedGun();
 }
 
 void ACompetitivePlayerCharacter::Attack()
@@ -530,11 +519,33 @@ void ACompetitivePlayerCharacter::ResetKnifeAttackCooldown()
 
 void ACompetitivePlayerCharacter::OnRep_EquippedGun()
 {
+	if (IsValid(EquippedGun))
+	{
+		if (!HasAuthority())
+		{
+			EquippedGun->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		}
+		EquippedGun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+							TEXT("Weapon_R_Socket"));
+	}
 	RefreshAnimInstance();
 }
 
 void ACompetitivePlayerCharacter::OnRep_EquippedKnife()
 {
+	if (IsValid(EquippedKnife))
+	{
+		if (!HasAuthority())
+		{
+			if (!HasAuthority())
+			{
+				EquippedKnife->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+			}
+		}
+		EquippedKnife->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+					TEXT("Weapon_R_Socket"));
+	}
+
 	RefreshAnimInstance();
 }
 
