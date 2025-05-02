@@ -120,6 +120,11 @@ void ACompetitivePlayerController::SetupInputComponent()
 void ACompetitivePlayerController::Move(const FInputActionValue& Value)
 {
     // 자신에게 할당된 캐릭터에 대한 이동 입력은 자동 동기화, 즉시 이 함수에서 진행
+	ACharacter* const ControllingCharacter = GetCharacter();
+	if (!IsValid(ControllingCharacter))
+	{
+		return;
+	}
 	
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -134,9 +139,10 @@ void ACompetitivePlayerController::Move(const FInputActionValue& Value)
 	// get right vector 
 	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
+	
 	// add movement 
-	GetCharacter()->AddMovementInput(ForwardDirection, MovementVector.Y);
-	GetCharacter()->AddMovementInput(RightDirection, MovementVector.X);
+	ControllingCharacter->AddMovementInput(ForwardDirection, MovementVector.Y);
+	ControllingCharacter->AddMovementInput(RightDirection, MovementVector.X);
 }
 
 void ACompetitivePlayerController::LookMouse()
