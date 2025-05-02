@@ -48,6 +48,7 @@ void UCompetitiveSystemComponent::StartGame()
 
 	CurrentPhase = ECompetitiveGamePhase::Game;
 	CurrentPhaseTime = 0.0f;
+	OnGameStarted.Broadcast();
 }
 
 void UCompetitiveSystemComponent::EndGame()
@@ -142,6 +143,7 @@ void UCompetitiveSystemComponent::Update_RoundEnd()
 		BlueTeamKillScore = 0;
 		RedTeamKillScore = 0;
 		CurrentPhaseTime = 0.0f;
+		OnGameStarted.Broadcast();
 	}
 }
 

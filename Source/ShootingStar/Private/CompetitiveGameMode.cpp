@@ -33,28 +33,8 @@ void ACompetitiveGameMode::BeginPlay()
 
 	// MapGeneratorComponent 초기화
 	MapGeneratorComponent->Initialize();
-}
 
-void ACompetitiveGameMode::AssignTeamIfNone(APlayerController* Player)
-{
-	UTeamComponent* const TeamComponent = Cast<UTeamComponent>(
-		Player->GetComponentByClass(UTeamComponent::StaticClass()));
-	check(IsValid(TeamComponent));
-
-	// 로비를 거치지 않고 시작한 경우 등 팀이 없는 경우에는 새로 할당
-	if (TeamComponent->GetTeam() == ETeam::None)
-	{
-		const ETeam TeamToAssign = CompetitiveSystemComponent->GetTeamForNextPlayer(
-			GetGameState<AGameStateBase>()->PlayerArray);
-
-		// 혹시 팀 할당에 실패했으면 즉시 게임 종료
-		if (TeamToAssign == ETeam::None)
-		{
-			CompetitiveSystemComponent->EndGame();
-			return;
-		}
-		TeamComponent->SetTeam(TeamToAssign);
-	}
+	CompetitiveSystemComponent->OnGameStarted.AddDynamic(this, &ACompetitiveGameMode::OnGameStarted);
 }
 
 void ACompetitiveGameMode::Tick(const float DeltaSeconds)
@@ -76,6 +56,17 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 	{
 		GetWorld()->ServerTravel(ExitLevel.ToString());
 	}
+
+	for (APlayerState* const PlayerState : GameState->PlayerArray)
+	{
+		APlayerController* const PlayerController = PlayerState->GetPlayerController();
+		if (!IsValid(PlayerController) || IsValid(PlayerController->GetPawn()))
+		{
+			continue;
+		}
+
+		RestartPlayer(PlayerController);
+	}
 }
 
 void ACompetitiveGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId,
@@ -89,6 +80,11 @@ void ACompetitiveGameMode::PreLogin(const FString& Options, const FString& Addre
 		return;
 	}
 	NumPlayers += 1;
+}
+
+void ACompetitiveGameMode::OnPostLogin(AController* const NewPlayer)
+{
+	Super::OnPostLogin(NewPlayer);
 }
 
 void ACompetitiveGameMode::Logout(AController* Exiting)
@@ -148,14 +144,6 @@ APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AControl
 	return CompetitivePlayerCharacter;
 }
 
-void ACompetitiveGameMode::RespawnPlayer(AController* const Player)
-{
-	APawn* NewPawn = SpawnDefaultPawnAtTransform(Player, FTransform{
-		                                             FRotator{0.0f, 0.0f, 0.0f}, FVector{1000.0f, 0.0f, 1000.0f},
-	                                             });
-	Player->Possess(NewPawn);
-}
-
 void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee)
 {
 	// 지금 게임 중인지 검증
@@ -190,7 +178,6 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee
 
 	const ETeam Team_Attacker = TeamComponent_Killer->GetTeam();
 	CompetitiveSystemComponent->GiveKillScoreForTeam(Team_Attacker);
-	UE_LOG(LogShootingStar, Log, TEXT("Gain!"));
 }
 
 void ACompetitiveGameMode::InteractResource(AController* const Controller)
@@ -275,4 +262,35 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 
 	const FWeaponData CraftedWeapon = InventoryComponent->Craft_Weapon(Weapon, Resources);
 	Character->SetWeaponData(CraftedWeapon);
+}
+
+void ACompetitiveGameMode::AssignTeamIfNone(APlayerController* Player)
+{
+	UTeamComponent* const TeamComponent = Cast<UTeamComponent>(
+		Player->GetComponentByClass(UTeamComponent::StaticClass()));
+	check(IsValid(TeamComponent));
+
+	// 로비를 거치지 않고 시작한 경우 등 팀이 없는 경우에는 새로 할당
+	if (TeamComponent->GetTeam() == ETeam::None)
+	{
+		const ETeam TeamToAssign = CompetitiveSystemComponent->GetTeamForNextPlayer(
+			GetGameState<AGameStateBase>()->PlayerArray);
+
+		// 혹시 팀 할당에 실패했으면 즉시 게임 종료
+		if (TeamToAssign == ETeam::None)
+		{
+			CompetitiveSystemComponent->EndGame();
+			return;
+		}
+		TeamComponent->SetTeam(TeamToAssign);
+	}
+}
+
+void ACompetitiveGameMode::OnGameStarted()
+{
+	for (APlayerState* const PlayerState : GameState->PlayerArray)
+	{
+		APlayerController* const Player = PlayerState->GetPlayerController();
+		RestartPlayer(Player);
+	}
 }

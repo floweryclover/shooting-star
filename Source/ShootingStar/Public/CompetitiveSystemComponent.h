@@ -17,6 +17,8 @@ enum class ECompetitiveGamePhase : uint8
 	GameDestroyed, // 완전히 종료되어 더 이상 유효한 게임 상태가 아닙니다.
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGameStarted);
+
 /**
 * 3선승 게임인 경쟁 모드의 동작과 상태를 정의하는 컴포넌트입니다.
 * @details RoundScore는 한 라운드에서 각 팀이 얻은 점수를, GameScore는 승리한 라운드 수를 의미합니다.
@@ -27,6 +29,12 @@ class SHOOTINGSTAR_API UCompetitiveSystemComponent final : public UActorComponen
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Game 상태로 처음 전이될 때 발생하는 이벤트.
+	 */
+	UPROPERTY(BlueprintAssignable)
+	FGameStarted OnGameStarted;
+	
 	UCompetitiveSystemComponent();
 	
 	/**

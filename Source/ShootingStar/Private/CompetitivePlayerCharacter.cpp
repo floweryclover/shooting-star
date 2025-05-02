@@ -6,24 +6,14 @@
 #include "Knife.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
-#include "Components/DecalComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Materials/Material.h"
 #include "Engine/World.h"
-#include "InventoryComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "ResourceActor.h"
-#include "InputAction.h"
-#include "InputMappingContext.h"
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
 #include "Character_AnimInstance.h"
-#include "ClientComponent.h"
-#include "CompetitiveGameMode.h"
-#include "CompetitivePlayerController.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
 
@@ -410,7 +400,6 @@ void ACompetitivePlayerCharacter::DestroyCharacter()
 	{
 		EquippedKnife->Destroy();
 	}
-	Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode())->RespawnPlayer(GetController());
 	Destroy();
 }
 

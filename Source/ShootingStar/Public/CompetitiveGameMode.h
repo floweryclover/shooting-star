@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "CompetitiveGameMode.generated.h"
 
+class ACompetitivePlayerController;
 class ACompetitivePlayerCharacter;
 class UCompetitiveSystemComponent;
 class UMapGeneratorComponent;
@@ -25,13 +26,13 @@ public:
 
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 
+	virtual void OnPostLogin(AController* NewPlayer) override;
+	
 	virtual void Logout(AController* Exiting) override;
 
 	virtual void SwapPlayerControllers(APlayerController* OldPC, APlayerController* NewPC) override;
 	
 	virtual APawn* SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform) override;
-	
-	void RespawnPlayer(AController* Player);
 
 	/**
 	 * Killer에게 점수를 줍니다. 실제로 액터를 죽이거나 하지 않습니다.
@@ -87,4 +88,7 @@ protected:
 
 private:
 	void AssignTeamIfNone(APlayerController* Player);
+
+	UFUNCTION()
+	void OnGameStarted();
 };
