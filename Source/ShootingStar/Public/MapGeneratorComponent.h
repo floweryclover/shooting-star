@@ -19,6 +19,11 @@ class SHOOTINGSTAR_API UDecorationGenerator;
 
 DECLARE_LOG_CATEGORY_EXTERN(MapGenerator, Log, All);
 
+/**
+ * @brief 맵을 생성하는 컴포넌트입니다.
+ * @details 맵의 크기, 장애물, 자원, 장식물 등을 설정하고 생성합니다.
+ * @note 이 컴포넌트는 CompetitiveGameMode에 부착되어 사용됩니다.
+**/
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UMapGeneratorComponent : public UActorComponent
 {
@@ -65,6 +70,7 @@ public:
 	void Initialize();
 	void InitializeMapCoordinate(int32 GridSize);
 	void GenerateMap();
+	// void RegisterMapActors();
 	void SetObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType);
 	void SetObjectRegion(FVector Location, UStaticMesh* ObjectMesh, EObjectMask ObjectType);
 	bool HasObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType);
@@ -79,21 +85,31 @@ public:
 		return (X + mapHalfSize) + ((Y + mapHalfSize) * mapHalfSize * 2);
 	}
 
+	// 스폰 포인트 관련 함수
+	void InitializeSpawnPoints();
+	bool IsValidSpawnLocation(const FVector& Location);
+	UFUNCTION(BlueprintCallable, Category = "Spawn System")
+	FVector GetRandomSpawnLocation();
+
+	// // Map Static Actors
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map Static Actors", meta = (AllowPrivateAccess = "true"))
+	// TArray<UStaticMesh*> MapStaticActors;
+
 protected:
 	// Map Settings
-	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1000", ClampMax = "50000"))
-	int32 mapHalfSize = 5000;
+	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1000", ClampMax = "10000"))
+	int32 mapHalfSize = 2500;
 
+	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "20"))
+	int32 numObstacles = 5;
+	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "50"))
+	int32 numSubObstacles = 15;
+	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "20"))
+	int32 numFences = 5;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
-	int32 numObstacles = 15;
+	int32 numResources = 30;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
-	int32 numSubObstacles = 20;
-	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
-	int32 numFences = 15;
-	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "200"))
-	int32 numResources = 40;
-	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "300"))
-	int32 numDecos = 30;
+	int32 numDecos = 20;
 
 	// Distance Settings
 	UPROPERTY(EditAnywhere, Category = "Distance Settings", meta = (ClampMin = "100.0", ClampMax = "5000.0"))
@@ -109,7 +125,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Pattern Settings", meta = (ClampMin = "50.0", ClampMax = "500.0"))
 	float patternSpacing = 100.f;
 	UPROPERTY(EditAnywhere, Category = "Pattern Settings", meta = (ClampMin = "100.0", ClampMax = "1000.0"))
-	float clusterRadius = 300.f;
+	float clusterRadius = 500.f;
 	UPROPERTY(EditAnywhere, Category = "Pattern Settings", meta = (ClampMin = "1", ClampMax = "100"))
 	int32 maxClusterNum = 20;
 
@@ -148,4 +164,19 @@ protected:
 	UResourceGenerator* resourceGenerator;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Generators")
 	UDecorationGenerator* decorationGenerator;
+
+	// 스폰 포인트 설정
+	UPROPERTY(EditAnywhere, Category = "Spawn Settings")
+	int32 NumSpawnPointsPerQuadrant = 5; // 각 사분면당 스폰 포인트 개수
+
+	UPROPERTY(VisibleAnywhere, Category = "Spawn Settings")
+	TArray<FVector> PlayerSpawnPoints;
+
+	// 스폰 포인트 간 최소 거리
+	UPROPERTY(EditAnywhere, Category = "Spawn Settings")
+	float MinSpawnPointDistance = 1000.f;
+
+	// 맵 경계로부터의 최소 거리
+	UPROPERTY(EditAnywhere, Category = "Spawn Settings")
+	float BorderMargin = 1000.f;
 };

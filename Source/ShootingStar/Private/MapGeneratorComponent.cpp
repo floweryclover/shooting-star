@@ -24,23 +24,41 @@ UMapGeneratorComponent::UMapGeneratorComponent()
 
 void UMapGeneratorComponent::Initialize()
 {
-    // Map Instanced Mesh Actor 생성
+    // 1. Map Coordinate 초기화화
+    InitializeMapCoordinate(mapHalfSize * 2);
+
+    // 2. Map Instanced Mesh Actor 생성
     FActorSpawnParameters Params;
     Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     MapInstancedMeshActor = GetWorld()->SpawnActor<AMapInstancedMeshActor>(Params);
-    MapInstancedMeshActor->SetReplicates(true);
-    MapInstancedMeshActor->Initialize(this);
+    if (!IsValid(MapInstancedMeshActor))
+    {
+        UE_LOG(MapGenerator, Error, TEXT("Failed to spawn MapInstancedMeshActor"));
+        return;
+    }
+    else
+    {
+        MapInstancedMeshActor->SetReplicates(true);
+        MapInstancedMeshActor->Initialize(this);
+    }
 
-	// Generators 초기화
-	obstacleGenerator->Initialize(this);
-	subObstacleGenerator->Initialize(this);
-	fenceGenerator->Initialize(this);
-	resourceGenerator->Initialize(this);
-	decorationGenerator->Initialize(this);
+    // 3. Generators 초기화
+    if (IsValid(obstacleGenerator)) obstacleGenerator->Initialize(this);
+    if (IsValid(subObstacleGenerator)) subObstacleGenerator->Initialize(this);
+    if (IsValid(fenceGenerator)) fenceGenerator->Initialize(this);
+    if (IsValid(resourceGenerator)) resourceGenerator->Initialize(this);
+    if (IsValid(decorationGenerator)) decorationGenerator->Initialize(this);
 
-	// 절차적 생성 시작
-    InitializeMapCoordinate(mapHalfSize * 2);
+    // // 4. Static Actors 등록
+    // RegisterMapActors();
+
+    // 5. 절차적 생성 시작
     GenerateMap();
+    
+    // 6. 스폰 포인트 초기화
+    InitializeSpawnPoints();
+
+    UE_LOG(MapGenerator, Log, TEXT("Map Generator initialized successfully"));
 }
 
 void UMapGeneratorComponent::InitializeMapCoordinate(int32 GridSize)
@@ -60,6 +78,43 @@ void UMapGeneratorComponent::GenerateMap()
 
     UE_LOG(MapGenerator, Log, TEXT("Generate Map Completed"));
 }
+
+// void UMapGeneratorComponent::RegisterMapActors()
+// {
+//     if (MapStaticActors.Num() == 0)
+//     {
+//         UE_LOG(MapGenerator, Warning, TEXT("No static mesh actors to register"));
+//         return;
+//     }
+
+//     for (AStaticMeshActor* SM_Actor : MapStaticActors)
+//     {
+//         if (!IsValid(SM_Actor))
+//         {
+//             UE_LOG(MapGenerator, Warning, TEXT("Invalid static mesh actor found in MapStaticActors"));
+//             continue;
+//         }
+
+//         UStaticMeshComponent* MeshComp = SM_Actor->GetStaticMeshComponent();
+//         if (!IsValid(MeshComp))
+//         {
+//             UE_LOG(MapGenerator, Warning, TEXT("Invalid static mesh component in actor"));
+//             continue;
+//         }
+
+//         UStaticMesh* ActorStaticMesh = MeshComp->GetStaticMesh();
+//         if (!IsValid(ActorStaticMesh))
+//         {
+//             UE_LOG(MapGenerator, Warning, TEXT("Invalid static mesh in component"));
+//             continue;
+//         }
+//         FVector ActorLocation = SM_Actor->GetActorLocation();
+//         if (PlaceObject(ActorLocation, ActorStaticMesh))
+//         {
+//             SetObjectRegion(ActorLocation, ActorStaticMesh, EObjectMask::ObstacleMask);
+//         }
+//     }
+// }
 
 // 좌표 배열에 오브젝트를 설정하는 함수
 void UMapGeneratorComponent::SetObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType)
@@ -194,9 +249,17 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
     if (NewActor)
     {
         NewActor->SetReplicates(true);
-        NewActor->GetStaticMeshComponent()->SetIsReplicated(true);
-        NewActor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
-        NewActor->GetStaticMeshComponent()->SetStaticMesh(ObjectMesh);
+        UStaticMeshComponent* MeshComp = NewActor->GetStaticMeshComponent();
+        MeshComp->SetIsReplicated(true);
+        MeshComp->SetMobility(EComponentMobility::Movable);
+        MeshComp->SetStaticMesh(ObjectMesh);
+
+        MeshComp->SetCanEverAffectNavigation(false);
+        // 메쉬 이름이 "SM_tumbleweed_001"인 경우 Player와 Overlap되도록 설정
+        FString MeshName = ObjectMesh->GetName();
+        if (MeshName.Equals(TEXT("SM_tumbleweed_001")))
+            MeshComp->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
+
         NewActor->SetActorLocation(Location);
 
         UE_LOG(MapGenerator, Log, TEXT("Placed StaticMeshActor at %s"), *Location.ToString());
@@ -205,3 +268,72 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
 
     return false;
 }
+
+#pragma region Player Spawn
+void UMapGeneratorComponent::InitializeSpawnPoints()
+{
+    PlayerSpawnPoints.Empty();
+
+    // 각 사분면별로 스폰 포인트 생성
+    for (int32 Quadrant = 0; Quadrant < 4; Quadrant++)
+    {
+        for (int32 i = 0; i < NumSpawnPointsPerQuadrant; i++)
+        {
+            float MinX = (Quadrant == 1 || Quadrant == 2) ? 0 : -mapHalfSize + BorderMargin;
+            float MaxX = (Quadrant == 1 || Quadrant == 2) ? mapHalfSize - BorderMargin : 0;
+            float MinY = (Quadrant == 2 || Quadrant == 3) ? 0 : -mapHalfSize + BorderMargin;
+            float MaxY = (Quadrant == 2 || Quadrant == 3) ? mapHalfSize - BorderMargin : 0;
+
+            FVector SpawnLocation;
+            int32 MaxAttempts = 100;
+            bool bFoundValidLocation = false;
+
+            // 유효한 스폰 위치를 찾을 때까지 시도
+            while (MaxAttempts > 0 && !bFoundValidLocation)
+            {
+                SpawnLocation = FVector(
+                    FMath::RandRange(MinX, MaxX),
+                    FMath::RandRange(MinY, MaxY),
+                    0.f
+                );
+
+                if (IsValidSpawnLocation(SpawnLocation))
+                {
+                    PlayerSpawnPoints.Add(SpawnLocation);
+                    bFoundValidLocation = true;
+                }
+
+                MaxAttempts--;
+            }
+        }
+    }
+
+    UE_LOG(MapGenerator, Log, TEXT("Initialized %d spawn points"), PlayerSpawnPoints.Num());
+}
+
+bool UMapGeneratorComponent::IsValidSpawnLocation(const FVector& Location)
+{
+    // 이미 존재하는 스폰 포인트들과의 거리 체크
+    for (const FVector& ExistingSpot : PlayerSpawnPoints)
+    {
+        if (FVector::Dist(Location, ExistingSpot) < MinSpawnPointDistance)
+            return false;
+    }
+
+    // 해당 위치에 다른 오브젝트가 있는지 체크
+    return CheckLocation(Location);
+}
+
+FVector UMapGeneratorComponent::GetRandomSpawnLocation()
+{
+    if (PlayerSpawnPoints.Num() == 0)
+    {
+        UE_LOG(MapGenerator, Warning, TEXT("No spawn points available!"));
+        return FVector::ZeroVector;
+    }
+
+    // 사용 가능한 스폰 포인트 중에서 랜덤하게 선택
+    const int32 RandomIndex = FMath::RandRange(0, PlayerSpawnPoints.Num() - 1);
+    return PlayerSpawnPoints[RandomIndex];
+}
+#pragma endregion

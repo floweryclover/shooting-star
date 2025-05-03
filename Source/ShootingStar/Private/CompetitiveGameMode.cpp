@@ -279,7 +279,7 @@ void ACompetitiveGameMode::AssignTeamIfNone(APlayerController* Player)
 		// 혹시 팀 할당에 실패했으면 즉시 게임 종료
 		if (TeamToAssign == ETeam::None)
 		{
-			CompetitiveSystemComponent->EndGame();
+			// CompetitiveSystemComponent->EndGame();
 			return;
 		}
 		TeamComponent->SetTeam(TeamToAssign);

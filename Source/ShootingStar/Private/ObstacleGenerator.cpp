@@ -17,6 +17,8 @@ void UObstacleGenerator::Initialize(UMapGeneratorComponent* InOwner)
         obstacleMinDistance = Owner->GetObstacleMinDistance();
         obstacleMeshes = Owner->GetObstacleMeshes();
     }
+
+    UE_LOG(MapGenerator, Log, TEXT("ObstacleGenerator Initialized, obstacle Meshes: %d,"), obstacleMeshes.Num());
 }
 
 // 건물, 큰 바위 등 주요 Obstacles를 생성하는 함수
