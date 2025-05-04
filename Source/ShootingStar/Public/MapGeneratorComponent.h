@@ -66,6 +66,8 @@ public:
 
 	FORCEINLINE AMapInstancedMeshActor* GetMapInstancedMeshActor() const { return MapInstancedMeshActor; }
 
+	FORCEINLINE const TArray<FVector>& GetPlayerSpawnPoints() const { return PlayerSpawnPoints; }
+	
 	// Map Generation Functions
 	void Initialize();
 	void InitializeMapCoordinate(int32 GridSize);
