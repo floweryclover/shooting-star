@@ -22,6 +22,8 @@ class SHOOTINGSTAR_API ACompetitiveGameMode final : public AGameModeBase
 public:
 	ACompetitiveGameMode();
 
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+	
 	virtual void Tick(float DeltaSeconds) override;
 
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
@@ -33,6 +35,8 @@ public:
 	virtual void SwapPlayerControllers(APlayerController* OldPC, APlayerController* NewPC) override;
 	
 	virtual APawn* SpawnDefaultPawnAtTransform_Implementation(AController* NewPlayer, const FTransform& SpawnTransform) override;
+
+	virtual void RestartPlayer(AController* NewPlayer) override;
 
 	/**
 	 * Killer에게 점수를 줍니다. 실제로 액터를 죽이거나 하지 않습니다.
@@ -68,9 +72,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void CraftWeapon(AController* Controller, const FWeaponData& Weapon, const TArray<int32>& Resources);
 
-protected:
-	virtual void BeginPlay() override;
+	/**
+	 * MapGeneratorComponent::GetPlayerPoints()의 좌표들 중 Player를 제외한 모든 플레이어와의 거리값 합이 최대인 좌표를 반환하는 함수.
+	 * @return 
+	 */
+	UFUNCTION(BlueprintCallable)
+	FVector GetMostIsolatedSpawnPointFor(APlayerController* Player) const;
 	
+protected:
 	UPROPERTY(BlueprintReadOnly)
 	int32 NumPlayers;
 	
@@ -91,4 +100,5 @@ private:
 
 	UFUNCTION()
 	void OnGameStarted();
+
 };

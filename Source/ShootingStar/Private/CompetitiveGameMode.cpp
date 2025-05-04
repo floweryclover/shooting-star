@@ -27,9 +27,9 @@ ACompetitiveGameMode::ACompetitiveGameMode()
 	MapGeneratorComponent = CreateDefaultSubobject<UMapGeneratorComponent>(TEXT("MapGeneratorComponent"));
 }
 
-void ACompetitiveGameMode::BeginPlay()
+void ACompetitiveGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
 {
-	Super::BeginPlay();
+	Super::InitGame(MapName, Options, ErrorMessage);
 
 	// MapGeneratorComponent 초기화
 	MapGeneratorComponent->Initialize();
@@ -124,24 +124,36 @@ APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AControl
 		return nullptr;
 	}
 
-	AssignTeamIfNone(Cast<APlayerController>(NewPlayer));
-
 	FActorSpawnParameters SpawnInfo;
 	SpawnInfo.Instigator = nullptr;
 	SpawnInfo.Owner = NewPlayer;
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 	// 충돌 무시하고 스폰
 
-	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = GetWorld()->SpawnActor<ACompetitivePlayerCharacter>(
+	APawn* const Pawn = GetWorld()->SpawnActor<APawn>(
 		DefaultPawnClass, SpawnTransform, SpawnInfo);;
 
+	return Pawn;
+}
+
+void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
+{
+	if (!IsValid(NewPlayer))
+	{
+		return;
+	}
+
+	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(Cast<APlayerController>(NewPlayer));
+	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = Cast<ACompetitivePlayerCharacter>(
+		SpawnDefaultPawnAtTransform(NewPlayer, FTransform{SpawnPoint + FVector{0.0, 0.0, 100.0}}));
+
+	AssignTeamIfNone(Cast<APlayerController>(NewPlayer));
 	UTeamComponent* const TeamComponent = Cast<ACompetitivePlayerController>(NewPlayer)->GetTeamComponent();
 	CompetitivePlayerCharacter->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
 	CompetitivePlayerCharacter->SetPlayerName(NewPlayer->GetPlayerState<APlayerState>()->GetPlayerName());
-
 	CompetitivePlayerCharacter->OnKilled.AddDynamic(this, &ACompetitiveGameMode::HandleKill);
 
-	return CompetitivePlayerCharacter;
+	NewPlayer->Possess(CompetitivePlayerCharacter);
 }
 
 void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee)
@@ -151,7 +163,7 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee
 	{
 		return;
 	}
-	
+
 	if (!IsValid(Killer))
 	{
 		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - Killer is invalid."));
@@ -264,6 +276,48 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 	Character->SetWeaponData(CraftedWeapon);
 }
 
+FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* const Player) const
+{
+	if (!IsValid(Player))
+	{
+		return {};
+	}
+
+	TArray<FVector> OtherPlayerPositions;
+	for (const APlayerState* PlayerState : GameState->PlayerArray)
+	{
+		if (!IsValid(PlayerState->GetPlayerController())
+			|| !IsValid(PlayerState->GetPlayerController()->GetPawn())
+			|| PlayerState->GetPlayerController() == Player)
+		{
+			continue;
+		}
+
+		const APawn* const Pawn = PlayerState->GetPlayerController()->GetPawn();
+		OtherPlayerPositions.Add(Pawn->GetActorLocation());
+	}
+
+	FVector ReturnValue{};
+	double MaximumDistanceSquared = 0.0;
+	const TArray<FVector>& PlayerSpawnPoints = MapGeneratorComponent->GetPlayerSpawnPoints();
+	for (const FVector& SpawnPoint : PlayerSpawnPoints)
+	{
+		double DistanceSquaredSum = 0.0;
+		for (const FVector& OtherPlayerPosition : OtherPlayerPositions)
+		{
+			DistanceSquaredSum += FVector::DistSquaredXY(SpawnPoint, OtherPlayerPosition);
+		}
+
+		if (DistanceSquaredSum >= MaximumDistanceSquared)
+		{
+			MaximumDistanceSquared = DistanceSquaredSum;
+			ReturnValue = SpawnPoint;
+		}
+	}
+
+	return ReturnValue;
+}
+
 void ACompetitiveGameMode::AssignTeamIfNone(APlayerController* Player)
 {
 	UTeamComponent* const TeamComponent = Cast<UTeamComponent>(
@@ -279,7 +333,7 @@ void ACompetitiveGameMode::AssignTeamIfNone(APlayerController* Player)
 		// 혹시 팀 할당에 실패했으면 즉시 게임 종료
 		if (TeamToAssign == ETeam::None)
 		{
-			// CompetitiveSystemComponent->EndGame();
+			CompetitiveSystemComponent->EndGame();
 			return;
 		}
 		TeamComponent->SetTeam(TeamToAssign);
@@ -301,7 +355,7 @@ void ACompetitiveGameMode::OnGameStarted()
 			Player->UnPossess();
 			Pawn->Destroy();
 		}
-		
+
 		RestartPlayer(Player);
 	}
 }
