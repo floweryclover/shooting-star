@@ -138,17 +138,17 @@ APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AControl
 
 void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 {
-	if (!IsValid(NewPlayer))
+	ACompetitivePlayerController* const CompetitivePlayerController = Cast<ACompetitivePlayerController>(NewPlayer);
+	if (!IsValid(NewPlayer) || !IsValid(CompetitivePlayerController))
 	{
 		return;
 	}
 
-	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(Cast<APlayerController>(NewPlayer));
+	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(CompetitivePlayerController);
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = Cast<ACompetitivePlayerCharacter>(
 		SpawnDefaultPawnAtTransform(NewPlayer, FTransform{SpawnPoint + FVector{0.0, 0.0, 100.0}}));
-
-	AssignTeamIfNone(Cast<APlayerController>(NewPlayer));
-	UTeamComponent* const TeamComponent = Cast<ACompetitivePlayerController>(NewPlayer)->GetTeamComponent();
+	AssignTeamIfNone(CompetitivePlayerController);
+	UTeamComponent* const TeamComponent = CompetitivePlayerController->GetTeamComponent();
 	CompetitivePlayerCharacter->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
 	CompetitivePlayerCharacter->SetPlayerName(NewPlayer->GetPlayerState<APlayerState>()->GetPlayerName());
 	CompetitivePlayerCharacter->OnKilled.AddDynamic(this, &ACompetitiveGameMode::HandleKill);
