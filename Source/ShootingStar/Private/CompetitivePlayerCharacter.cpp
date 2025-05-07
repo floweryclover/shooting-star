@@ -100,6 +100,7 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, bDeadNotify);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, CurrentWeapon);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, PlayerName);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, Health);
 }
 
 void ACompetitivePlayerCharacter::SetTeamMaterial(ETeam Team)
