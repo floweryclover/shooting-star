@@ -200,6 +200,11 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee
 
 void ACompetitiveGameMode::InteractResource(AController* const Controller)
 {
+	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
+	{
+		return;
+	}
+	
 	if (!IsValid(Controller))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Controller is Invalid!"));
