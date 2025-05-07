@@ -27,6 +27,9 @@ AKnife::AKnife()
     BodyMesh->SetCollisionProfileName("Knife");
     BodyMesh->SetGenerateOverlapEvents(false);
 
+    StaticBodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticBodyMesh")); // 곡괭이용 StaticMesh
+    StaticBodyMesh->SetupAttachment(BodyMesh);
+
     AttackHitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
     AttackHitBox->SetupAttachment(BodyMesh);
     AttackHitBox->SetGenerateOverlapEvents(false);
@@ -53,9 +56,16 @@ void AKnife::Tick(float DeltaTime)
 
 void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+    if (!OtherActor || OtherActor == GetAttachParentActor() || bHasDamaged)
+        return;
+
+    // 충돌 대상이 팀 컴포넌트를 가지고 있는지 확인
+    UTeamComponent* OtherTeamComponent = OtherActor->FindComponentByClass<UTeamComponent>();
+    if (!OtherTeamComponent)
+        return;
+
     if (OtherActor != GetAttachParentActor() && !bHasDamaged)
     {
-        UTeamComponent* OtherTeamComponent = OtherActor->FindComponentByClass<UTeamComponent>();
         if (OtherTeamComponent->GetTeam() != GetAttachParentActor()->FindComponentByClass<UTeamComponent>()->GetTeam())
         {
             // 디버그 표시

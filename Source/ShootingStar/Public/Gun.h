@@ -18,7 +18,9 @@ enum class WEAPONLEVER : uint8 {
 UENUM(BlueprintType)
 enum class WEAPONTYPE : uint8 {
 	RIFLE,
-	PISTOL
+	PISTOL,
+	SHOTGUN,
+	ROCKETLAUNCHER
 };
 
 UCLASS()

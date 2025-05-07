@@ -144,8 +144,25 @@ void ACompetitivePlayerCharacter::WeaponChange()
 	Params.Owner = GetController();
 	Params.Instigator = this;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	
+
 	AGun* SpawnedRifle = GetWorld()->SpawnActor<AGun>(RifleClass, Params);
+	SpawnedRifle->SetReplicates(true);
+	EquipGun(SpawnedRifle);
+}
+void ACompetitivePlayerCharacter::WeaponShotgunChange()
+{
+	if (!ShotgunClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("RifleClass is nullptr! Check the Blueprint setting."));
+		return;
+	}
+
+	FActorSpawnParameters Params;
+	Params.Owner = GetController();
+	Params.Instigator = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AGun* SpawnedRifle = GetWorld()->SpawnActor<AGun>(ShotgunClass, Params);
 	SpawnedRifle->SetReplicates(true);
 	EquipGun(SpawnedRifle);
 }
@@ -248,10 +265,7 @@ void ACompetitivePlayerCharacter::SpawnPickAxe()
 	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
 	SpawnedPickAxe->SetReplicates(true);
 
-	FVector NewLocationOffset(-250.293793f / 2, -70.988396f / 2, 56.498161f / 2);
-	SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-	                                  TEXT("Backpack_Socket"));
-	SpawnedPickAxe->SetActorRelativeLocation(NewLocationOffset);
+	SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Backpack_Socket"));
 }
 
 void ACompetitivePlayerCharacter::EquipPickAxe()
@@ -464,14 +478,18 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 			}
 		}
 	}
-	if (WeaponNameStr == TEXT("총"))
+	if (WeaponNameStr == TEXT("AK"))
 	{
 		WeaponChange();
 	}
-	else if (WeaponNameStr == TEXT("칼"))
+	else if (WeaponNameStr == TEXT("Knife"))
 	{
 		// 칼 장착 로직
 		WeaponKnifeChange();
+	}
+	else if (WeaponNameStr == TEXT("Shotgun"))
+	{
+		WeaponShotgunChange();
 	}
 	else
 	{
