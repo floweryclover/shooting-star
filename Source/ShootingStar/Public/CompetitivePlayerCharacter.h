@@ -109,6 +109,7 @@ public:
 	void PullTrigger();
 	float GetHealthPercent() const;
 	void WeaponChange();
+	void WeaponShotgunChange();
 	void WeaponKnifeChange();
 	void EquipGun(AGun* Equip);
 	void EquipKnife(AKnife* Equip);
@@ -179,9 +180,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AGun> RifleClass;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	TSubclassOf<AGun> ShotgunClass;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AKnife> KnifeClass;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<APickAxe> PickAxeClass;
+
 	UPROPERTY(VisibleAnywhere)
 	APickAxe* SpawnedPickAxe;
 	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedGun)

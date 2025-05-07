@@ -8,9 +8,9 @@ APickAxe::APickAxe()
     // Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
 
-    static ConstructorHelpers::FObjectFinder<USkeletalMesh>SKELETALPICKAXE(TEXT("SkeletalMesh'/Game/lowpoly-mine-assets/source/SKM_Pickaxe.SKM_Pickaxe'"));
-    if (SKELETALPICKAXE.Succeeded()) {
-        BodyMesh->SetSkeletalMesh(SKELETALPICKAXE.Object);
+    static ConstructorHelpers::FObjectFinder<UStaticMesh>STATICPICKAXE(TEXT("StaticMesh'/Game/lowpoly-mine-assets/source/Pickaxe.Pickaxe'"));
+    if (STATICPICKAXE.Succeeded()) {
+        StaticBodyMesh->SetStaticMesh(STATICPICKAXE.Object);
     }
 
 }
