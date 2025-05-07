@@ -144,6 +144,12 @@ void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 		return;
 	}
 
+	if (APawn* const OldPawn = NewPlayer->GetPawn(); IsValid(OldPawn))
+	{
+		NewPlayer->UnPossess();
+		OldPawn->Destroy();
+	}
+
 	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(CompetitivePlayerController);
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = Cast<ACompetitivePlayerCharacter>(
 		SpawnDefaultPawnAtTransform(NewPlayer, FTransform{SpawnPoint + FVector{0.0, 0.0, 100.0}}));
@@ -348,12 +354,6 @@ void ACompetitiveGameMode::OnGameStarted()
 		if (!IsValid(Player))
 		{
 			continue;
-		}
-
-		if (APawn* const Pawn = Player->GetPawn(); IsValid(Pawn))
-		{
-			Player->UnPossess();
-			Pawn->Destroy();
 		}
 
 		RestartPlayer(Player);
