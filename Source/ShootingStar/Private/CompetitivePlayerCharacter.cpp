@@ -205,6 +205,10 @@ void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 	OnRep_EquippedGun();
 	OnRep_EquippedKnife();
 }
+void ACompetitivePlayerCharacter::EquipRocketLauncher()
+{
+
+}
 
 void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 {

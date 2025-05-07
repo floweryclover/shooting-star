@@ -113,6 +113,7 @@ public:
 	void WeaponKnifeChange();
 	void EquipGun(AGun* Equip);
 	void EquipKnife(AKnife* Equip);
+	void EquipRocketLauncher();
 	void PlayDeadAnim();
 	void DestroyCharacter();
 	// �ڿ� ��ȣ �ۿ�
