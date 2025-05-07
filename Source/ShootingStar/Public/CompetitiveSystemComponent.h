@@ -5,6 +5,7 @@
 #include "TeamComponent.h"
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "CompetitiveGameMode.h"
 #include "CompetitiveSystemComponent.generated.h"
 
 UENUM(BlueprintType)
@@ -18,6 +19,9 @@ enum class ECompetitiveGamePhase : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGameStarted);
+
+// 보급 이벤트 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSupplyDropEvent, FVector, Location);
 
 /**
 * 3선승 게임인 경쟁 모드의 동작과 상태를 정의하는 컴포넌트입니다.
@@ -34,6 +38,10 @@ public:
 	 */
 	UPROPERTY(BlueprintAssignable)
 	FGameStarted OnGameStarted;
+
+	// 보급품 생성 이벤트
+	UPROPERTY(BlueprintAssignable)
+	FSupplyDropEvent OnSupplyDrop;
 	
 	UCompetitiveSystemComponent();
 	
@@ -138,7 +146,13 @@ public:
 		return IsGoldenKillTime() ? 0.0f : GameTime - CurrentPhaseTime;
 	}
 
+	// 자기장 알파값 getter
+	UFUNCTION(BlueprintCallable)
+	float GetSafeZoneAlpha() const { return SafeZoneAlpha; }
+
 protected:
+	virtual void BeginPlay() override;
+
 	UPROPERTY(BlueprintReadOnly)
 	int MaxPlayersPerTeam = 2;
 	
@@ -182,6 +196,27 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	ECompetitiveGamePhase CurrentPhase;
+	
+	// 현재 자기장 알파값 (0: 초기 크기, 1: 최종 크기)
+	UPROPERTY()
+	float SafeZoneAlpha;
+
+	UPROPERTY(EditAnywhere, Category = "SafeZone Settings")
+	float SafeZoneShrinkStartTime = 30.f;
+
+	UPROPERTY(EditAnywhere, Category = "SafeZone Settings")
+	float SafeZoneShrinkDuration = 120.f;
+
+	// 보급품 드롭 타임
+	UPROPERTY(EditAnywhere, Category = "Supply Settings")
+	TArray<float> SupplyDropTimes = {30.f, 75.f, 120.f};
+
+	// 보급품 트리거 배열
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<bool> SupplyDropsTriggered;
+
+	UPROPERTY()
+	class ACompetitiveGameMode* GameMode;
 
 private:
 	void Update_WaitingForStart();
@@ -193,6 +228,10 @@ private:
 	void Update_GameEnd();
 	
 	void Update_GameDestroyed();
+
+	void UpdateSafeZoneAlpha(float GameTime);
+
+	void CheckAndTriggerSupplyDrop(float GameTime);
 
 	void WinTeam(ETeam Team);
 };
