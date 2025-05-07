@@ -160,17 +160,23 @@ APawn* ACompetitiveGameMode::SpawnDefaultPawnAtTransform_Implementation(AControl
 
 void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 {
-	if (!IsValid(NewPlayer))
+	ACompetitivePlayerController* const CompetitivePlayerController = Cast<ACompetitivePlayerController>(NewPlayer);
+	if (!IsValid(NewPlayer) || !IsValid(CompetitivePlayerController))
 	{
 		return;
 	}
 
-	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(Cast<APlayerController>(NewPlayer));
+	if (APawn* const OldPawn = NewPlayer->GetPawn(); IsValid(OldPawn))
+	{
+		NewPlayer->UnPossess();
+		OldPawn->Destroy();
+	}
+
+	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(CompetitivePlayerController);
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = Cast<ACompetitivePlayerCharacter>(
 		SpawnDefaultPawnAtTransform(NewPlayer, FTransform{SpawnPoint + FVector{0.0, 0.0, 100.0}}));
-
-	AssignTeamIfNone(Cast<APlayerController>(NewPlayer));
-	UTeamComponent* const TeamComponent = Cast<ACompetitivePlayerController>(NewPlayer)->GetTeamComponent();
+	AssignTeamIfNone(CompetitivePlayerController);
+	UTeamComponent* const TeamComponent = CompetitivePlayerController->GetTeamComponent();
 	CompetitivePlayerCharacter->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
 	CompetitivePlayerCharacter->SetPlayerName(NewPlayer->GetPlayerState<APlayerState>()->GetPlayerName());
 	CompetitivePlayerCharacter->OnKilled.AddDynamic(this, &ACompetitiveGameMode::HandleKill);
@@ -216,6 +222,11 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee
 
 void ACompetitiveGameMode::InteractResource(AController* const Controller)
 {
+	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
+	{
+		return;
+	}
+	
 	if (!IsValid(Controller))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Controller is Invalid!"));
@@ -370,12 +381,6 @@ void ACompetitiveGameMode::OnGameStarted()
 		if (!IsValid(Player))
 		{
 			continue;
-		}
-
-		if (APawn* const Pawn = Player->GetPawn(); IsValid(Pawn))
-		{
-			Player->UnPossess();
-			Pawn->Destroy();
 		}
 
 		RestartPlayer(Player);
