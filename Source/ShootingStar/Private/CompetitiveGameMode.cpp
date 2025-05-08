@@ -12,6 +12,10 @@
 #include "MapGeneratorComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "ShootingStar/ShootingStar.h"
+#include "Kismet/GameplayStatics.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMeshActor.h"
+#include "SafeZoneComponent.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
 	: NumPlayers{1} // 호스트 항상 포함
@@ -34,7 +38,25 @@ void ACompetitiveGameMode::InitGame(const FString& MapName, const FString& Optio
 	// MapGeneratorComponent 초기화
 	MapGeneratorComponent->Initialize();
 
+	// 태그로 SafeZone 액터 찾기
+	TArray<AActor*> TaggedActors;
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("SafeZone"), TaggedActors);
+	if (TaggedActors.Num() > 0)
+	{
+		SafeZoneComponent = Cast<USafeZoneComponent>(TaggedActors[0]->GetComponentByClass(USafeZoneComponent::StaticClass()));
+		if (SafeZoneComponent)
+		{
+			UE_LOG(LogShootingStar, Log, TEXT("Found SafeZoneComponent using tag"));
+		}
+	}
+
+	if (!SafeZoneComponent)
+	{
+		UE_LOG(LogShootingStar, Error, TEXT("Failed to find SafeZoneComponent - Make sure SafeZone actor has the 'SafeZone' tag"));
+	}
+
 	CompetitiveSystemComponent->OnGameStarted.AddDynamic(this, &ACompetitiveGameMode::OnGameStarted);
+	CompetitiveSystemComponent->OnSupplyDrop.AddDynamic(this, &ACompetitiveGameMode::HandleSupplyDrop);
 }
 
 void ACompetitiveGameMode::Tick(const float DeltaSeconds)
@@ -363,4 +385,58 @@ void ACompetitiveGameMode::OnGameStarted()
 
 		RestartPlayer(Player);
 	}
+}
+
+void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
+{
+    if (!SupplyDropActorClass)
+    {
+        UE_LOG(LogShootingStar, Warning, TEXT("SupplyDropActorClass is not set in CompetitiveGameMode"));
+        return;
+    }
+
+    // MapGenerator를 통한 위치 검증
+    if (MapGeneratorComponent)
+    {
+        // 현재 위치가 유효하지 않다면 가장 가까운 유효한 위치 찾기
+        if (!MapGeneratorComponent->CheckLocation(Location))
+        {
+            Location = MapGeneratorComponent->FindNearestValidLocation(Location, 500.f, EObjectMask::ResourceMask);
+        }
+        
+        // 위치가 여전히 유효하지 않다면 생성 취소
+        if (!MapGeneratorComponent->CheckLocation(Location))
+        {
+            UE_LOG(LogShootingStar, Warning, TEXT("Failed to find valid location for supply drop"));
+            return;
+        }
+
+        // 해당 위치를 ResourceMask로 등록
+        MapGeneratorComponent->SetObjectAtArray(
+            FMath::FloorToInt(Location.X / MapGeneratorComponent->GetPatternSpacing()),
+            FMath::FloorToInt(Location.Y / MapGeneratorComponent->GetPatternSpacing()),
+            EObjectMask::ResourceMask
+        );
+    }
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+    
+    AActor* SupplyDrop = GetWorld()->SpawnActor<AActor>(
+        SupplyDropActorClass,
+        Location,
+        FRotator::ZeroRotator,
+        SpawnParams
+    );
+
+    if (SupplyDrop)
+    {
+		UE_LOG(LogShootingStar, Log, TEXT("Supply drop spawned at %s"), *Location.ToString());
+		
+        SupplyDrop->SetReplicates(true);
+        if (UStaticMeshComponent* MeshComp = Cast<UStaticMeshComponent>(SupplyDrop->GetComponentByClass(UStaticMeshComponent::StaticClass())))
+        {
+            MeshComp->SetIsReplicated(true);
+        }
+    }
 }
