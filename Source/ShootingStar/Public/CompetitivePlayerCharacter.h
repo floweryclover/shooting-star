@@ -13,6 +13,7 @@ class AGun;
 class AKnife;
 class UInventoryComponent;
 class APickAxe;
+class UWidgetComponent;
 
 enum class ETeam :uint8;
 struct FWeaponData;
@@ -107,7 +108,10 @@ public:
 	void EquipPickAxe();
 	void UnEquipPickAxe();
 	void PullTrigger();
+	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetHealthPercent() const;
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	float GetHealth() const;
 	void WeaponChange();
 	void WeaponShotgunChange();
 	void WeaponKnifeChange();
@@ -155,6 +159,13 @@ protected:
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_PlayerName)
 	FString PlayerName;
 
+	/* HpBar UI */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* HealthBarWidget;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> HpBarUIClass;
+
 private:
 
 	/** Top down camera */
@@ -172,8 +183,6 @@ private:
 
 	UPROPERTY(Replicated, VisibleAnywhere)
 	float Health;
-
-
 
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AGun> GunClass;
@@ -198,7 +207,6 @@ private:
 	AGun* Gun = nullptr;
 	UPROPERTY(EditDefaultsOnly)
 	AKnife* Knife = nullptr;
-
 
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
