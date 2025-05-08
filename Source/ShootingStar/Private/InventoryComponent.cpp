@@ -113,7 +113,7 @@ void UInventoryComponent::AddResource(UResourceDataAsset* Resource, int32 Amount
 		UE_LOG(LogTemp, Warning, TEXT("Invalid Add Amont in UInventoryComponent::AddResource"));
 		return;
 	}
-
+	
 	ResourceInventory[ResourceIndex].Count += Amount;
 
 	// 클라이언트의 값을 변경하고 있다면 자동으로 OnRep이 호출되지만,

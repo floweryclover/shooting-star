@@ -7,6 +7,14 @@
 #include "ResourceType.h"
 #include "ResourceDataAsset.generated.h"
 
+enum RESOURCE_STATE
+{
+    RESOURCE_STATE_LARGE,
+    RESOURCE_STATE_MEDIUM,
+    RESOURCE_STATE_SMALL,
+    RESOURCE_STATE_END
+};
+
 UCLASS(BlueprintType)
 class SHOOTINGSTAR_API UResourceDataAsset : public UDataAsset
 {
@@ -23,7 +31,13 @@ public:
     UTexture2D* Icon;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    UStaticMesh* Mesh;
+    UStaticMesh* LargeMesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    UStaticMesh* MediumMesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    UStaticMesh* SmallMesh;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     UMaterialInterface* Material;

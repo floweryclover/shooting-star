@@ -26,6 +26,7 @@ public:
 		return ResourceData;
 	}
 
+	void UpdateMesh_AfterHarvest();
 	void UpdateVisual();
 
 protected:
@@ -37,6 +38,7 @@ protected:
 #endif
 	
 private:
+	RESOURCE_STATE ResourceState = RESOURCE_STATE_LARGE;
 
 public:
 	UPROPERTY(VisibleAnywhere)
