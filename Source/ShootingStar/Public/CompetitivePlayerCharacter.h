@@ -106,6 +106,7 @@ public:
 	void SpawnPickAxe();
 	void EquipPickAxe();
 	void UnEquipPickAxe();
+	void PlayMiningAnim();
 	void PullTrigger();
 	float GetHealthPercent() const;
 	void WeaponChange();

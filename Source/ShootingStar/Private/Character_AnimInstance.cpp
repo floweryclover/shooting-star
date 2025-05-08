@@ -17,12 +17,18 @@ UCharacter_AnimInstance::UCharacter_AnimInstance()
 	if (GetAK_IdleMontage.Succeeded()) AK_Idle_Montage = GetAK_IdleMontage.Object;
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> GetKnifeAttackMontage(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/Akimbo/Character_KnifeAttack.Character_KnifeAttack'"));
 	if (GetKnifeAttackMontage.Succeeded()) KnifeAttackMontage = GetKnifeAttackMontage.Object;
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> GetMiningLoop(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/PickAxe/MiningLoopMontage.MiningLoopMontage'"));
+	if (GetMiningLoop.Succeeded()) MiningLoopMontage = GetMiningLoop.Object;
 }
 
 void UCharacter_AnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
+}
+void UCharacter_AnimInstance::PlayMiningMontage()
+{
+	Montage_Play(MiningLoopMontage);
 }
 void UCharacter_AnimInstance::PlayHitMontage()
 {

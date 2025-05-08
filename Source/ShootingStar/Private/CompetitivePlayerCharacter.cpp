@@ -242,6 +242,17 @@ void ACompetitivePlayerCharacter::Attack()
 	if (EquippedGun == nullptr && EquippedKnife == nullptr)
 	{
 		EquipPickAxe();
+
+		if (!bCanKnifeAttack)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Knife attack is on cooldown!"));
+			return; // 쿨타임이 끝나지 않으면 공격하지 않음
+		}
+		bCanKnifeAttack = false;
+		GetWorld()->GetTimerManager().SetTimer(KnifeAttackCoolDownTimer, this,
+			&ACompetitivePlayerCharacter::ResetKnifeAttackCooldown,
+			KnifeAttackCooldown, false);
+
 		OnRep_KnifeAttackCount();
 		KnifeAttackCount += 1;
 	}
@@ -277,23 +288,12 @@ void ACompetitivePlayerCharacter::EquipPickAxe()
 {
 	if (SpawnedPickAxe)
 	{
+		FTransform RelativeTransform;
+		RelativeTransform.SetRotation(FQuat(FVector(-1, 0, 0), FMath::DegreesToRadians(90.f)));
+
 		SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		                                  TEXT("Weapon_R_Socket"));
-	}
-	else
-	{
-		// If the pickaxe hasn't been spawned yet, spawn it and then attach it.
-		if (PickAxeClass)
-		{
-			SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
-			if (SpawnedPickAxe)
-			{
-				FVector NewLocationOffset(-250.293793f / 2, -70.988396f / 2, 56.498161f / 2);
-				SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-				                                  TEXT("Weapon_R_Socket"));
-				SpawnedPickAxe->SetActorRelativeLocation(NewLocationOffset);
-			}
-		}
+		SpawnedPickAxe->SetActorRelativeTransform(RelativeTransform);
 	}
 }
 
@@ -304,21 +304,11 @@ void ACompetitivePlayerCharacter::UnEquipPickAxe()
 		SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		                                  TEXT("Backpack_Socket"));
 	}
-	else
-	{
-		// If the pickaxe hasn't been spawned yet, spawn it and then attach it.
-		if (PickAxeClass)
-		{
-			SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
-			if (SpawnedPickAxe)
-			{
-				FVector NewLocationOffset(-250.293793f / 2, -70.988396f / 2, 56.498161f / 2);
-				SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-				                                  TEXT("Backpack_Socket"));
-				SpawnedPickAxe->SetActorRelativeLocation(NewLocationOffset);
-			}
-		}
-	}
+}
+void ACompetitivePlayerCharacter::PlayMiningAnim()
+{
+	EquipPickAxe();
+	AnimInstance->PlayMiningMontage();
 }
 
 void ACompetitivePlayerCharacter::PullTrigger()
@@ -463,14 +453,15 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 				switch (ResourceType)
 				{
 				case EResourceType::Wood:
-					GetCharacterMovement()->MaxWalkSpeed *= 1.1f * UsedCount;
+					GetCharacterMovement()->MaxWalkSpeed *= FMath::Pow(1.1f, UsedCount);
 					UE_LOG(LogTemp, Log, TEXT("Wood used, speed increased by 10%% per count. New MaxWalkSpeed: %f"),
 					       GetCharacterMovement()->MaxWalkSpeed);
 					break;
 				case EResourceType::Stone:
-					Armor *= 1.1f * UsedCount;
+					MaxHealth *= FMath::Pow(1.1f, UsedCount);
+					Health = MaxHealth;
 					UE_LOG(LogTemp, Log, TEXT("Stone used, defense increased by 10%% per count. New defense: %f"),
-					       Armor);
+						MaxHealth);
 					break;
 				case EResourceType::Iron:
 					IncreasedDamage *= 1.2f * UsedCount;

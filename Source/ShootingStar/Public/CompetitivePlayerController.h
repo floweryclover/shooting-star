@@ -112,7 +112,7 @@ protected:
 	void EquipWeapon();
 	void EquipKnifeWeapon();
 	void InteractResource();
-
+	void Mining();
 	// HUD
 	UPROPERTY(BlueprintReadOnly)
 	TSubclassOf<UUserWidget> ScoreBoardUIClass;
