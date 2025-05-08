@@ -107,6 +107,7 @@ public:
 	void SpawnPickAxe();
 	void EquipPickAxe();
 	void UnEquipPickAxe();
+	void PlayMiningAnim();
 	void PullTrigger();
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetHealthPercent() const;
