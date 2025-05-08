@@ -58,7 +58,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InteractAction;
 
-	
 	UTeamComponent* GetTeamComponent() const
 	{
 		return TeamComponent;
@@ -86,6 +85,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryWidget();
+
+	/* Supply UI */
+	UFUNCTION()
+	void RenderSupplyIndicator(FVector Location);
 	
 	/**
 	 * Actor에 부착되어 공격 판정 등에 이용되는 일반적인 TeamComponent와는 달리,

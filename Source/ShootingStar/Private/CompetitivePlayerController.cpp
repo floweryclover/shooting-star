@@ -19,6 +19,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/PlayerState.h"
 #include "ShootingStar/ShootingStar.h"
+#include "CompetitiveSystemComponent.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
@@ -65,6 +66,13 @@ void ACompetitivePlayerController::BeginPlay()
 			}
 		}
 	}
+	if (ACompetitiveGameMode* GameMode = GetWorld()->GetAuthGameMode<ACompetitiveGameMode>())
+	{
+		if (UCompetitiveSystemComponent* SystemComp = GameMode->GetCompetitiveSystemComponent())
+		{
+			SystemComp->OnSupplyDrop.AddDynamic(this, &ACompetitivePlayerController::RenderSupplyIndicator);
+		}
+	}
 }
 
 void ACompetitivePlayerController::Tick(float DeltaTime)
@@ -90,6 +98,11 @@ void ACompetitivePlayerController::ToggleInventoryWidget()
 			InventoryWidget->AddToViewport();
 		}
 	}
+}
+
+void ACompetitivePlayerController::RenderSupplyIndicator(FVector Location)
+{
+	int a = 3;
 }
 
 void ACompetitivePlayerController::SetupInputComponent()
