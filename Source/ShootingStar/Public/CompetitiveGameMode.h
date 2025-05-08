@@ -10,6 +10,7 @@ class ACompetitivePlayerController;
 class ACompetitivePlayerCharacter;
 class UCompetitiveSystemComponent;
 class UMapGeneratorComponent;
+class USafeZoneComponent;  // 전방 선언으로 변경
 
 /**
  * 2대2 3선승 게임 모드입니다.
@@ -78,6 +79,8 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	FVector GetMostIsolatedSpawnPointFor(APlayerController* Player) const;
+
+	USafeZoneComponent* GetSafeZoneComponent() const { return SafeZoneComponent; }
 	
 protected:
 	UPROPERTY(BlueprintReadOnly)
@@ -95,10 +98,20 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UMapGeneratorComponent> MapGeneratorComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	USafeZoneComponent* SafeZoneComponent;
+
+	// 보급품 액터 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "Supply Drop")
+	TSubclassOf<AActor> SupplyDropActorClass;
+
 private:
 	void AssignTeamIfNone(APlayerController* Player);
 
 	UFUNCTION()
 	void OnGameStarted();
+
+	UFUNCTION()
+	void HandleSupplyDrop(FVector Location);
 
 };
