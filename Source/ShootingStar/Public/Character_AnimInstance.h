@@ -32,6 +32,7 @@ public:
 	UFUNCTION()
 	void AnimNotify_AttackEnd();
 
+	void PlayMiningMontage();
 	void PlayHitMontage();
 	void PlayDeadMontage();
 	void PlayFireMontage();
@@ -39,6 +40,7 @@ public:
 	void PlayAKIdleMontage();
 	void StopAKIdleMontage();
 	
+	UAnimMontage* MiningLoopMontage;
 	UAnimMontage* AK_Idle_Montage;
 	UAnimMontage* AK_Fire_Montage;
 	UAnimMontage* KnifeAttackMontage;

@@ -126,7 +126,7 @@ void ACompetitivePlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(EquipKnifeAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipKnifeWeapon);
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::Dash);
 		EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::ToggleInventoryWidget);
-		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::InteractResource);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::Mining);
 	}
 }
 
@@ -176,6 +176,23 @@ void ACompetitivePlayerController::LookMouse()
 			SetControlRotation(LookRotation);
 		}
 	}
+}
+void ACompetitivePlayerController::Mining()
+{
+	ACharacter* const ControllingCharacter = GetCharacter();
+	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(ControllingCharacter);
+
+	if (!IsValid(CompetitiveCharacter))
+		return;
+	CompetitiveCharacter->PlayMiningAnim();
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle,
+		this,
+		&ACompetitivePlayerController::InteractResource,
+		1.0f,
+		false
+	);
 }
 void ACompetitivePlayerController::Dash()
 {
