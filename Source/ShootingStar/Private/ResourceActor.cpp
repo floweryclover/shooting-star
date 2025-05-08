@@ -40,12 +40,60 @@ void AResourceActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 
 #endif
 
+void AResourceActor::UpdateMesh_AfterHarvest()
+{
+    ResourceState = static_cast<RESOURCE_STATE>(static_cast<int>(ResourceState) + 1);
+
+    if (ResourceState >= RESOURCE_STATE_END)
+    {
+        Destroy();
+        return;
+    }
+
+    UpdateVisual();
+}
+
 void AResourceActor::UpdateVisual()
 {
     if (ResourceData)
     {
-        MeshComponent->SetStaticMesh(ResourceData->Mesh ? ResourceData->Mesh : nullptr);
+        switch (ResourceState)
+        {
+        case RESOURCE_STATE_LARGE:
+            MeshComponent->SetStaticMesh(ResourceData->LargeMesh ? ResourceData->LargeMesh : nullptr);
+            break;
+
+        case RESOURCE_STATE_MEDIUM:
+            MeshComponent->SetStaticMesh(ResourceData->MediumMesh ? ResourceData->MediumMesh : nullptr);
+            break;
+
+        case RESOURCE_STATE_SMALL:
+            MeshComponent->SetStaticMesh(ResourceData->SmallMesh ? ResourceData->SmallMesh : nullptr);
+            break;
+        }
+
         MeshComponent->SetMaterial(0, ResourceData->Material ? ResourceData->Material : nullptr);
+
+        // Wood Scale Modify
+        if (ResourceData->ResourceType == EResourceType::Wood)
+        {
+            FVector LargeWoodScale = { 1.3, 1.3, 1.2 };
+
+            switch (ResourceState)
+            {
+            case RESOURCE_STATE_LARGE:
+                SetActorScale3D(LargeWoodScale);
+                break;
+
+            case RESOURCE_STATE_MEDIUM:
+                SetActorScale3D(LargeWoodScale * 0.8f);
+                break;
+
+            case RESOURCE_STATE_SMALL:
+                SetActorScale3D(LargeWoodScale * 0.6f);
+                break;
+            }
+        }
     }
 }
 

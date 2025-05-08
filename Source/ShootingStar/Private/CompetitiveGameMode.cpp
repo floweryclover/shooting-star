@@ -252,7 +252,7 @@ void ACompetitiveGameMode::InteractResource(AController* const Controller)
 	Start.Z = 0.f;
 	FRotator Rotation = Pawn->GetActorRotation();
 
-	FVector End = Start + Rotation.Vector() * 100.f;
+	FVector End = Start + Rotation.Vector() * 130.f;
 
 	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
 	FHitResult Hit;
@@ -262,6 +262,7 @@ void ACompetitiveGameMode::InteractResource(AController* const Controller)
 		AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
 
 		InventoryComponent->AddResource(Resource->ResourceData);
+		Resource->UpdateMesh_AfterHarvest();
 	}
 }
 

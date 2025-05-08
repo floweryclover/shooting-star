@@ -49,7 +49,7 @@ void UResourceGenerator::GenerateObjects()
         if (SelectedResource && SpawnResourceActor(RandomLocation, SelectedResource))
         {
             PlacedObjects++;
-            Owner->SetObjectRegion(RandomLocation, SelectedResource->Mesh, EObjectMask::ResourceMask);
+            Owner->SetObjectRegion(RandomLocation, SelectedResource->LargeMesh, EObjectMask::ResourceMask);
             UE_LOG(MapGenerator, Log, TEXT("(Resource) Generated %s at Location: X=%.1f Y=%.1f"), 
                 *SelectedResource->DisplayName.ToString(), RandomLocation.X, RandomLocation.Y);
         }
