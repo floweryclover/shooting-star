@@ -16,6 +16,7 @@
 #include "Character_AnimInstance.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
+#include "Components/WidgetComponent.h"
 
 ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
@@ -65,6 +66,24 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
+
+	// HpBar UI
+	//static ConstructorHelpers::FClassFinder<UUserWidget> HpBarWidgetBPFinder(TEXT("/Game/Blueprints/UI/BP_HpBarUI"));
+	//ensure(HpBarWidgetBPFinder.Succeeded());
+	//if (HpBarWidgetBPFinder.Succeeded())
+	//{
+	//	HpBarUIClass = HpBarWidgetBPFinder.Class;
+	//}
+
+	//HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
+	//HealthBarWidget->SetupAttachment(GetMesh()); 
+	//HealthBarWidget->SetRelativeLocation(FVector(0, 0, 100)); 
+	//HealthBarWidget->SetWidgetSpace(EWidgetSpace::World);
+	//HealthBarWidget->SetDrawSize(FVector2D(200, 50));
+	//HealthBarWidget->SetPivot(FVector2D(0.5f, 0.5f)); 
+	//HealthBarWidget->SetTickWhenOffscreen(true);      
+	//HealthBarWidget->SetBlendMode(EWidgetBlendMode::Transparent); 
+	//HealthBarWidget->SetWidgetClass(HpBarUIClass);
 }
 
 void ACompetitivePlayerCharacter::BeginPlay()
