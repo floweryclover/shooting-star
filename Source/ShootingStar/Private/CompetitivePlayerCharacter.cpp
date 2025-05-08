@@ -147,6 +147,11 @@ float ACompetitivePlayerCharacter::GetHealthPercent() const
 	return Health / MaxHealth;
 }
 
+float ACompetitivePlayerCharacter::GetHealth() const
+{
+	return Health;
+}
+
 void ACompetitivePlayerCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);

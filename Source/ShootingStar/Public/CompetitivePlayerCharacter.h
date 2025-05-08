@@ -108,7 +108,10 @@ public:
 	void EquipPickAxe();
 	void UnEquipPickAxe();
 	void PullTrigger();
+	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetHealthPercent() const;
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	float GetHealth() const;
 	void WeaponChange();
 	void WeaponShotgunChange();
 	void WeaponKnifeChange();
