@@ -7,7 +7,6 @@
 #include "Blueprint/UserWidget.h"
 #include "LobbyNetworkComponent.h"
 #include "LobbyGameMode.h"
-#include "TeamComponent.h"
 
 ALobbyPlayerController::ALobbyPlayerController()
 	: LobbyUI{nullptr},
@@ -20,8 +19,8 @@ ALobbyPlayerController::ALobbyPlayerController()
 		LobbyUIClass = LobbyUIBPFinder.Class;
 	}
 
-	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 	LobbyNetworkComponent = CreateDefaultSubobject<ULobbyNetworkComponent>(TEXT("LobbyNetworkComponent"));
+	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 }
 
 void ALobbyPlayerController::BeginPlay()
@@ -61,6 +60,7 @@ void ALobbyPlayerController::Tick(const float DeltaSeconds)
 
 	if (IsLocalPlayerController() && HasAuthority())
 	{
-		LobbyNetworkComponent->Process(LobbyGameMode->GetNumPlayers(), LobbyGameMode->GetCompetitiveSystemComponent()->GetMaxPlayersPerTeam() * 2, DeltaSeconds);
+		LobbyNetworkComponent->Process(LobbyGameMode->GetNumPlayers(),
+		                               UCompetitiveSystemComponent::MaxPlayersPerTeam, DeltaSeconds);
 	}
 }

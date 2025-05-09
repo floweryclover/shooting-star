@@ -27,19 +27,10 @@ public:
 	virtual void Logout(AController* Exiting) override;
 
 	virtual void SwapPlayerControllers(APlayerController* OldPC, APlayerController* NewPC) override;
-
-	UCompetitiveSystemComponent* GetCompetitiveSystemComponent() const
-	{
-		return CompetitiveSystemComponent;
-	}
 	
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	int32 NumPlayers;
-	
-	// 최대 인원수 등 경쟁모드의 여러 설정값들을 가져오기 위한 컴포넌트입니다.
-	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<UCompetitiveSystemComponent> CompetitiveSystemComponent;
 	
 	bool bIsDestroying;
 };
