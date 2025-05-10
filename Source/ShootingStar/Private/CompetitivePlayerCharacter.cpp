@@ -371,13 +371,9 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 	DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	DamageToApply = FMath::Min(Health, DamageToApply);
 
-	if (DamageEvent.DamageTypeClass)
+	if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass->IsChildOf(UDoT_DamageType::StaticClass()))
 	{
-		if (DamageEvent.DamageTypeClass->IsChildOf(UDoT_DamageType::StaticClass()))
-		{
-			
-			ApplyDoTDamage(EventInstigator, DamageCauser);
-		}
+		ApplyDoTDamage(EventInstigator, DamageCauser);
 	}
 	else
 	{
