@@ -20,6 +20,7 @@
 #include "GameFramework/PlayerState.h"
 #include "ShootingStar/ShootingStar.h"
 #include "CompetitiveSystemComponent.h"
+#include "SupplyIndicatorUI.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
@@ -29,13 +30,15 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
 
+	//* ScoreBoard
 	static ConstructorHelpers::FClassFinder<UUserWidget> ScoreBoardUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_ScoreUI") };
 	ensure(ScoreBoardUIBPFinder.Succeeded());
 	if (ScoreBoardUIBPFinder.Succeeded())
 	{
 		ScoreBoardUIClass = ScoreBoardUIBPFinder.Class;
-	}
+	} 
 
+	//* Inventory
 	static ConstructorHelpers::FClassFinder<UUserWidget> InventoryWidgetBPFinder(TEXT("/Game/Blueprints/UI/BP_Inventory"));
 	ensure(InventoryWidgetBPFinder.Succeeded());
 	if (InventoryWidgetBPFinder.Succeeded())
@@ -45,6 +48,14 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 	
 	// Attach Inventory Component
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+
+	//* SupplyIndicator
+	static ConstructorHelpers::FClassFinder<UUserWidget> SupplyIndicatorBPFinder(TEXT("/Game/Blueprints/UI/BP_SupplyIndicatorUI"));
+	ensure(SupplyIndicatorBPFinder.Succeeded());
+	if (SupplyIndicatorBPFinder.Succeeded())
+	{
+		SupplyIndicatorUIClass = SupplyIndicatorBPFinder.Class;
+	}
 }
 
 void ACompetitivePlayerController::BeginPlay()
@@ -66,6 +77,8 @@ void ACompetitivePlayerController::BeginPlay()
 			}
 		}
 	}
+
+	// Supply Gen Event Call
 	if (ACompetitiveGameMode* GameMode = GetWorld()->GetAuthGameMode<ACompetitiveGameMode>())
 	{
 		if (UCompetitiveSystemComponent* SystemComp = GameMode->GetCompetitiveSystemComponent())
@@ -102,7 +115,15 @@ void ACompetitivePlayerController::ToggleInventoryWidget()
 
 void ACompetitivePlayerController::RenderSupplyIndicator(FVector Location)
 {
-	int a = 3;
+	if (SupplyIndicatorUIClass)
+	{
+		USupplyIndicatorUI* UI = CreateWidget<USupplyIndicatorUI>(GetWorld(), SupplyIndicatorUIClass);
+		if (UI)
+		{
+			UI->AddToViewport();
+			UI->Init_SupplyPos(Location);
+		}
+	}
 }
 
 void ACompetitivePlayerController::SetupInputComponent()

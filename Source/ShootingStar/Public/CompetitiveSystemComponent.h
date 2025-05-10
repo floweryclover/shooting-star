@@ -209,7 +209,7 @@ protected:
 
 	// 보급품 드롭 타임
 	UPROPERTY(EditAnywhere, Category = "Supply Settings")
-	TArray<float> SupplyDropTimes = {30.f, 75.f, 120.f};
+	TArray<float> SupplyDropTimes = {1.f, 75.f, 120.f};
 
 	// 보급품 트리거 배열
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

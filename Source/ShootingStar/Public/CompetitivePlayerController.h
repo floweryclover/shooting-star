@@ -15,6 +15,8 @@ class UInputMappingContext;
 class UInputAction;
 class UTeamComponent;
 class UInventoryComponent;
+class USupplyIndicatorUI;
+
 /**
  *
  */
@@ -126,6 +128,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
+
+	UPROPERTY(BlueprintReadOnly)
+	TSubclassOf<USupplyIndicatorUI> SupplyIndicatorUIClass;
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UServerComponent> ServerComponent;

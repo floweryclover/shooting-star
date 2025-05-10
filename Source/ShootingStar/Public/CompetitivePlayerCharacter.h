@@ -160,13 +160,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_PlayerName)
 	FString PlayerName;
 
-	/* HpBar UI */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
-	UWidgetComponent* HealthBarWidget;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> HpBarUIClass;
-
 private:
 
 	/** Top down camera */
