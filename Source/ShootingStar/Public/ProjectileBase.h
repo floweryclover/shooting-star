@@ -38,6 +38,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage")
+	TSubclassOf<UDamageType> DamageTypeClass;
+
 	void ProjectileFire(FVector FireDir, AActor* Onwer);
 	void SetProjectileVelocity(float Velocity);
 	float GetProjectileDamage() { return projectileDamage; };

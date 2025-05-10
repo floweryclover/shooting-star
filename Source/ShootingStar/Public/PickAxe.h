@@ -19,7 +19,7 @@ public:
 	// Sets default values for this actor's properties
 	APickAxe();
 
-	float knifeDamage = 50.0f;
+	float knifeDamage = 20.0f;
 
 protected:
 	// Called when the game starts or when spawned
@@ -34,4 +34,5 @@ public:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex, bool bFromSweep,
 		const FHitResult& SweepResult);
+	virtual void ResetDamageFlag();
 };
