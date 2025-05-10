@@ -56,6 +56,7 @@ public:
 	static constexpr float SafeZoneShrinkDuration = 120.f;
 
 	// 보급품 드롭 타임
+	static constexpr int NumSupplies = 3;
 	static constexpr float SupplyDropTimes[] = {30.f, 75.f, 120.f};
 	
 	/**
@@ -170,6 +171,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	ECompetitiveGamePhase CurrentPhase;
+
+	UPROPERTY(BlueprintReadOnly)
+	ETeam CurRoundWinTeam{};
 	
 	// 현재 자기장 알파값 (0: 초기 크기, 1: 최종 크기)
 	UPROPERTY()
