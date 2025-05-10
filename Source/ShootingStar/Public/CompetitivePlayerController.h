@@ -97,9 +97,11 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UTeamComponent> TeamComponent;
 
+	bool bCanMove = true;
+	bool GetCanMove() const { return bCanMove; };
+	void SetCanMove(bool CanMove) { bCanMove = CanMove; };
+
 protected:
-	/** True if the controlled character should navigate to the mouse cursor. */
-	uint32 bMoveToMouseCursor : 1;
 
 	virtual void SetupInputComponent() override;
 

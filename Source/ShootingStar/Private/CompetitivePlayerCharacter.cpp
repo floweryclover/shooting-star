@@ -1,6 +1,7 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "CompetitivePlayerCharacter.h"
+#include "CompetitivePlayerController.h"
 #include "PickAxe.h"
 #include "Gun.h"
 #include "Knife.h"
@@ -236,6 +237,22 @@ void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 }
 void ACompetitivePlayerCharacter::EquipRocketLauncher()
 {
+	UnEquipPickAxe();
+	if (IsValid(EquippedKnife))
+	{
+		EquippedKnife->Destroy();
+		EquippedKnife = nullptr;
+	}
+	FActorSpawnParameters Params;
+	Params.Owner = GetController();
+	Params.Instigator = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AGun* SpawnedRocketLauncher = GetWorld()->SpawnActor<AGun>(RocketLauncherClass, Params);
+	SpawnedRocketLauncher->SetReplicates(true);
+	SpawnedRocketLauncher->SetActorEnableCollision(true);
+
+	SpawnedRocketLauncher->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		TEXT("Weapon_R_Socket"));
 
 }
 
@@ -418,6 +435,12 @@ void ACompetitivePlayerCharacter::ApplyDoTTick()
 }
 void ACompetitivePlayerCharacter::PlayDeadAnim()
 {
+	ACompetitivePlayerController* PlayerController = Cast<ACompetitivePlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->SetCanMove(false);
+	}
+
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
