@@ -9,6 +9,7 @@
 #include "CompetitivePlayerCharacter.generated.h"
 
 class UCharacter_AnimInstance;
+class ACompetitivePlayerController;
 class AGun;
 class AKnife;
 class UInventoryComponent;
@@ -206,6 +207,8 @@ private:
 	TSubclassOf<AGun> RifleClass;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AGun> ShotgunClass;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	TSubclassOf<AGun> RocketLauncherClass;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AKnife> KnifeClass;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)

@@ -78,7 +78,12 @@ void ACompetitivePlayerController::BeginPlay()
 void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	LookMouse();
+	
+	SetIgnoreMoveInput(!bCanMove);
+	if (bCanMove) 
+	{
+		LookMouse();
+	}
 }
 
 void ACompetitivePlayerController::ToggleInventoryWidget()
@@ -179,6 +184,7 @@ void ACompetitivePlayerController::LookMouse()
 }
 void ACompetitivePlayerController::Mining()
 {
+	SetCanMove(false);
 	ACharacter* const ControllingCharacter = GetCharacter();
 	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(ControllingCharacter);
 
@@ -200,6 +206,7 @@ void ACompetitivePlayerController::Dash()
 }
 void ACompetitivePlayerController::InteractResource()
 {
+	SetCanMove(true);
 	ServerComponent->RequestInteractResource();
 }
 
