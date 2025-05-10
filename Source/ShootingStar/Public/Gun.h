@@ -32,7 +32,7 @@ public:
 	// Sets default values for this actor's properties
 	AGun();
 
-	void PullTrigger();
+	// void PullTrigger();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Base)
 	class USkeletalMeshComponent* BodyMesh;

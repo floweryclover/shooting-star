@@ -2,8 +2,13 @@
 
 
 #include "LobbyNetworkComponent.h"
+
+#include "CompetitiveSystemComponent.h"
+#include "LobbyPlayerController.h"
 #include "WifiDirectInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/GameStateBase.h"
+#include "GameFramework/PlayerState.h"
 #include "ShootingStar/ShootingStar.h"
 
 ULobbyNetworkComponent::ULobbyNetworkComponent()
@@ -91,6 +96,39 @@ void ULobbyNetworkComponent::LeaveGame()
 {
 	FWorldContext* const WorldContext = GetWorld()->GetGameInstance()->GetWorldContext();
 	GEngine->BrowseToDefaultMap(*WorldContext);
+}
+
+void ULobbyNetworkComponent::SetTeam_Implementation(ETeam Team)
+{
+	ALobbyPlayerController* const PlayerController = Cast<ALobbyPlayerController>(GetOwner());
+	
+	const ETeam CurrentTeam = PlayerController->GetTeamComponent()->GetTeam();
+	if (Team == CurrentTeam)
+	{
+		return;
+	}
+
+	int NumPlayersOfRequestedTeam = 0;
+	for (APlayerState* PlayerState : GetWorld()->GetAuthGameMode()->GameState->PlayerArray)
+	{
+		ALobbyPlayerController* const OtherPlayer = Cast<ALobbyPlayerController>(PlayerState->GetPlayerController());
+		if (!IsValid(OtherPlayer))
+		{
+			continue;
+		}
+
+		const ETeam OtherTeam = OtherPlayer->GetTeamComponent()->GetTeam();
+		if (OtherTeam == Team)
+		{
+			NumPlayersOfRequestedTeam += 1;
+		}
+	}
+
+	if (NumPlayersOfRequestedTeam >= UCompetitiveSystemComponent::MaxPlayersPerTeam)
+	{
+		return;
+	}
+	PlayerController->GetTeamComponent()->SetTeam(Team);
 }
 
 void ULobbyNetworkComponent::SetNickname_Implementation(const FString& NewNickname)

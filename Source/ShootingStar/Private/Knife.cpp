@@ -56,29 +56,31 @@ void AKnife::Tick(float DeltaTime)
 
 void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (!OtherActor || OtherActor == GetAttachParentActor() || bHasDamaged)
-        return;
-
-    // 충돌 대상이 팀 컴포넌트를 가지고 있는지 확인
-    UTeamComponent* OtherTeamComponent = OtherActor->FindComponentByClass<UTeamComponent>();
-    if (!OtherTeamComponent)
-        return;
-
-    if (OtherActor != GetAttachParentActor() && !bHasDamaged)
+    if (!HasAuthority()
+        || !IsValid(GetOwner())
+        || !IsValid(GetAttachParentActor())
+        || !IsValid(OtherActor)
+        || !IsValid(OtherActor->FindComponentByClass<UTeamComponent>()))
     {
-        if (OtherTeamComponent->GetTeam() != GetAttachParentActor()->FindComponentByClass<UTeamComponent>()->GetTeam())
-        {
-            // 디버그 표시
-            DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
+        return;
+    }
+    UTeamComponent* const OtherTeamComponent = OtherActor->FindComponentByClass<UTeamComponent>();
+    
+    if (OtherActor == GetAttachParentActor() || bHasDamaged)
+        return;
+    
+    if (OtherTeamComponent->GetTeam() != GetAttachParentActor()->FindComponentByClass<UTeamComponent>()->GetTeam())
+    {
+        // 디버그 표시
+        DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
 
-            // 데미지 적용
-            UGameplayStatics::ApplyDamage(OtherActor, knifeDamage, Cast<APlayerController>(GetOwner()), GetOwner(), nullptr);
-            UE_LOG(LogTemp, Warning, TEXT("Knife Hit: Player Hit"));
+        // 데미지 적용
+        UGameplayStatics::ApplyDamage(OtherActor, knifeDamage, Cast<APlayerController>(GetOwner()), GetOwner(), nullptr);
+        UE_LOG(LogTemp, Warning, TEXT("Knife Hit: Player Hit"));
 
-            // 데미지 플래그를 초기화하는 타이머 설정
-            GetWorld()->GetTimerManager().SetTimer(ResetDamageFlagHandle, this, &AKnife::ResetDamageFlag, 1.f, false);
-            bHasDamaged = true;
-        }
+        // 데미지 플래그를 초기화하는 타이머 설정
+        GetWorld()->GetTimerManager().SetTimer(ResetDamageFlagHandle, this, &AKnife::ResetDamageFlag, 1.f, false);
+        bHasDamaged = true;
     }
 }
 void AKnife::ResetDamageFlag()

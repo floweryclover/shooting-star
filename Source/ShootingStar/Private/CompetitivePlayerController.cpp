@@ -163,7 +163,7 @@ void ACompetitivePlayerController::LookMouse()
 	// Move와 마찬가지로 회전 입력은 리플리케이션 없이 즉시 반영
 	
 	FHitResult Hit;
-	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+	GetHitResultUnderCursor(ECC_GameTraceChannel2, false, Hit);
 	
 	if (Hit.bBlockingHit && IsLocalController())
 	{
