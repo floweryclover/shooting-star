@@ -177,7 +177,7 @@ void UCompetitiveSystemComponent::CheckAndTriggerSupplyDrop(const float CurrentT
         return;
 	}
 
-    for (int32 i = 0; i < sizeof(SupplyDropsTriggered) / sizeof(float); ++i)
+    for (int32 i = 0; i < SupplyDropsTriggered.Num(); ++i)
     {
         if (!SupplyDropsTriggered[i] && CurrentTime >= SupplyDropTimes[i])
         {
