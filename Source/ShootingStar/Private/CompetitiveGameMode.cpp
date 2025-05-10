@@ -96,7 +96,7 @@ void ACompetitiveGameMode::PreLogin(const FString& Options, const FString& Addre
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
 
-	if (NumPlayers >= CompetitiveSystemComponent->GetMaxPlayersPerTeam() * 2)
+	if (NumPlayers >= UCompetitiveSystemComponent::MaxPlayersPerTeam * 2)
 	{
 		ErrorMessage = TEXT("정원이 가득 찼습니다.");
 		return;

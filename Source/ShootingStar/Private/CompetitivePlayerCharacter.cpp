@@ -1,6 +1,7 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "CompetitivePlayerCharacter.h"
+#include "CompetitivePlayerController.h"
 #include "PickAxe.h"
 #include "Gun.h"
 #include "Knife.h"
@@ -10,6 +11,10 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/DamageEvents.h"
+#include "Bullet_DamageType.h"
+#include "DoT_DamageType.h"
 #include "Materials/Material.h"
 #include "Engine/World.h"
 #include "ResourceActor.h"
@@ -214,6 +219,22 @@ void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 }
 void ACompetitivePlayerCharacter::EquipRocketLauncher()
 {
+	UnEquipPickAxe();
+	if (IsValid(EquippedKnife))
+	{
+		EquippedKnife->Destroy();
+		EquippedKnife = nullptr;
+	}
+	FActorSpawnParameters Params;
+	Params.Owner = GetController();
+	Params.Instigator = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AGun* SpawnedRocketLauncher = GetWorld()->SpawnActor<AGun>(RocketLauncherClass, Params);
+	SpawnedRocketLauncher->SetReplicates(true);
+	SpawnedRocketLauncher->SetActorEnableCollision(true);
+
+	SpawnedRocketLauncher->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		TEXT("Weapon_R_Socket"));
 
 }
 
@@ -349,8 +370,20 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 
 	DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	DamageToApply = FMath::Min(Health, DamageToApply);
-	Health -= DamageToApply * 100 / Armor;
-	UE_LOG(LogTemp, Warning, TEXT("Health left %f"), Health);
+
+	if (DamageEvent.DamageTypeClass)
+	{
+		if (DamageEvent.DamageTypeClass->IsChildOf(UDoT_DamageType::StaticClass()))
+		{
+			
+			ApplyDoTDamage(EventInstigator, DamageCauser);
+		}
+	}
+	else
+	{
+		// 데미지 타입이 명시되지 않았을 경우 기본 처리
+		Health -= DamageToApply * 100 / Armor;
+	}
 	HitCount += 1;
 	OnRep_HitCount();
 
@@ -362,9 +395,34 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 
 	return DamageToApply;
 }
+void ACompetitivePlayerCharacter::ApplyDoTDamage(AController* InInstigator, AActor* InCauser)
+{
+	DoTInstigator = InInstigator;
+	DoTCauser = InCauser;
+	GetWorldTimerManager().SetTimer(DoTTimerHandle, this, &ACompetitivePlayerCharacter::ApplyDoTTick, 1.0f, true, 0.0f);
+}
+void ACompetitivePlayerCharacter::ApplyDoTTick()
+{
+	const float TickDamage = 5.0f;
+	const float TotalDuration = 5.0f;
+	const float TickInterval = 1.0f;
 
+	UGameplayStatics::ApplyDamage(this, TickDamage, DoTInstigator, DoTCauser, UDoT_DamageType::StaticClass());
+	CurrentDoTTime += TickInterval;
+	if (CurrentDoTTime >= TotalDuration)
+	{
+		GetWorldTimerManager().ClearTimer(DoTTimerHandle);
+		CurrentDoTTime = 0.0f;
+	}
+}
 void ACompetitivePlayerCharacter::PlayDeadAnim()
 {
+	ACompetitivePlayerController* PlayerController = Cast<ACompetitivePlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->SetCanMove(false);
+	}
+
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -435,6 +493,10 @@ void ACompetitivePlayerCharacter::DashEnd()
 void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData)
 {
 	CurrentWeapon = NewWeaponData;
+	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
+	MaxHealth = 100;
+	IncreasedDamage = 1;
+	DamageTypeClass = UBullet_DamageType::StaticClass();
 	OnRep_CurrentWeapon();
 
 	FString WeaponNameStr = CurrentWeapon.WeaponName.ToString();
@@ -470,6 +532,7 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 					IncreasedDamage *= FMath::Pow(1.2f, UsedCount);
 					break;
 				case EResourceType::Uranium:
+					DamageTypeClass = UDoT_DamageType::StaticClass();
 					break;
 				default:
 					break;
@@ -495,6 +558,9 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 		UE_LOG(LogTemp, Warning, TEXT("알 수 없는 무기입니다: %s"), *WeaponNameStr);
 	}
 }
+void ACompetitivePlayerCharacter::SetInBush(bool bIsInBush)
+{
+}
 
 FWeaponData ACompetitivePlayerCharacter::GetWeaponData()
 {
@@ -514,6 +580,23 @@ void ACompetitivePlayerCharacter::KnifeAttackEnd()
 	if (EquippedKnife)
 	{
 		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(false);
+	}
+}
+void ACompetitivePlayerCharacter::PickAxeAttackStart()
+{
+	if (SpawnedPickAxe)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PickAxeAttackStart"));
+		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(true);
+	}
+}
+
+void ACompetitivePlayerCharacter::PickAxeAttackEnd()
+{
+	if (SpawnedPickAxe)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PickAxeAttackEnd"));
+		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(false);
 	}
 }
 

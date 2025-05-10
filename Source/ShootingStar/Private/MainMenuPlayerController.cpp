@@ -21,6 +21,8 @@ AMainMenuPlayerController::AMainMenuPlayerController()
 
 void AMainMenuPlayerController::BeginPlay()
 {
+	Super::BeginPlay();
+	
 	ensure(MainMenuUIClass);
 	if (MainMenuUIClass)
 	{

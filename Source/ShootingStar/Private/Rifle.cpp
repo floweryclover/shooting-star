@@ -13,8 +13,10 @@ ARifle::ARifle()
 	BodyMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	BodyMesh->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh>SKELETALGUN(TEXT("/Script/Engine.SkeletalMesh'/Game/Toon_Soldiers_UE5/Meshes/Weapons/SKM_weapon_assault_rifle_A.SKM_weapon_assault_rifle_A'"));
-	if (SKELETALGUN.Succeeded()) {
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SKELETALGUN(TEXT(
+		"/Script/Engine.SkeletalMesh'/Game/Toon_Soldiers_UE5/Meshes/Weapons/SKM_weapon_assault_rifle_A.SKM_weapon_assault_rifle_A'"));
+	if (SKELETALGUN.Succeeded())
+	{
 		BodyMesh->SetSkeletalMesh(SKELETALGUN.Object);
 	}
 
@@ -28,8 +30,8 @@ ARifle::ARifle()
 
 	WeaponType = WEAPONTYPE::RIFLE;
 	for (int i = 0; i < WeaponeLeverCheck.Num(); i++) WeaponeLeverCheck[i] = true;
-
 }
+
 void ARifle::BeginPlay()
 {
 	Super::BeginPlay();
@@ -39,6 +41,7 @@ UClass* ARifle::GetStaticClass()
 {
 	return ARifle::StaticClass();
 }
+
 AGun* ARifle::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 {
 	UE_LOG(LogTemp, Warning, TEXT("SpawnToHand"));
@@ -52,32 +55,44 @@ AGun* ARifle::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 
 void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
+	if (!IsValid(GetAttachParentActor())
+		|| !IsValid(GetOwner())
+		|| !IsValid(GetOwner()->FindComponentByClass<UTeamComponent>()))
+	{
+		return;
+	}
+
+	AActor* const Shooter = GetAttachParentActor();
+	UTeamComponent* const TeamComp = Shooter->FindComponentByClass<UTeamComponent>();
+
 	FActorSpawnParameters spawnParameter;
 	spawnParameter.Owner = GetOwner();
 	spawnParameter.Instigator = GetInstigator();
 
-	auto projectile = GetWorld()->SpawnActor<ARifle_Projectile>(ARifle_Projectile::StaticClass(), loc, rot, spawnParameter);
-	if (projectile) {
+	auto projectile = GetWorld()->SpawnActor<ARifle_Projectile>(ARifle_Projectile::StaticClass(), loc, rot,
+	                                                            spawnParameter);
+	if (IsValid(projectile))
+	{
 		projectile->SetReplicates(true);
 		projectile->SetActorEnableCollision(true);
 		projectile->SetProjectileVelocity(3000.0f);
-
-		AActor* Shooter = GetAttachParentActor(); // Shooter = 캐릭터
-		if (UTeamComponent* TeamComp = Shooter->FindComponentByClass<UTeamComponent>())
-		{
-			projectile->ShooterTeam = TeamComp->GetTeam(); // 발사자의 팀 정보를 저장
-		}
+		projectile->ShooterTeam = TeamComp->GetTeam(); // 발사자의 팀 정보를 저장
 
 		FVector FireDirection = bulletRot.Vector();
 		FireDirection.Z = 0; // Z 방향 제거
 		FireDirection.Normalize();
 
-		if (ACompetitivePlayerCharacter* OwnerCharacter = Cast<ACompetitivePlayerCharacter>(GetOwner())) {
+		if (ACompetitivePlayerCharacter* OwnerCharacter = Cast<ACompetitivePlayerCharacter>(GetOwner()))
+		{
 			// 캐릭터의 공격력을 총알에 전달
 			float NewDamage = OwnerCharacter->IncreasedDamage * projectile->GetProjectileDamage();
 			projectile->SetProjectileDamage(NewDamage);
+			this->DamageTypeClass = OwnerCharacter->DamageTypeClass;
 		}
-
+		if (IsValid(DamageTypeClass))
+		{
+			projectile->DamageTypeClass = this->DamageTypeClass;
+		}
 		projectile->ProjectileFire(FireDirection, GetOwner());
 	}
 }

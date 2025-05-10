@@ -33,6 +33,31 @@ class SHOOTINGSTAR_API UCompetitiveSystemComponent final : public UActorComponen
 	GENERATED_BODY()
 
 public:
+	//
+	// 상수들. 다른 클래스에서 항상 동일한 값 참조를 위해 static constexpr로 정의하였습니다.
+	//
+	static constexpr int32 MaxPlayersPerTeam = 2;
+	
+	static constexpr int32 RoundWinningKillScore = 5;
+	
+	static constexpr int32 GameWinningScore = 3;
+
+	// 한 라운드 타임입니다.
+	static constexpr float GameTime = 180.0f;
+
+	// GameEnd에서 GameDestroyed 상태로 전이까지 필요한 시간
+	static constexpr float GameEndTime = 10.0f;
+	
+	// 라운드가 종료된 후부터 다음 라운드 시작까지 대기하는 시간입니다. 
+	static constexpr float RoundEndTime = 5.0f;
+
+	static constexpr float SafeZoneShrinkStartTime = 30.f;
+	
+	static constexpr float SafeZoneShrinkDuration = 120.f;
+
+	// 보급품 드롭 타임
+	static constexpr float SupplyDropTimes[] = {30.f, 75.f, 120.f};
+	
 	/**
 	 * Game 상태로 처음 전이될 때 발생하는 이벤트.
 	 */
@@ -74,32 +99,7 @@ public:
 	 * @return 
 	 */
 	UFUNCTION(BlueprintCallable)
-	ETeam GetTeamForNextPlayer(const TArray<APlayerState*>& PlayerArray) const;
-
-	int GetMaxPlayersPerTeam() const
-	{
-		return MaxPlayersPerTeam;
-	}
-	
-	int GetRoundWinningKillScore() const
-	{
-		return RoundWinningKillScore;
-	}
-
-	int GetGameWinningScore() const
-	{
-		return GameWinningScore;
-	}
-
-	float GetRoundTime() const
-	{
-		return GameTime;
-	}
-
-	float GetRoundEndTime() const
-	{
-		return RoundEndTime;
-	}
+	static ETeam GetTeamForNextPlayer(const TArray<APlayerState*>& PlayerArray);
 
 	float GetCurrentPhaseTime() const
 	{
@@ -154,36 +154,6 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(BlueprintReadOnly)
-	int MaxPlayersPerTeam = 2;
-	
-	UPROPERTY(BlueprintReadOnly)
-	int RoundWinningKillScore = 5;
-
-	UPROPERTY(BlueprintReadOnly)
-	int GameWinningScore = 3;
-
-	/**
-	 * 한 라운드 타임입니다.
-	 */
-	UPROPERTY(BlueprintReadOnly)
-	float GameTime = 180.0f;
-
-	// GameEnd에서 GameDestroyed 상태로 전이까지 필요한 시간
-	UPROPERTY(BlueprintReadOnly)
-	float GameEndTime = 10.0f;
-
-	// 현재 라운드 승리 팀
-	UPROPERTY(BlueprintReadOnly)
-	ETeam CurRoundWinTeam = ETeam::None;
-
-	/**
-	 * 라운드가 종료된 후부터 다음 라운드 시작까지 대기하는 시간입니다.
-	 * @return 
-	 */
-	UPROPERTY(BlueprintReadOnly)
-	float RoundEndTime = 5.0f;
-
-	UPROPERTY(BlueprintReadOnly)
 	int BlueTeamKillScore;
 
 	UPROPERTY(BlueprintReadOnly)
@@ -204,16 +174,6 @@ protected:
 	// 현재 자기장 알파값 (0: 초기 크기, 1: 최종 크기)
 	UPROPERTY()
 	float SafeZoneAlpha;
-
-	UPROPERTY(EditAnywhere, Category = "SafeZone Settings")
-	float SafeZoneShrinkStartTime = 30.f;
-
-	UPROPERTY(EditAnywhere, Category = "SafeZone Settings")
-	float SafeZoneShrinkDuration = 120.f;
-
-	// 보급품 드롭 타임
-	UPROPERTY(EditAnywhere, Category = "Supply Settings")
-	TArray<float> SupplyDropTimes = {1.f, 75.f, 120.f};
 
 	// 보급품 트리거 배열
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

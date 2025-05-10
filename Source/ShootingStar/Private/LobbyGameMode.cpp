@@ -14,9 +14,6 @@ ALobbyGameMode::ALobbyGameMode()
 	bUseSeamlessTravel = true;
 	PlayerControllerClass = ALobbyPlayerController::StaticClass();
 	GameStateClass = ALobbyGameState::StaticClass();
-
-	CompetitiveSystemComponent = CreateDefaultSubobject<
-		UCompetitiveSystemComponent>(TEXT("CompetitiveSystemComponent"));
 }
 
 int32 ALobbyGameMode::GetNumPlayers()
@@ -30,7 +27,7 @@ void ALobbyGameMode::PreLogin(const FString& Options, const FString& Address, co
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
 
-	if (NumPlayers >= CompetitiveSystemComponent->GetMaxPlayersPerTeam() * 2)
+	if (NumPlayers >= UCompetitiveSystemComponent::MaxPlayersPerTeam * 2)
 	{
 		ErrorMessage = TEXT("정원이 가득 찼습니다.");
 		return;
@@ -43,7 +40,12 @@ void ALobbyGameMode::PostLogin(APlayerController* const NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	const ETeam TeamToAssign = CompetitiveSystemComponent->GetTeamForNextPlayer(
+	if (NewPlayer->GetClass() != ALobbyPlayerController::StaticClass())
+	{
+		return;
+	}
+
+	const ETeam TeamToAssign = UCompetitiveSystemComponent::GetTeamForNextPlayer(
 		GetGameState<AGameStateBase>()->PlayerArray);
 	if (TeamToAssign == ETeam::None)
 	{
@@ -52,8 +54,7 @@ void ALobbyGameMode::PostLogin(APlayerController* const NewPlayer)
 		return;
 	}
 
-	UTeamComponent* const TeamComponent = Cast<UTeamComponent>(
-		NewPlayer->GetComponentByClass(UTeamComponent::StaticClass()));
+	UTeamComponent* const TeamComponent = NewPlayer->FindComponentByClass<UTeamComponent>();
 	check(TeamComponent != nullptr);
 
 	TeamComponent->SetTeam(TeamToAssign);

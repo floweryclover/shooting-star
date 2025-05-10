@@ -9,6 +9,7 @@
 #include "CompetitivePlayerCharacter.generated.h"
 
 class UCharacter_AnimInstance;
+class ACompetitivePlayerController;
 class AGun;
 class AKnife;
 class UInventoryComponent;
@@ -102,6 +103,13 @@ public:
 		class AController* EventInstigator, 
 		AActor* DamageCauser) override;
 
+	TSubclassOf<UDamageType> DamageTypeClass;
+	FTimerHandle DoTTimerHandle;
+	AController* DoTInstigator = nullptr;
+	AActor* DoTCauser = nullptr;
+	float CurrentDoTTime = 0.0f;
+	void ApplyDoTDamage(AController* InInstigator, AActor* InCauser);
+	void ApplyDoTTick();
 	FORCEINLINE bool IsDead() { return Health == 0; }
 	void Attack();
 	void SpawnPickAxe();
@@ -121,6 +129,9 @@ public:
 	void EquipRocketLauncher();
 	void PlayDeadAnim();
 	void DestroyCharacter();
+	UFUNCTION(BlueprintCallable, Category = "Bush")
+	void SetInBush(bool bIsInBush);
+	bool bInBush;
 	// �ڿ� ��ȣ �ۿ�
 	void OnInteract();
 	bool bIsKnifeAttacking;
@@ -128,6 +139,10 @@ public:
 	void KnifeAttackStart();
 	UFUNCTION()
 	void KnifeAttackEnd();
+	UFUNCTION()
+	void PickAxeAttackStart();
+	UFUNCTION()
+	void PickAxeAttackEnd();
 
 	//
 	// Getter, Setter
@@ -185,6 +200,8 @@ private:
 	TSubclassOf<AGun> RifleClass;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AGun> ShotgunClass;
+	UPROPERTY(EditDefaultsOnly, Category = Weapon)
+	TSubclassOf<AGun> RocketLauncherClass;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<AKnife> KnifeClass;
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)

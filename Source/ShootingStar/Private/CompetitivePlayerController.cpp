@@ -110,7 +110,12 @@ void ACompetitivePlayerController::BeginPlay()
 void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	LookMouse();
+	
+	SetIgnoreMoveInput(!bCanMove);
+	if (bCanMove) 
+	{
+		LookMouse();
+	}
 }
 
 void ACompetitivePlayerController::ToggleInventoryWidget()
@@ -203,7 +208,7 @@ void ACompetitivePlayerController::LookMouse()
 	// Move와 마찬가지로 회전 입력은 리플리케이션 없이 즉시 반영
 	
 	FHitResult Hit;
-	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+	GetHitResultUnderCursor(ECC_GameTraceChannel2, false, Hit);
 	
 	if (Hit.bBlockingHit && IsLocalController())
 	{
@@ -219,6 +224,7 @@ void ACompetitivePlayerController::LookMouse()
 }
 void ACompetitivePlayerController::Mining()
 {
+	SetCanMove(false);
 	ACharacter* const ControllingCharacter = GetCharacter();
 	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(ControllingCharacter);
 
@@ -240,6 +246,7 @@ void ACompetitivePlayerController::Dash()
 }
 void ACompetitivePlayerController::InteractResource()
 {
+	SetCanMove(true);
 	ServerComponent->RequestInteractResource();
 }
 

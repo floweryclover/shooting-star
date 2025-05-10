@@ -32,7 +32,7 @@ public:
 	// Sets default values for this actor's properties
 	AGun();
 
-	void PullTrigger();
+	// void PullTrigger();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Base)
 	class USkeletalMeshComponent* BodyMesh;
@@ -69,6 +69,8 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	UPROPERTY()
+	TSubclassOf<UDamageType> DamageTypeClass;
 
 	UPROPERTY(EditAnywhere)
 	float MaxRange = 1000;

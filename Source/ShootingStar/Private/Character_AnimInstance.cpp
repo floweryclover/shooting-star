@@ -71,7 +71,14 @@ void UCharacter_AnimInstance::AnimNotify_AttackStart()
 	ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(TryGetPawnOwner());
 	if (Character)
 	{
-		Character->KnifeAttackStart();
+		if (!IsKnifeEquipped)
+		{
+			Character->PickAxeAttackStart();
+		}
+		else
+		{
+			Character->KnifeAttackStart();
+		}
 	}
 }
 void UCharacter_AnimInstance::AnimNotify_AttackEnd()
@@ -79,6 +86,13 @@ void UCharacter_AnimInstance::AnimNotify_AttackEnd()
 	ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(TryGetPawnOwner());
 	if (Character)
 	{
-		Character->KnifeAttackEnd();
+		if (!IsKnifeEquipped)
+		{
+			Character->PickAxeAttackEnd();
+		}
+		else
+		{
+			Character->KnifeAttackEnd();
+		}
 	}
 }

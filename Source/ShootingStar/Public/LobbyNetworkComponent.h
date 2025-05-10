@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "TeamComponent.h"
 #include "Components/ActorComponent.h"
 #include "LobbyNetworkComponent.generated.h"
 
@@ -42,6 +43,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void SetNickname(const FString& NewNickname);
+
+	UFUNCTION(BlueprintCallable, Reliable, Server)
+	void SetTeam(ETeam Team);
 
 private:
 	bool bIsLocalComponent;

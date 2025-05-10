@@ -3,8 +3,6 @@
 
 #include "CompetitiveSystemComponent.h"
 #include "GameFramework/PlayerState.h"
-#include "ShootingStar/ShootingStar.h"
-#include "Kismet/GameplayStatics.h"
 #include "CompetitiveGameMode.h"
 #include "SafeZoneComponent.h"
 
@@ -23,7 +21,7 @@ UCompetitiveSystemComponent::UCompetitiveSystemComponent()
 void UCompetitiveSystemComponent::BeginPlay()
 {
     Super::BeginPlay();
-    GameMode = Cast<ACompetitiveGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+    GameMode = Cast<ACompetitiveGameMode>(GetOwner());
 }
 
 void UCompetitiveSystemComponent::Update(const float DeltaTime)
@@ -87,14 +85,17 @@ void UCompetitiveSystemComponent::GiveKillScoreForTeam(const ETeam Team)
 	}
 }
 
-ETeam UCompetitiveSystemComponent::GetTeamForNextPlayer(const TArray<APlayerState*>& PlayerArray) const
+ETeam UCompetitiveSystemComponent::GetTeamForNextPlayer(const TArray<APlayerState*>& PlayerArray)
 {
 	int NumBlueTeamPlayers = 0;
 	int NumRedTeamPlayers = 0;
 	for (const auto PlayerState : PlayerArray)
 	{
-		UTeamComponent* TeamComponent = Cast<UTeamComponent>(PlayerState->GetPlayerController()->GetComponentByClass(UTeamComponent::StaticClass()));
-		check(TeamComponent != nullptr);
+		UTeamComponent* const TeamComponent = PlayerState->GetPlayerController()->FindComponentByClass<UTeamComponent>();
+		if (!IsValid(TeamComponent))
+		{
+			continue;
+		}
 
 		if (TeamComponent->GetTeam() == ETeam::Red)
 		{
@@ -176,7 +177,7 @@ void UCompetitiveSystemComponent::CheckAndTriggerSupplyDrop(const float CurrentT
         return;
 	}
 
-    for (int32 i = 0; i < SupplyDropTimes.Num(); ++i)
+    for (int32 i = 0; i < sizeof(SupplyDropsTriggered) / sizeof(float); ++i)
     {
         if (!SupplyDropsTriggered[i] && CurrentTime >= SupplyDropTimes[i])
         {
