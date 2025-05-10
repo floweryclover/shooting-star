@@ -231,6 +231,7 @@ void UCompetitiveSystemComponent::WinTeam(const ETeam Team)
 		return;
 	}
 	
+	CurRoundWinTeam = Team;
 	int& CurrentTeamGameScore = Team == ETeam::Blue ? BlueTeamGameScore : RedTeamGameScore;
 	ensure(CurrentTeamGameScore < GameWinningScore);
 	if (CurrentTeamGameScore < GameWinningScore)

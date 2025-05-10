@@ -133,6 +133,12 @@ protected:
 	TSubclassOf<USupplyIndicatorUI> SupplyIndicatorUIClass;
 
 	UPROPERTY(BlueprintReadOnly)
+	TSubclassOf<UUserWidget> GameStateUIClass;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UUserWidget> GameStateUI;
+
+	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UServerComponent> ServerComponent;
 
 	UPROPERTY(BlueprintReadOnly)

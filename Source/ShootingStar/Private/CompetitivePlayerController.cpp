@@ -30,7 +30,7 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
 
-	//* ScoreBoard
+	//* ScoreBoard UI
 	static ConstructorHelpers::FClassFinder<UUserWidget> ScoreBoardUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_ScoreUI") };
 	ensure(ScoreBoardUIBPFinder.Succeeded());
 	if (ScoreBoardUIBPFinder.Succeeded())
@@ -38,7 +38,7 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 		ScoreBoardUIClass = ScoreBoardUIBPFinder.Class;
 	} 
 
-	//* Inventory
+	//* Inventory UI
 	static ConstructorHelpers::FClassFinder<UUserWidget> InventoryWidgetBPFinder(TEXT("/Game/Blueprints/UI/BP_Inventory"));
 	ensure(InventoryWidgetBPFinder.Succeeded());
 	if (InventoryWidgetBPFinder.Succeeded())
@@ -49,12 +49,20 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 	// Attach Inventory Component
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 
-	//* SupplyIndicator
+	//* SupplyIndicator UI
 	static ConstructorHelpers::FClassFinder<UUserWidget> SupplyIndicatorBPFinder(TEXT("/Game/Blueprints/UI/BP_SupplyIndicatorUI"));
 	ensure(SupplyIndicatorBPFinder.Succeeded());
 	if (SupplyIndicatorBPFinder.Succeeded())
 	{
 		SupplyIndicatorUIClass = SupplyIndicatorBPFinder.Class;
+	}
+
+	//* GameState UI
+	static ConstructorHelpers::FClassFinder<UUserWidget> GameStateUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_GameStateUI") };
+	ensure(GameStateUIBPFinder.Succeeded());
+	if (GameStateUIBPFinder.Succeeded())
+	{
+		GameStateUIClass = GameStateUIBPFinder.Class;
 	}
 }
 
@@ -74,6 +82,17 @@ void ACompetitivePlayerController::BeginPlay()
 			if (ScoreBoardUI)
 			{
 				ScoreBoardUI->AddToViewport();
+			}
+		}
+
+		ensure(GameStateUIClass);
+		if (GameStateUIClass)
+		{
+			GameStateUI = CreateWidget<UUserWidget>(GetWorld(), GameStateUIClass);
+			ensure(GameStateUI);
+			if (GameStateUI)
+			{
+				GameStateUI->AddToViewport();
 			}
 		}
 	}

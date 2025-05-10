@@ -172,6 +172,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float GameEndTime = 10.0f;
 
+	// 현재 라운드 승리 팀
+	UPROPERTY(BlueprintReadOnly)
+	ETeam CurRoundWinTeam = ETeam::None;
+
 	/**
 	 * 라운드가 종료된 후부터 다음 라운드 시작까지 대기하는 시간입니다.
 	 * @return 
