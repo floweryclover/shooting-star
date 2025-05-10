@@ -56,6 +56,11 @@ public:
 	//
 	// Getter/Setter
 	//
+
+	float GetWaitingForGameStartSeconds() const
+	{
+		return WaitingForGameStartSeconds;
+	}
 	
 	UCompetitiveSystemComponent* GetCompetitiveSystemComponent() const
 	{
@@ -87,7 +92,7 @@ protected:
 	int32 NumPlayers;
 	
 	UPROPERTY(BlueprintReadOnly)
-	float GameStartSeconds = 10.0f;
+	float WaitingForGameStartSeconds = 10.0f;
 
 	UPROPERTY(BlueprintReadOnly)
 	FName ExitLevel = TEXT("/Game/Levels/Lobby");

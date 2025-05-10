@@ -151,6 +151,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	float GetSafeZoneAlpha() const { return SafeZoneAlpha; }
 
+	ETeam GetLastRoundWinTeam() const
+	{
+		return LastRoundWinTeam;
+	}
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -173,7 +178,7 @@ protected:
 	ECompetitiveGamePhase CurrentPhase;
 
 	UPROPERTY(BlueprintReadOnly)
-	ETeam CurRoundWinTeam{};
+	ETeam LastRoundWinTeam{};
 	
 	// 현재 자기장 알파값 (0: 초기 크기, 1: 최종 크기)
 	UPROPERTY()

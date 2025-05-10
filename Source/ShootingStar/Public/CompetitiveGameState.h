@@ -51,9 +51,17 @@ public:
 	{
 		return Phase;
 	}
+	
+	ETeam GetLastRoundWinTeam() const
+	{
+		return LastRoundWinTeam;
+	}
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	float WaitingForGameStartTime;
 	
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	int BlueTeamKills;
@@ -75,6 +83,9 @@ protected:
 
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	bool bIsGoldenKillTime;
+
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	ETeam LastRoundWinTeam;
 
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	ECompetitiveGamePhase Phase;

@@ -69,7 +69,7 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 	{
 		// 게임 입장 후 10초가 지나면 시작하는 코드
 		// 추후 준비 완료 또는 모두 로그인 완료 시 시작으로 구체화 해야 할 것
-		if (CompetitiveSystemComponent->GetCurrentPhaseTime() > GameStartSeconds)
+		if (CompetitiveSystemComponent->GetCurrentPhaseTime() > WaitingForGameStartSeconds)
 		{
 			CompetitiveSystemComponent->StartGame();
 		}

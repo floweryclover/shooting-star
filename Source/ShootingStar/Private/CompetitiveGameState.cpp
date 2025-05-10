@@ -34,6 +34,7 @@ void ACompetitiveGameState::Tick(float DeltaSeconds)
 		return;
 	}
 
+	WaitingForGameStartTime = CompetitiveGameMode->GetWaitingForGameStartSeconds();
 	BlueTeamKills = CompetitiveSystem->GetBlueTeamKillScore();
 	RedTeamKills = CompetitiveSystem->GetRedTeamKillScore();
 	BlueTeamWinRounds = CompetitiveSystem->GetBlueTeamGameScore();
@@ -42,12 +43,14 @@ void ACompetitiveGameState::Tick(float DeltaSeconds)
 	PhaseTime = CompetitiveSystem->GetCurrentPhaseTime();
 	bIsGoldenKillTime = CompetitiveSystem->IsGoldenKillTime();
 	RemainingGameTime = CompetitiveSystem->GetRemainingGameTime();
+	LastRoundWinTeam = CompetitiveSystem->GetLastRoundWinTeam();
 }
 
 void ACompetitiveGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ACompetitiveGameState, WaitingForGameStartTime);
 	DOREPLIFETIME(ACompetitiveGameState, BlueTeamKills);
 	DOREPLIFETIME(ACompetitiveGameState, RedTeamKills);
 	DOREPLIFETIME(ACompetitiveGameState, BlueTeamWinRounds);
@@ -56,4 +59,5 @@ void ACompetitiveGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(ACompetitiveGameState, PhaseTime);
 	DOREPLIFETIME(ACompetitiveGameState, bIsGoldenKillTime);
 	DOREPLIFETIME(ACompetitiveGameState, RemainingGameTime);
+	DOREPLIFETIME(ACompetitiveGameState, LastRoundWinTeam);
 }
