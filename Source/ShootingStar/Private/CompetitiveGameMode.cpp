@@ -175,6 +175,8 @@ void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 		OldPawn->Destroy();
 	}
 
+	CompetitivePlayerController->GetInventoryComponent()->ClearInventory();
+
 	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(CompetitivePlayerController);
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = Cast<ACompetitivePlayerCharacter>(
 		SpawnDefaultPawnAtTransform(NewPlayer, FTransform{SpawnPoint + FVector{0.0, 0.0, 100.0}}));

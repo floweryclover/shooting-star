@@ -66,6 +66,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     TArray<UResourceDataAsset*> Get_OwnedDataAssets();
 
+    UFUNCTION(Blueprintable)
+    void ClearInventory();
+
 private:
     UFUNCTION()
     void OnRep_ResourceInventory();

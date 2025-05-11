@@ -11,27 +11,7 @@ void UInventoryComponent::BeginPlay()
 
 	SetIsReplicated(true);
 	// Init ResourceInventory
-	ResourceInventory.Empty();
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-
-	TArray<FAssetData> AssetList;
-	FName AssetPath = TEXT("/Game/Data/Resources");
-
-	AssetRegistryModule.Get().GetAssetsByPath(AssetPath, AssetList, true);
-
-	for (const FAssetData& Asset : AssetList)
-	{
-		UResourceDataAsset* Resource = Cast<UResourceDataAsset>(Asset.GetAsset());
-		if (Resource)
-		{
-			ResourceInventory.Add({ Resource, 0 });
-		}
-	}
-
-	// Ascending Sort By ResourceType Enum
-	ResourceInventory.Sort([](const FResourceInventoryData& A, const FResourceInventoryData& B) {
-		return static_cast<int>(A.Resource->ResourceType) < static_cast<int>(B.Resource->ResourceType);
-		});
+	ClearInventory();
 }
 
 void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -158,6 +138,33 @@ TArray<UResourceDataAsset*> UInventoryComponent::Get_OwnedDataAssets()
 	}
 
 	return Ret;
+}
+
+void UInventoryComponent::ClearInventory()
+{
+	ResourceInventory.Empty();
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+
+	TArray<FAssetData> AssetList;
+	FName AssetPath = TEXT("/Game/Data/Resources");
+
+	AssetRegistryModule.Get().GetAssetsByPath(AssetPath, AssetList, true);
+
+	for (const FAssetData& Asset : AssetList)
+	{
+		UResourceDataAsset* Resource = Cast<UResourceDataAsset>(Asset.GetAsset());
+		if (Resource)
+		{
+			ResourceInventory.Add({ Resource, 0 });
+		}
+	}
+
+	// Ascending Sort By ResourceType Enum
+	ResourceInventory.Sort([](const FResourceInventoryData& A, const FResourceInventoryData& B) {
+		return static_cast<int>(A.Resource->ResourceType) < static_cast<int>(B.Resource->ResourceType);
+		});
+	
+	OnRep_ResourceInventory();
 }
 
 void UInventoryComponent::OnRep_ResourceInventory()
