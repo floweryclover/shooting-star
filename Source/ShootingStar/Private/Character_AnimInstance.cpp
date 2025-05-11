@@ -19,6 +19,8 @@ UCharacter_AnimInstance::UCharacter_AnimInstance()
 	if (GetKnifeAttackMontage.Succeeded()) KnifeAttackMontage = GetKnifeAttackMontage.Object;
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> GetMiningLoop(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/PickAxe/MiningLoopMontage.MiningLoopMontage'"));
 	if (GetMiningLoop.Succeeded()) MiningLoopMontage = GetMiningLoop.Object;
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> GetRocketShoot(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/RocketLauncher/rocketlauncher_shoot.rocketlauncher_shoot'"));
+	if (GetRocketShoot.Succeeded()) RocketLauncher_Shoot_Montage = GetRocketShoot.Object;
 }
 
 void UCharacter_AnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -44,6 +46,11 @@ void UCharacter_AnimInstance::PlayFireMontage()
 {
 	float MontageLength = AK_Fire_Montage->GetPlayLength();
 	Montage_Play(AK_Fire_Montage, MontageLength, EMontagePlayReturnType::MontageLength, 0.0f, false);
+}
+void UCharacter_AnimInstance::PlayRocketFireMontage()
+{
+	float MontageLength = RocketLauncher_Shoot_Montage->GetPlayLength();
+	Montage_Play(RocketLauncher_Shoot_Montage, MontageLength, EMontagePlayReturnType::MontageLength, 0.0f, false);
 }
 void UCharacter_AnimInstance::PlayKnifeAttackMontage()
 {

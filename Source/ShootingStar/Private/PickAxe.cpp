@@ -18,13 +18,6 @@ APickAxe::APickAxe()
         BodyMesh = nullptr;
     }
     
-    // StaticMesh를 루트로 설정
-    if (!StaticBodyMesh)
-    {
-        StaticBodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticBodyMesh"));
-    }
-    RootComponent = StaticBodyMesh;
-    
     static ConstructorHelpers::FObjectFinder<UStaticMesh> STATICPICKAXE(TEXT("StaticMesh'/Game/lowpoly-mine-assets/source/Pickaxe.Pickaxe'"));
     if (STATICPICKAXE.Succeeded()) {
         StaticBodyMesh->SetStaticMesh(STATICPICKAXE.Object);
@@ -35,16 +28,9 @@ APickAxe::APickAxe()
     {
         AttackHitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
     }
-    AttackHitBox->SetupAttachment(StaticBodyMesh);
-    AttackHitBox->SetGenerateOverlapEvents(false);
+    AttackHitBox->SetupAttachment(RootComponent);
     AttackHitBox->OnComponentBeginOverlap.Clear(); // 이전 바인딩 제거
     AttackHitBox->OnComponentBeginOverlap.AddDynamic(this, &APickAxe::OnOverlapBegin_Body);
-    
-    // 사운드 컴포넌트도 루트에 붙임
-    if (Sound)
-    {
-        Sound->SetupAttachment(StaticBodyMesh);
-    }
 }
 
 // Called when the game starts or when spawned
@@ -80,4 +66,5 @@ void APickAxe::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* 
     {
         return;
     }
+    UE_LOG(LogTemp, Warning, TEXT("Pickaxe Overlap with: %s"), *OtherActor->GetName());
 }
