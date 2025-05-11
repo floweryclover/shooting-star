@@ -144,6 +144,24 @@ void ACompetitivePlayerCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 }
 
+void ACompetitivePlayerCharacter::Destroyed()
+{
+	if (SpawnedPickAxe)
+	{
+		SpawnedPickAxe->Destroy();
+	}
+	if (EquippedGun)
+	{
+		EquippedGun->Destroy();
+	}
+	if (EquippedKnife)
+	{
+		EquippedKnife->Destroy();
+	}
+	
+	Super::Destroyed();
+}
+
 void ACompetitivePlayerCharacter::WeaponChange()
 {
 	if (!RifleClass)
@@ -480,18 +498,6 @@ void ACompetitivePlayerCharacter::PlayDeadAnim()
 
 void ACompetitivePlayerCharacter::DestroyCharacter()
 {
-	if (SpawnedPickAxe)
-	{
-		SpawnedPickAxe->Destroy();
-	}
-	if (EquippedGun)
-	{
-		EquippedGun->Destroy();
-	}
-	if (EquippedKnife)
-	{
-		EquippedKnife->Destroy();
-	}
 	Destroy();
 }
 
