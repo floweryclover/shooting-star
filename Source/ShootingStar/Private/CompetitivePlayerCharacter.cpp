@@ -1,7 +1,6 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "CompetitivePlayerCharacter.h"
-#include "CompetitivePlayerController.h"
 #include "PickAxe.h"
 #include "Gun.h"
 #include "Knife.h"
@@ -431,7 +430,27 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 
 	if (!bWasAlreadyDead && IsDead())
 	{
-		PlayDeadAnim();
+		float MontageLength = AnimInstance->DeadMontage->GetPlayLength();
+		UE_LOG(LogTemp, Warning, TEXT("Dead montage length: %f"), MontageLength);
+
+		bDeadNotify = true;
+		OnRep_bDeadNotify();
+
+		UCapsuleComponent* Capsule = GetCapsuleComponent();
+		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+		GetMesh()->SetCollisionProfileName(TEXT("DeadState"));
+		SetActorEnableCollision(true);
+
+		GetMesh()->SetAllBodiesSimulatePhysics(true);
+		GetMesh()->SetSimulatePhysics(true);
+		GetMesh()->WakeAllRigidBodies();
+		GetMesh()->bBlendPhysics = true;
+
+		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
+		GetWorldTimerManager().SetTimer(timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, MontageLength, false);
+	
 		OnKilled.Broadcast(EventInstigator, GetController());
 	}
 
@@ -465,35 +484,6 @@ void ACompetitivePlayerCharacter::ApplyDoTTick()
 		GetWorldTimerManager().ClearTimer(DoTTimerHandle);
 		CurrentDoTTime = 0.0f;
 	}
-}
-void ACompetitivePlayerCharacter::PlayDeadAnim()
-{
-	ACompetitivePlayerController* PlayerController = Cast<ACompetitivePlayerController>(GetController());
-	if (PlayerController)
-	{
-		PlayerController->SetCanMove(false);
-	}
-
-	UCapsuleComponent* Capsule = GetCapsuleComponent();
-	Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
-
-	GetMesh()->SetCollisionProfileName(TEXT("DeadState"));
-	SetActorEnableCollision(true);
-
-	GetMesh()->SetAllBodiesSimulatePhysics(true);
-	GetMesh()->SetSimulatePhysics(true);
-	GetMesh()->WakeAllRigidBodies();
-	GetMesh()->bBlendPhysics = true;
-
-	float MontageLength = AnimInstance->DeadMontage->GetPlayLength();
-	UE_LOG(LogTemp, Warning, TEXT("Dead montage length: %f"), MontageLength);
-
-	bDeadNotify = true;
-	OnRep_bDeadNotify();
-
-	UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
-	GetWorldTimerManager().SetTimer(timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, MontageLength, false);
 }
 
 void ACompetitivePlayerCharacter::DestroyCharacter()
@@ -714,6 +704,10 @@ void ACompetitivePlayerCharacter::OnRep_HitCount()
 
 void ACompetitivePlayerCharacter::OnRep_bDeadNotify()
 {
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+	
 	AnimInstance->PlayDeadMontage();
 }
 

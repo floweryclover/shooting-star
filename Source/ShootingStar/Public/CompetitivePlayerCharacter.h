@@ -133,7 +133,6 @@ public:
 	void EquipGun(AGun* Equip);
 	void EquipKnife(AKnife* Equip);
 	void EquipRocketLauncher();
-	void PlayDeadAnim();
 	void DestroyCharacter();
 	UFUNCTION(BlueprintCallable, Category = "Bush")
 	void SetInBush(bool bIsInBush);
