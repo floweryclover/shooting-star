@@ -191,7 +191,7 @@ private:
 
 	FTimerHandle timer;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(Replicated)
 	float MaxHealth = 100;
 
 	UPROPERTY(Replicated, VisibleAnywhere)
