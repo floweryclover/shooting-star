@@ -3,8 +3,6 @@
 
 #include "ResourceActor.h"
 #include "Components/StaticMeshComponent.h"
-#include "Resource.h" 
-#include "InventoryComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
 
@@ -18,16 +16,10 @@ AResourceActor::AResourceActor()
     MeshComponent->SetCollisionResponseToChannel(CollisionChannels::ResourceActor, ECR_Block);
 }
 
-void AResourceActor::Harvest(UInventoryComponent* Inventory)
-{
-    // Server
-    Inventory->AddResource(ResourceData);
-}
-
 void AResourceActor::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
-
+    
     UpdateVisual();
 }
 
@@ -42,15 +34,15 @@ void AResourceActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 
 void AResourceActor::UpdateMesh_AfterHarvest()
 {
-    ResourceState = static_cast<RESOURCE_STATE>(static_cast<int>(ResourceState) + 1);
+    ResourceState = static_cast<EResourceState>(static_cast<int>(ResourceState) + 1);
 
-    if (ResourceState >= RESOURCE_STATE_END)
+    if (ResourceState >= EResourceState::End)
     {
         Destroy();
         return;
     }
-
-    UpdateVisual();
+    
+    OnRep_ResourceState();
 }
 
 void AResourceActor::UpdateVisual()
@@ -59,15 +51,15 @@ void AResourceActor::UpdateVisual()
     {
         switch (ResourceState)
         {
-        case RESOURCE_STATE_LARGE:
+        case EResourceState::Large:
             MeshComponent->SetStaticMesh(ResourceData->LargeMesh ? ResourceData->LargeMesh : nullptr);
             break;
 
-        case RESOURCE_STATE_MEDIUM:
+        case EResourceState::Medium:
             MeshComponent->SetStaticMesh(ResourceData->MediumMesh ? ResourceData->MediumMesh : nullptr);
             break;
 
-        case RESOURCE_STATE_SMALL:
+        case EResourceState::Small:
             MeshComponent->SetStaticMesh(ResourceData->SmallMesh ? ResourceData->SmallMesh : nullptr);
             break;
         }
@@ -81,15 +73,15 @@ void AResourceActor::UpdateVisual()
 
             switch (ResourceState)
             {
-            case RESOURCE_STATE_LARGE:
+            case EResourceState::Large:
                 SetActorScale3D(LargeWoodScale);
                 break;
 
-            case RESOURCE_STATE_MEDIUM:
+            case EResourceState::Medium:
                 SetActorScale3D(LargeWoodScale * 0.8f);
                 break;
 
-            case RESOURCE_STATE_SMALL:
+            case EResourceState::Small:
                 SetActorScale3D(LargeWoodScale * 0.6f);
                 break;
             }
@@ -102,9 +94,15 @@ void AResourceActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(AResourceActor, ResourceData);
+    DOREPLIFETIME(AResourceActor, ResourceState);
 }
 
 void AResourceActor::OnRep_ResourceData()
+{
+    UpdateVisual();
+}
+
+void AResourceActor::OnRep_ResourceState()
 {
     UpdateVisual();
 }

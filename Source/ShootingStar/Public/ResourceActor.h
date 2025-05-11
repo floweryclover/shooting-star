@@ -9,7 +9,6 @@
 
 class UStaticMeshComponent;
 class UResource;
-class UInventoryComponent;
 
 UCLASS()
 class SHOOTINGSTAR_API AResourceActor : public AActor
@@ -19,7 +18,6 @@ class SHOOTINGSTAR_API AResourceActor : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AResourceActor();
-	void Harvest(UInventoryComponent* Inventory);
 
 	const UResourceDataAsset* GetResourceData() const
 	{
@@ -38,7 +36,8 @@ protected:
 #endif
 	
 private:
-	RESOURCE_STATE ResourceState = RESOURCE_STATE_LARGE;
+	UPROPERTY(ReplicatedUsing=OnRep_ResourceState)
+	EResourceState ResourceState = EResourceState::Large;
 
 public:
 	UPROPERTY(VisibleAnywhere)
@@ -53,4 +52,7 @@ protected:
 private:
 	UFUNCTION()
 	void OnRep_ResourceData();
+
+	UFUNCTION()
+	void OnRep_ResourceState();
 };

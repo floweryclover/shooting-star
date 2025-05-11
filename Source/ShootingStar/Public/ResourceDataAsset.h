@@ -7,12 +7,13 @@
 #include "ResourceType.h"
 #include "ResourceDataAsset.generated.h"
 
-enum RESOURCE_STATE
+UENUM()
+enum class EResourceState : uint8
 {
-    RESOURCE_STATE_LARGE,
-    RESOURCE_STATE_MEDIUM,
-    RESOURCE_STATE_SMALL,
-    RESOURCE_STATE_END
+    Large,
+    Medium,
+    Small,
+    End
 };
 
 UCLASS(BlueprintType)
