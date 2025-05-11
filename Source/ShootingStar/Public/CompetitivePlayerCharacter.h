@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "TeamComponent.h"
 #include "WeaponData.h"
 #include "CompetitivePlayerCharacter.generated.h"
 
@@ -12,9 +11,9 @@ class UCharacter_AnimInstance;
 class ACompetitivePlayerController;
 class AGun;
 class AKnife;
-class UInventoryComponent;
 class APickAxe;
 class UWidgetComponent;
+class UTeamComponent;
 
 enum class ETeam :uint8;
 struct FWeaponData;
@@ -223,9 +222,6 @@ private:
 	AGun* Gun = nullptr;
 	UPROPERTY(EditDefaultsOnly)
 	AKnife* Knife = nullptr;
-
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
-	UInventoryComponent* InventoryComponent;
 
 	// 애니메이션 동기화용 카운트. 값 변경시켜 클라이언트에서 감지하는 것 이외에는 값에 의미 없음
 	UPROPERTY(ReplicatedUsing=OnRep_FireCount)

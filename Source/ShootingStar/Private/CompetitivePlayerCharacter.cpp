@@ -4,6 +4,7 @@
 #include "PickAxe.h"
 #include "Gun.h"
 #include "Knife.h"
+#include "TeamComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -20,7 +21,6 @@
 #include "Character_AnimInstance.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
-#include "Components/WidgetComponent.h"
 
 ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
