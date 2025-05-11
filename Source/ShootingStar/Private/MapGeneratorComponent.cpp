@@ -24,7 +24,7 @@ UMapGeneratorComponent::UMapGeneratorComponent()
 
 void UMapGeneratorComponent::Initialize()
 {
-    // 1. Map Coordinate 초기화화
+    // 1. Map Coordinate 초기화
     InitializeMapCoordinate(mapHalfSize * 2);
 
     // 2. Map Instanced Mesh Actor 생성

@@ -102,7 +102,7 @@ void ACompetitivePlayerController::BeginPlay()
 	{
 		if (UCompetitiveSystemComponent* SystemComp = GameMode->GetCompetitiveSystemComponent())
 		{
-			SystemComp->OnSupplyDrop.AddDynamic(this, &ACompetitivePlayerController::RenderSupplyIndicator);
+			SystemComp->OnSupplyDropped.AddDynamic(this, &ACompetitivePlayerController::RenderSupplyIndicator);
 		}
 	}
 }

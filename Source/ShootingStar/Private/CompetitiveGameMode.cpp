@@ -16,6 +16,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMeshActor.h"
 #include "SafeZoneComponent.h"
+#include "SupplyActor.h"
+#include "ResourceActor.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
 	: NumPlayers{1} // 호스트 항상 포함
@@ -56,7 +59,8 @@ void ACompetitiveGameMode::InitGame(const FString& MapName, const FString& Optio
 	}
 
 	CompetitiveSystemComponent->OnGameStarted.AddDynamic(this, &ACompetitiveGameMode::OnGameStarted);
-	CompetitiveSystemComponent->OnSupplyDrop.AddDynamic(this, &ACompetitiveGameMode::HandleSupplyDrop);
+	CompetitiveSystemComponent->OnSupplyDropped.AddDynamic(this, &ACompetitiveGameMode::HandleSupplyDrop);
+	CompetitiveSystemComponent->OnSupplyOpened.AddDynamic(this, &ACompetitiveGameMode::HandleSupplyOpened);
 }
 
 void ACompetitiveGameMode::Tick(const float DeltaSeconds)
@@ -259,10 +263,45 @@ void ACompetitiveGameMode::InteractResource(AController* const Controller)
 	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
 	{
 		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
-		AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
+		UE_LOG(LogTemp, Log, TEXT("Hit Actor: %s"), *Hit.GetActor()->GetName());
 
-		InventoryComponent->AddResource(Resource->ResourceData);
-		Resource->UpdateMesh_AfterHarvest();
+		// Supply 태그 확인
+		if (Hit.GetActor()->ActorHasTag("Supply"))
+		{
+			if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()))
+			{
+				// 캐릭터 가져오기
+				ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(Controller->GetCharacter());
+				if (!Character)
+				{
+					UE_LOG(LogTemp, Error, TEXT("Supply: Character not found"));
+					return;
+				}
+
+				// 보급품 상자가 이미 열려있는지 확인
+				if (!SupplyActor->IsOpened())
+				{
+					// 무기 데이터 설정 및 장착
+					Character->SetWeaponData(SupplyActor->GetStoredWeapon());
+					Character->EquipRocketLauncher();
+					SupplyActor->PlayOpeningAnimation();
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("SupplyActor not found"));
+			}
+		}
+		else
+		{
+			// 기존 자원 처리
+			AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
+			if (Resource)
+			{
+				InventoryComponent->AddResource(Resource->ResourceData);
+				Resource->UpdateMesh_AfterHarvest();
+			}
+		}
 	}
 }
 
@@ -390,16 +429,14 @@ void ACompetitiveGameMode::OnGameStarted()
 
 void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
 {
-    if (!SupplyDropActorClass)
+    if (!SupplyActorClass)
     {
-        UE_LOG(LogShootingStar, Warning, TEXT("SupplyDropActorClass is not set in CompetitiveGameMode"));
+        UE_LOG(LogShootingStar, Error, TEXT("SupplyActorClass is not set in GameMode"));
         return;
     }
 
-    // MapGenerator를 통한 위치 검증
     if (MapGeneratorComponent)
     {
-        // 현재 위치가 유효하지 않다면 가장 가까운 유효한 위치 찾기
         if (!MapGeneratorComponent->CheckLocation(Location))
         {
             Location = MapGeneratorComponent->FindNearestValidLocation(Location, 500.f, EObjectMask::ResourceMask);
@@ -420,24 +457,25 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
         );
     }
 
+    // 동적으로 SupplyActor 스폰
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
     
-    AActor* SupplyDrop = GetWorld()->SpawnActor<AActor>(
-        SupplyDropActorClass,
-        Location,
-        FRotator::ZeroRotator,
-        SpawnParams
-    );
-
-    if (SupplyDrop)
+    if (ASupplyActor* SupplyActor = GetWorld()->SpawnActor<ASupplyActor>(SupplyActorClass, Location, FRotator::ZeroRotator, SpawnParams))
     {
-		UE_LOG(LogShootingStar, Log, TEXT("Supply drop spawned at %s"), *Location.ToString());
-		
-        SupplyDrop->SetReplicates(true);
-        if (UStaticMeshComponent* MeshComp = Cast<UStaticMeshComponent>(SupplyDrop->GetComponentByClass(UStaticMeshComponent::StaticClass())))
-        {
-            MeshComp->SetIsReplicated(true);
-        }
+        CurrentSupplyIndex++;
+        UE_LOG(LogShootingStar, Log, TEXT("Supply %d spawned at %s"), CurrentSupplyIndex, *Location.ToString());
     }
+    else
+    {
+        UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
+    }
+}
+
+// 보급품 상자가 열린 시점에서 호출되는 함수
+void ACompetitiveGameMode::HandleSupplyOpened(FVector Location)
+{
+    UE_LOG(LogShootingStar, Log, TEXT("Supply box opened at %s"), *Location.ToString());
+
+    // TODO: 보급품 아이템 생성 및 분배 로직 구현
 }
