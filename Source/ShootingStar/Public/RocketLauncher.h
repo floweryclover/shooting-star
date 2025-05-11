@@ -9,6 +9,8 @@
 /**
  *
  */
+class AProjectileBase;
+
 UCLASS()
 class SHOOTINGSTAR_API ARocketLauncher : public AGun
 {
@@ -23,6 +25,9 @@ protected:
 private:
 
 public:
+	UPROPERTY(EditDefaultsOnly, Category = Rocket)
+	TSubclassOf<AProjectileBase> RocketClass;
+
 	virtual UClass* GetStaticClass() override;
 	virtual AGun* SpawnToHand(APawn* owner, FVector loc, FRotator rot) override;
 	virtual void ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot) override;

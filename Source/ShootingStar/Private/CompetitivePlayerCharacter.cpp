@@ -225,6 +225,10 @@ void ACompetitivePlayerCharacter::EquipRocketLauncher()
 		EquippedKnife->Destroy();
 		EquippedKnife = nullptr;
 	}
+	if (IsValid(EquippedGun))
+	{
+		EquippedGun->Destroy();
+	}
 	FActorSpawnParameters Params;
 	Params.Owner = GetController();
 	Params.Instigator = this;
@@ -233,9 +237,9 @@ void ACompetitivePlayerCharacter::EquipRocketLauncher()
 	SpawnedRocketLauncher->SetReplicates(true);
 	SpawnedRocketLauncher->SetActorEnableCollision(true);
 
-	SpawnedRocketLauncher->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		TEXT("Weapon_R_Socket"));
-
+	EquippedGun = SpawnedRocketLauncher;
+	OnRep_EquippedGun();
+	OnRep_EquippedKnife();
 }
 
 void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
@@ -306,7 +310,12 @@ void ACompetitivePlayerCharacter::SpawnPickAxe()
 	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
 	SpawnedPickAxe->SetReplicates(true);
 
-	SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("Backpack_Socket"));
+	FTransform RelativeTransform;
+	RelativeTransform.SetRotation(FQuat(FVector(-1, 0, 0), FMath::DegreesToRadians(90.f)));
+
+	SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		TEXT("Weapon_R_Socket"));
+	SpawnedPickAxe->SetActorRelativeTransform(RelativeTransform);
 }
 
 void ACompetitivePlayerCharacter::EquipPickAxe()
@@ -340,11 +349,11 @@ void ACompetitivePlayerCharacter::PullTrigger()
 	if (EquippedGun)
 	{
 		// 총에서 소켓 위치와 회전 가져오기
-		FVector MuzzleLoc = EquippedGun->BodyMesh->GetSocketLocation("Muzzle");
-		FRotator MuzzleRot = EquippedGun->BodyMesh->GetSocketRotation("Muzzle");
-		FRotator BulletFireRot = MuzzleRot; // 총구 방향 그대로 발사
+		FVector FireLoc = EquippedGun->BodyMesh->GetSocketLocation("Muzzle");
+		FRotator FireRot = Owner->GetActorRotation();
+		FRotator BulletFireRot = FireRot; // 총구 방향 그대로 발사
 
-		EquippedGun->ProjectileFire(MuzzleLoc, MuzzleRot, MuzzleRot);
+		EquippedGun->ProjectileFire(FireLoc, FireRot, BulletFireRot);
 
 		FireCount += 1;
 		OnRep_FireCount();
@@ -364,6 +373,11 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		UE_LOG(LogShootingStar, Error, TEXT("DamageCauser is invalid!"));
 		return 0.0f;
 	}
+
+	ACompetitivePlayerCharacter* InstigatorCharacter = Cast<ACompetitivePlayerCharacter>(EventInstigator->GetPawn());
+	if (IsValid(InstigatorCharacter) && InstigatorCharacter->GetTeamComponent()->GetTeam() == this->GetTeamComponent()->GetTeam())
+		return 0.0f;
+
 	float DamageToApply{0.0f};
 
 	const bool bWasAlreadyDead = IsDead();
@@ -373,6 +387,7 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 
 	if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass->IsChildOf(UDoT_DamageType::StaticClass()))
 	{
+		Health -= DamageToApply * 100 / Armor;
 		ApplyDoTDamage(EventInstigator, DamageCauser);
 	}
 	else
@@ -393,6 +408,9 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 }
 void ACompetitivePlayerCharacter::ApplyDoTDamage(AController* InInstigator, AActor* InCauser)
 {
+	if (GetWorldTimerManager().IsTimerActive(DoTTimerHandle))
+		return; // 이미 적용 중이면 무시하
+
 	DoTInstigator = InInstigator;
 	DoTCauser = InCauser;
 	GetWorldTimerManager().SetTimer(DoTTimerHandle, this, &ACompetitivePlayerCharacter::ApplyDoTTick, 1.0f, true, 0.0f);
@@ -402,6 +420,12 @@ void ACompetitivePlayerCharacter::ApplyDoTTick()
 	const float TickDamage = 5.0f;
 	const float TotalDuration = 5.0f;
 	const float TickInterval = 1.0f;
+
+	if (IsDead())
+	{
+		GetWorldTimerManager().ClearTimer(DoTTimerHandle);
+		return;
+	}
 
 	UGameplayStatics::ApplyDamage(this, TickDamage, DoTInstigator, DoTCauser, UDoT_DamageType::StaticClass());
 	CurrentDoTTime += TickInterval;
@@ -582,6 +606,7 @@ void ACompetitivePlayerCharacter::PickAxeAttackStart()
 {
 	if (SpawnedPickAxe)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("PickAxe Onwer: %s"), *SpawnedPickAxe->GetAttachParentActor()->GetName());
 		UE_LOG(LogTemp, Warning, TEXT("PickAxeAttackStart"));
 		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(true);
 	}
@@ -623,6 +648,7 @@ void ACompetitivePlayerCharacter::OnRep_EquippedGun()
 		}
 		EquippedGun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 							TEXT("Weapon_R_Socket"));
+		EquippedGun->SetDamageType(DamageTypeClass);
 	}
 	RefreshAnimInstance();
 }
@@ -647,7 +673,14 @@ void ACompetitivePlayerCharacter::OnRep_EquippedKnife()
 
 void ACompetitivePlayerCharacter::OnRep_FireCount()
 {
-	AnimInstance->PlayFireMontage();
+	if (EquippedGun->IsA(RocketLauncherClass))
+	{
+		AnimInstance->PlayRocketFireMontage();
+	}
+	else 
+	{
+		AnimInstance->PlayFireMontage();
+	}
 }
 
 void ACompetitivePlayerCharacter::OnRep_KnifeAttackCount()
@@ -684,4 +717,5 @@ void ACompetitivePlayerCharacter::RefreshAnimInstance()
 {
 	AnimInstance->IsKnifeEquipped = IsValid(EquippedKnife);
 	AnimInstance->IsGunEquipped = IsValid(EquippedGun);
+	AnimInstance->IsRockLauncherEquipped = IsValid(EquippedGun) && EquippedGun->IsA(RocketLauncherClass);
 }

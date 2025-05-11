@@ -24,6 +24,8 @@ public:
 	bool IsGunEquipped;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	bool IsKnifeEquipped;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	bool IsRockLauncherEquipped;
 
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
@@ -36,10 +38,12 @@ public:
 	void PlayHitMontage();
 	void PlayDeadMontage();
 	void PlayFireMontage();
+	void PlayRocketFireMontage();
 	void PlayKnifeAttackMontage();
 	void PlayAKIdleMontage();
 	void StopAKIdleMontage();
 	
+	UAnimMontage* RocketLauncher_Shoot_Montage;
 	UAnimMontage* MiningLoopMontage;
 	UAnimMontage* AK_Idle_Montage;
 	UAnimMontage* AK_Fire_Montage;

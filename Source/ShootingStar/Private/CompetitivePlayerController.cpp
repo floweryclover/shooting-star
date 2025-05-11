@@ -169,6 +169,7 @@ void ACompetitivePlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &ACompetitivePlayerController::Attack);
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipWeapon);
 		EnhancedInputComponent->BindAction(EquipKnifeAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipKnifeWeapon);
+		EnhancedInputComponent->BindAction(EquipRocketLauncherAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipRocketLauncher);
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::Dash);
 		EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::ToggleInventoryWidget);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::Mining);
@@ -239,6 +240,12 @@ void ACompetitivePlayerController::Mining()
 		1.0f,
 		false
 	);
+}
+void ACompetitivePlayerController::EquipRocketLauncher()
+{
+	ACharacter* const ControllingCharacter = GetCharacter();
+	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(ControllingCharacter);
+	CompetitiveCharacter->EquipRocketLauncher();
 }
 void ACompetitivePlayerController::Dash()
 {

@@ -53,7 +53,8 @@ AGun* AShotgun::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 void AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
 	const int32 PelletCount = 8;
-	const float SpreadAngle = 5.0f;
+	const float AngleStep = 6.0f; // 각 총알 사이 각도 차이
+	const int32 HalfPellets = PelletCount / 2;
 
 	FActorSpawnParameters spawnParameter;
 	spawnParameter.Owner = GetOwner();
@@ -61,10 +62,13 @@ void AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 
 	for (int32 i = 0; i < PelletCount; i++)
 	{
-		// 퍼짐 각도 랜덤 생성
-		float YawSpread = FMath::FRandRange(-SpreadAngle, SpreadAngle);
-		float PitchSpread = FMath::FRandRange(-SpreadAngle, SpreadAngle);
-		FRotator SpreadRot = bulletRot + FRotator(PitchSpread, YawSpread, 0.0f);
+		int32 IndexOffset = i - HalfPellets;
+		if (PelletCount % 2 == 0 && i >= HalfPellets)
+			IndexOffset += 1;
+
+		// 고정된 각도 스프레드
+		float YawOffset = IndexOffset * AngleStep;
+		FRotator SpreadRot = bulletRot + FRotator(0.0f, YawOffset, 0.0f); // Pitch는 고정, Yaw만 조정
 
 		auto projectile = GetWorld()->SpawnActor<ARifle_Projectile>(ARifle_Projectile::StaticClass(), loc, rot, spawnParameter);
 		if (projectile)
@@ -72,6 +76,7 @@ void AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 			projectile->SetReplicates(true);
 			projectile->SetActorEnableCollision(true);
 			projectile->SetProjectileVelocity(3000.0f);
+			projectile->SetProjectileDamage(6.0f);
 
 			AActor* Shooter = GetAttachParentActor();
 			if (UTeamComponent* TeamComp = Shooter->FindComponentByClass<UTeamComponent>()) {
@@ -85,8 +90,12 @@ void AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 			if (ACompetitivePlayerCharacter* OwnerCharacter = Cast<ACompetitivePlayerCharacter>(GetOwner())) {
 				float NewDamage = OwnerCharacter->IncreasedDamage * projectile->GetProjectileDamage();
 				projectile->SetProjectileDamage(NewDamage);
+				projectile->SetDamageType(DamageTypeClass);
 			}
-
+			if (IsValid(DamageTypeClass))
+			{
+				projectile->DamageTypeClass = this->DamageTypeClass;
+			}
 			projectile->ProjectileFire(FireDirection, GetOwner());
 		}
 	}

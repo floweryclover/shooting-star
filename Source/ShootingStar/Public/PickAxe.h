@@ -28,11 +28,10 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
+	
 	virtual void OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex, bool bFromSweep,
-		const FHitResult& SweepResult);
-	virtual void ResetDamageFlag();
+		const FHitResult& SweepResult) override;
 };

@@ -72,6 +72,10 @@ public:
 	UPROPERTY()
 	TSubclassOf<UDamageType> DamageTypeClass;
 
+	void SetDamageType(TSubclassOf<UDamageType> InDamageType)
+	{
+		DamageTypeClass = InDamageType;
+	}
 	UPROPERTY(EditAnywhere)
 	float MaxRange = 1000;
 
