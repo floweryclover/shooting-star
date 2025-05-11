@@ -8,25 +8,28 @@ APickAxe::APickAxe()
 {
     // Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
-
+    
     if (BodyMesh)
     {
-        BodyMesh->DestroyComponent(); // AKnife로부터 상속된 SkeletalMesh 제거
+        BodyMesh->SetVisibility(false);
+        BodyMesh->SetHiddenInGame(true);
+        BodyMesh->SetComponentTickEnabled(false);
+        BodyMesh->Deactivate();
         BodyMesh = nullptr;
     }
-
+    
     // StaticMesh를 루트로 설정
     if (!StaticBodyMesh)
     {
         StaticBodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticBodyMesh"));
     }
     RootComponent = StaticBodyMesh;
-
+    
     static ConstructorHelpers::FObjectFinder<UStaticMesh> STATICPICKAXE(TEXT("StaticMesh'/Game/lowpoly-mine-assets/source/Pickaxe.Pickaxe'"));
     if (STATICPICKAXE.Succeeded()) {
         StaticBodyMesh->SetStaticMesh(STATICPICKAXE.Object);
     }
-
+    
     // 히트박스 설정
     if (!AttackHitBox)
     {
@@ -36,7 +39,7 @@ APickAxe::APickAxe()
     AttackHitBox->SetGenerateOverlapEvents(false);
     AttackHitBox->OnComponentBeginOverlap.Clear(); // 이전 바인딩 제거
     AttackHitBox->OnComponentBeginOverlap.AddDynamic(this, &APickAxe::OnOverlapBegin_Body);
-
+    
     // 사운드 컴포넌트도 루트에 붙임
     if (Sound)
     {
@@ -77,8 +80,4 @@ void APickAxe::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* 
     {
         return;
     }
-}
-void APickAxe::ResetDamageFlag()
-{
-    Super::ResetDamageFlag();
 }
