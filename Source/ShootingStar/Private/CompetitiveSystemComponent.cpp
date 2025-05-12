@@ -185,7 +185,7 @@ void UCompetitiveSystemComponent::CheckAndTriggerSupplyDrop(const float CurrentT
             
             // 맵 중앙 기준으로 현재 자기장 반경 내 랜덤 위치 선정
             const float RandomAngle = FMath::RandRange(0.f, 360.f);
-            const float CurrentRadius = GameMode->GetSafeZoneComponent()->GetCurrentRadius() * 10.f; // scale 고려하여 10배
+            const float CurrentRadius = GameMode->GetSafeZoneComponent()->GetCurrentRadius() * 50.f; // scale 고려하여 곱셈
             const float RandomRadius = FMath::RandRange(0.f, CurrentRadius * 0.8f);  // 자기장 80% 이내 위치에 생성
             const FVector DropLocation(
                 RandomRadius * FMath::Cos(RandomAngle),
@@ -194,7 +194,7 @@ void UCompetitiveSystemComponent::CheckAndTriggerSupplyDrop(const float CurrentT
             );
             
 			UE_LOG(LogTemp, Log, TEXT("Supply drop triggered at %s"), *DropLocation.ToString());
-            OnSupplyDrop.Broadcast(DropLocation);
+            OnSupplyDropped.Broadcast(DropLocation);
         }
     }
 }
