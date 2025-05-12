@@ -103,3 +103,11 @@ void UCharacter_AnimInstance::AnimNotify_AttackEnd()
 		}
 	}
 }
+void UCharacter_AnimInstance::AnimNotify_MiningComplete()
+{
+	ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(TryGetPawnOwner());
+	if (Character)
+	{
+		Character->HandleMiningComplete();
+	}
+}

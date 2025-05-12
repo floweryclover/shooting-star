@@ -297,6 +297,8 @@ void ACompetitiveGameMode::InteractResource(AController* const Controller)
 			AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
 			if (Resource)
 			{
+				ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(Controller->GetCharacter());
+				Character->PlayMiningAnim();
 				InventoryComponent->AddResource(Resource->ResourceData);
 				Resource->UpdateMesh_AfterHarvest();
 			}
