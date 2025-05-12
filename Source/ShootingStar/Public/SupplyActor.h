@@ -1,3 +1,6 @@
+// Copyright 2025 ShootingStar. All Rights Reserved.
+
+
 #pragma once
 
 #include "CoreMinimal.h"

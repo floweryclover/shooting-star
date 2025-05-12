@@ -122,8 +122,4 @@ private:
 
 	UFUNCTION()
 	void HandleSupplyDrop(FVector Location);
-
-	UFUNCTION()
-	void HandleSupplyOpened(FVector Location);
-
 };

@@ -60,7 +60,6 @@ void ACompetitiveGameMode::InitGame(const FString& MapName, const FString& Optio
 
 	CompetitiveSystemComponent->OnGameStarted.AddDynamic(this, &ACompetitiveGameMode::OnGameStarted);
 	CompetitiveSystemComponent->OnSupplyDropped.AddDynamic(this, &ACompetitiveGameMode::HandleSupplyDrop);
-	CompetitiveSystemComponent->OnSupplyOpened.AddDynamic(this, &ACompetitiveGameMode::HandleSupplyOpened);
 }
 
 void ACompetitiveGameMode::Tick(const float DeltaSeconds)
@@ -439,7 +438,7 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
     {
         if (!MapGeneratorComponent->CheckLocation(Location))
         {
-            Location = MapGeneratorComponent->FindNearestValidLocation(Location, 500.f, EObjectMask::ResourceMask);
+            Location = MapGeneratorComponent->FindNearestValidLocation(Location, 1000.f, EObjectMask::ResourceMask);
         }
         
         // 위치가 여전히 유효하지 않다면 생성 취소
@@ -449,7 +448,6 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
             return;
         }
 
-        // 해당 위치를 ResourceMask로 등록
         MapGeneratorComponent->SetObjectAtArray(
             FMath::FloorToInt(Location.X / MapGeneratorComponent->GetPatternSpacing()),
             FMath::FloorToInt(Location.Y / MapGeneratorComponent->GetPatternSpacing()),
@@ -457,9 +455,9 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
         );
     }
 
-    // 동적으로 SupplyActor 스폰
+    // SupplyActor 스폰
     FActorSpawnParameters SpawnParams;
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     
     if (ASupplyActor* SupplyActor = GetWorld()->SpawnActor<ASupplyActor>(SupplyActorClass, Location, FRotator::ZeroRotator, SpawnParams))
     {
@@ -467,15 +465,5 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
         UE_LOG(LogShootingStar, Log, TEXT("Supply %d spawned at %s"), CurrentSupplyIndex, *Location.ToString());
     }
     else
-    {
         UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
-    }
-}
-
-// 보급품 상자가 열린 시점에서 호출되는 함수
-void ACompetitiveGameMode::HandleSupplyOpened(FVector Location)
-{
-    UE_LOG(LogShootingStar, Log, TEXT("Supply box opened at %s"), *Location.ToString());
-
-    // TODO: 보급품 아이템 생성 및 분배 로직 구현
 }
