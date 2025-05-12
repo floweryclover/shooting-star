@@ -247,7 +247,7 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
     FActorSpawnParameters SpawnParams;
     SpawnParams.Owner = GetOwner();
     AStaticMeshActor* NewActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams);
-
+    
     if (NewActor)
     {
         NewActor->SetReplicates(true);
@@ -260,7 +260,9 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
         // 메쉬 이름이 "SM_tumbleweed_001"인 경우 Player와 Overlap되도록 설정
         FString MeshName = ObjectMesh->GetName();
         if (MeshName.Equals(TEXT("SM_tumbleweed_001")))
-            MeshComp->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
+        {
+            //MeshComp->SetCollisionProfileName(TEXT("OverlapOnlyPawn")); 
+        }
 
         NewActor->SetActorLocation(Location);
 
