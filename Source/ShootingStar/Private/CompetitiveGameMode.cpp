@@ -443,4 +443,16 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
     }
     else
         UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
+
+	// 플레이어들에게 통지
+	for (APlayerState* const PlayerState : GameState->PlayerArray)
+	{
+		ACompetitivePlayerController* const PlayerController = Cast<ACompetitivePlayerController>(PlayerState->GetPlayerController());
+		if (!IsValid(PlayerController))
+		{
+			continue;
+		}
+
+		PlayerController->GetClientComponent()->NotifySupplyDropped(Location);
+	}
 }

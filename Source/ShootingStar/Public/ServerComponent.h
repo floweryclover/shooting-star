@@ -37,4 +37,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void RequestDash();
+	
+	UFUNCTION(BlueprintCallable, Reliable, Server)
+	void RequestMining();
 };

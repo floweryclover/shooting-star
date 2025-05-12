@@ -361,12 +361,9 @@ void ACompetitivePlayerCharacter::UnEquipPickAxe()
 void ACompetitivePlayerCharacter::PlayMiningAnim()
 {
 	EquipPickAxe();
-	ACompetitivePlayerController* PlayerController = Cast<ACompetitivePlayerController>(GetController());
-	if (PlayerController)
-	{
-		PlayerController->SetCanMove(false);
-	}
-	AnimInstance->PlayMiningMontage();
+
+	MiningCount += 1;
+	OnRep_MiningCount();
 }
 void ACompetitivePlayerCharacter::HandleMiningComplete()
 {
@@ -721,6 +718,11 @@ void ACompetitivePlayerCharacter::OnRep_CurrentWeapon()
 void ACompetitivePlayerCharacter::OnRep_PlayerName()
 {
 	OnPlayerNameChanged.Broadcast(PlayerName);
+}
+
+void ACompetitivePlayerCharacter::OnRep_MiningCount()
+{
+	AnimInstance->PlayMiningMontage();
 }
 
 void ACompetitivePlayerCharacter::OnTeamChanged(const ETeam Team)

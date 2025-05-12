@@ -15,3 +15,13 @@ void UClientComponent::GainResource_Implementation(UResourceDataAsset* const Res
 	}
 	PlayerController->GetInventoryComponent()->AddResource(Resource);
 }
+
+void UClientComponent::NotifySupplyDropped_Implementation(FVector Location)
+{
+	ACompetitivePlayerController* const PlayerController = Cast<ACompetitivePlayerController>(GetOwner());
+	if (!PlayerController)
+	{
+		return;
+	}
+	PlayerController->RenderSupplyIndicator(Location);
+}

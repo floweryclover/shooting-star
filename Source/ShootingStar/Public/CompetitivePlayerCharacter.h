@@ -230,6 +230,9 @@ private:
 	UPROPERTY(ReplicatedUsing=OnRep_HitCount)
 	int32 HitCount;
 	
+	UPROPERTY(ReplicatedUsing=OnRep_MiningCount)
+	int32 MiningCount;
+	
 	UPROPERTY(ReplicatedUsing=OnRep_bDeadNotify)
 	bool bDeadNotify;
 	
@@ -256,6 +259,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_PlayerName();
+	
+	UFUNCTION()
+	void OnRep_MiningCount();
 
 	UFUNCTION()
 	void OnTeamChanged(ETeam Team);
