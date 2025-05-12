@@ -97,12 +97,13 @@ void ACompetitivePlayerController::BeginPlay()
 		}
 	}
 
-	// Supply Gen Event Call
+	// Supply Gen, Destory Event Call
 	if (ACompetitiveGameMode* GameMode = GetWorld()->GetAuthGameMode<ACompetitiveGameMode>())
 	{
 		if (UCompetitiveSystemComponent* SystemComp = GameMode->GetCompetitiveSystemComponent())
 		{
 			SystemComp->OnSupplyDropped.AddDynamic(this, &ACompetitivePlayerController::RenderSupplyIndicator);
+			SystemComp->OnSupplyOpened.AddDynamic(this, &ACompetitivePlayerController::DestorySupplyIndicator);
 		}
 	}
 }
@@ -144,8 +145,27 @@ void ACompetitivePlayerController::RenderSupplyIndicator(FVector Location)
 		USupplyIndicatorUI* UI = CreateWidget<USupplyIndicatorUI>(GetWorld(), SupplyIndicatorUIClass);
 		if (UI)
 		{
+			SupplyIndicatorUIArray.Push(UI);
 			UI->AddToViewport();
 			UI->Init_SupplyPos(Location);
+			UE_LOG(LogShootingStar, Log, TEXT("Push Supply"));
+		}
+	}
+}
+
+void ACompetitivePlayerController::DestorySupplyIndicator(FVector Location)
+{
+	for (int32 i = 0; i < SupplyIndicatorUIArray.Num();)
+	{
+		if (SupplyIndicatorUIArray[i] && SupplyIndicatorUIArray[i]->IsDestorySupply(Location))
+		{
+			SupplyIndicatorUIArray[i]->RemoveFromParent();
+			SupplyIndicatorUIArray.RemoveAt(i);
+			UE_LOG(LogShootingStar, Log, TEXT("Destory Supply %d"), i);
+		}
+		else
+		{
+			i++;
 		}
 	}
 }

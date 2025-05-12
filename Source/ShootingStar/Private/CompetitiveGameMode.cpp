@@ -436,27 +436,6 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
         return;
     }
 
-    if (MapGeneratorComponent)
-    {
-        if (!MapGeneratorComponent->CheckLocation(Location))
-        {
-            Location = MapGeneratorComponent->FindNearestValidLocation(Location, 1000.f, EObjectMask::ResourceMask);
-        }
-        
-        // 위치가 여전히 유효하지 않다면 생성 취소
-        if (!MapGeneratorComponent->CheckLocation(Location))
-        {
-            UE_LOG(LogShootingStar, Warning, TEXT("Failed to find valid location for supply drop"));
-            return;
-        }
-
-        MapGeneratorComponent->SetObjectAtArray(
-            FMath::FloorToInt(Location.X / MapGeneratorComponent->GetPatternSpacing()),
-            FMath::FloorToInt(Location.Y / MapGeneratorComponent->GetPatternSpacing()),
-            EObjectMask::ResourceMask
-        );
-    }
-
     // SupplyActor 스폰
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;

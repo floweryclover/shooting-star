@@ -17,4 +17,7 @@ class SHOOTINGSTAR_API USupplyIndicatorUI : public UUserWidget
 public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void Init_SupplyPos(FVector WorldPos);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	bool IsDestorySupply(FVector WorldPos);
 };

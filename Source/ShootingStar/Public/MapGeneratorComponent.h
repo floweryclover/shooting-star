@@ -93,11 +93,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Spawn System")
 	FVector GetRandomSpawnLocation();
 
+	FVector GetSupplySpawnLocation();
+
 	// // Map Static Actors
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map Static Actors", meta = (AllowPrivateAccess = "true"))
 	// TArray<UStaticMesh*> MapStaticActors;
 
 protected:
+	FVector GetRandomSupplySpawnLocation();
+
 	// Map Settings
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1000", ClampMax = "10000"))
 	int32 mapHalfSize = 2500;

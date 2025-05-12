@@ -7,6 +7,8 @@
 #include "ResourceGenerator.h"
 #include "DecorationGenerator.h"
 #include "Engine/StaticMeshActor.h"
+#include "CompetitiveGameMode.h"
+#include "SafeZoneComponent.h"
 
 DEFINE_LOG_CATEGORY(MapGenerator);
 
@@ -335,5 +337,37 @@ FVector UMapGeneratorComponent::GetRandomSpawnLocation()
     // 사용 가능한 스폰 포인트 중에서 랜덤하게 선택
     const int32 RandomIndex = FMath::RandRange(0, PlayerSpawnPoints.Num() - 1);
     return PlayerSpawnPoints[RandomIndex];
+}
+FVector UMapGeneratorComponent::GetSupplySpawnLocation()
+{
+    FVector DropLocation = GetRandomSupplySpawnLocation();
+
+    while (!CheckLocation(DropLocation))
+    {
+        // FindNearestValidLocation(DropLocation, 1000.f, EObjectMask::ResourceMask) -> GetRandonSupplySpawnLocation();
+        DropLocation = GetRandomSupplySpawnLocation();
+    }
+
+    SetObjectAtArray(
+        FMath::FloorToInt(DropLocation.X / GetPatternSpacing()),
+        FMath::FloorToInt(DropLocation.Y /GetPatternSpacing()),
+        EObjectMask::ResourceMask
+    );
+
+    return DropLocation;
+}
+FVector UMapGeneratorComponent::GetRandomSupplySpawnLocation()
+{
+    // 맵 중앙 기준으로 현재 자기장 반경 내 랜덤 위치 선정
+    const float RandomAngle = FMath::RandRange(0.f, 360.f);
+    const float CurrentRadius = Cast<ACompetitiveGameMode>(GetOwner())->GetSafeZoneComponent()->GetCurrentRadius() * 50.f; // scale 고려하여 곱셈
+    const float RandomRadius = FMath::RandRange(0.f, CurrentRadius * 0.8f);  // 자기장 80% 이내 위치에 생성
+    FVector DropLocation(
+        RandomRadius * FMath::Cos(RandomAngle),
+        RandomRadius * FMath::Sin(RandomAngle),
+        0.f
+    );
+
+    return DropLocation;
 }
 #pragma endregion
