@@ -93,6 +93,9 @@ public:
 	/* Supply UI */
 	UFUNCTION()
 	void RenderSupplyIndicator(FVector Location);
+
+	UFUNCTION()
+	void DestorySupplyIndicator(FVector Location);
 	
 	/**
 	 * Actor에 부착되어 공격 판정 등에 이용되는 일반적인 TeamComponent와는 달리,
@@ -136,6 +139,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	TSubclassOf<USupplyIndicatorUI> SupplyIndicatorUIClass;
+
+	UPROPERTY(BlueprintReadOnly)
+	TArray<TObjectPtr<USupplyIndicatorUI>> SupplyIndicatorUIArray;
 
 	UPROPERTY(BlueprintReadOnly)
 	TSubclassOf<UUserWidget> GameStateUIClass;
