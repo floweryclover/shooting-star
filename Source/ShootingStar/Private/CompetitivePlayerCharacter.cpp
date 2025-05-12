@@ -108,6 +108,7 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, PlayerName);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, Health);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, MaxHealth);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, MiningCount);
 }
 
 void ACompetitivePlayerCharacter::SetTeamMaterial(ETeam Team)
