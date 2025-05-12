@@ -438,6 +438,7 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
     
     if (ASupplyActor* SupplyActor = GetWorld()->SpawnActor<ASupplyActor>(SupplyActorClass, Location, FRotator::ZeroRotator, SpawnParams))
     {
+    	SupplyActor->SetReplicates(true);
         CurrentSupplyIndex++;
         UE_LOG(LogShootingStar, Log, TEXT("Supply %d spawned at %s"), CurrentSupplyIndex, *Location.ToString());
     }
