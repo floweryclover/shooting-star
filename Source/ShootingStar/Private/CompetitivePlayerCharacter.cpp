@@ -342,7 +342,20 @@ void ACompetitivePlayerCharacter::UnEquipPickAxe()
 void ACompetitivePlayerCharacter::PlayMiningAnim()
 {
 	EquipPickAxe();
+	ACompetitivePlayerController* PlayerController = Cast<ACompetitivePlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->SetCanMove(false);
+	}
 	AnimInstance->PlayMiningMontage();
+}
+void ACompetitivePlayerCharacter::HandleMiningComplete()
+{
+	ACompetitivePlayerController* PlayerController = Cast<ACompetitivePlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->SetCanMove(true);
+	}
 }
 void ACompetitivePlayerCharacter::PullTrigger()
 {

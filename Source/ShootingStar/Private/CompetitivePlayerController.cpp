@@ -111,8 +111,8 @@ void ACompetitivePlayerController::BeginPlay()
 void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
 	SetIgnoreMoveInput(!bCanMove);
+
 	if (bCanMove) 
 	{
 		LookMouse();
@@ -192,7 +192,7 @@ void ACompetitivePlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(EquipRocketLauncherAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::EquipRocketLauncher);
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::Dash);
 		EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::ToggleInventoryWidget);
-		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::Mining);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ACompetitivePlayerController::InteractResource);
 	}
 }
 
@@ -273,7 +273,6 @@ void ACompetitivePlayerController::Dash()
 }
 void ACompetitivePlayerController::InteractResource()
 {
-	SetCanMove(true);
 	ServerComponent->RequestInteractResource();
 }
 
