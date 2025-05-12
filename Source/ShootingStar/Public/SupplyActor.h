@@ -25,13 +25,10 @@ public:
     UFUNCTION(BlueprintCallable)
     const FWeaponData& GetStoredWeapon() const { return StoredWeapon; }
 
-    // 보급품 상자가 열려있는지 확인하는 함수 추가
     UFUNCTION(BlueprintCallable)
     bool IsOpened() const { return bIsOpened; }
 
 protected:
-    virtual void BeginPlay() override;
-
     UPROPERTY()
     bool bIsOpened;
 

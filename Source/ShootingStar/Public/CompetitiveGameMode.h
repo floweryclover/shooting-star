@@ -107,7 +107,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	USafeZoneComponent* SafeZoneComponent;
     
-	// SupplyBoxes 배열 제거하고 클래스 레퍼런스로 변경
 	UPROPERTY(EditDefaultsOnly, Category = "Supply")
 	TSubclassOf<ASupplyActor> SupplyActorClass;
 

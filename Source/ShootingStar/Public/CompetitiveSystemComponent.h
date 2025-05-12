@@ -58,7 +58,7 @@ public:
 
 	// 보급품 드롭 타임
 	static constexpr int NumSupplies = 3;
-	static constexpr float SupplyDropTimes[] = {3.f, 10.f, 20.f};
+	static constexpr float SupplyDropTimes[] = {30.f, 75.f, 120.f};
 	
 	/**
 	 * Game 상태로 처음 전이될 때 발생하는 이벤트.
