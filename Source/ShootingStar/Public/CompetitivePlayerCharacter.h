@@ -44,9 +44,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Direction", meta = (AllowPrivateAccess = "true"))
 	class UArrowComponent* FacingArrow;
 
-	UFUNCTION(BlueprintCallable)
-	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
-
 	UPROPERTY(EditDefaultsOnly)
 	TArray<AGun*> WeaponList;
 

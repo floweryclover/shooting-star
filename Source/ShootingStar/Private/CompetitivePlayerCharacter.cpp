@@ -1,6 +1,7 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "CompetitivePlayerCharacter.h"
+#include "CompetitivePlayerController.h"
 #include "PickAxe.h"
 #include "Gun.h"
 #include "Knife.h"
