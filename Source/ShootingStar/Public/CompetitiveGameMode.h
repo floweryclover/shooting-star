@@ -10,7 +10,8 @@ class ACompetitivePlayerController;
 class ACompetitivePlayerCharacter;
 class UCompetitiveSystemComponent;
 class UMapGeneratorComponent;
-class USafeZoneComponent;  // 전방 선언으로 변경
+class USafeZoneComponent;
+class ASupplyActor;
 
 /**
  * 2대2 3선승 게임 모드입니다.
@@ -105,10 +106,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	USafeZoneComponent* SafeZoneComponent;
+    
+	// SupplyBoxes 배열 제거하고 클래스 레퍼런스로 변경
+	UPROPERTY(EditDefaultsOnly, Category = "Supply")
+	TSubclassOf<ASupplyActor> SupplyActorClass;
 
-	// 보급품 액터 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "Supply Drop")
-	TSubclassOf<AActor> SupplyDropActorClass;
+	UPROPERTY()
+	int32 CurrentSupplyIndex;
 
 private:
 	void AssignTeamIfNone(APlayerController* Player);
@@ -118,5 +122,4 @@ private:
 
 	UFUNCTION()
 	void HandleSupplyDrop(FVector Location);
-
 };
