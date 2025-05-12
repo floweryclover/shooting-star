@@ -4,7 +4,7 @@
 #include "RocketLauncher.h"
 #include "CompetitivePlayerCharacter.h"
 #include "TeamComponent.h"
-#include "Rifle_Projectile.h"
+#include "Rocket_Projectile.h"
 
 ARocketLauncher::ARocketLauncher()
 {
@@ -56,11 +56,13 @@ void ARocketLauncher::ProjectileFire(FVector loc, FRotator rot, FRotator bulletR
 	spawnParameter.Owner = GetOwner();
 	spawnParameter.Instigator = GetInstigator();
 
-	auto projectile = GetWorld()->SpawnActor<ARifle_Projectile>(ARifle_Projectile::StaticClass(), loc, rot, spawnParameter);
+	auto projectile = GetWorld()->SpawnActor<ARocket_Projectile>(RocketClass, loc, rot, spawnParameter);
 	if (projectile) {
 		projectile->SetReplicates(true);
 		projectile->SetActorEnableCollision(true);
 		projectile->SetProjectileVelocity(3000.0f);
+		projectile->SetProjectileDamage(100.0f);
+		projectile->SetActorRotation(rot + FRotator(0.f, -70.f, 0.f));
 
 		AActor* Shooter = GetAttachParentActor(); // Shooter = 캐릭터
 		if (UTeamComponent* TeamComp = Shooter->FindComponentByClass<UTeamComponent>())

@@ -41,6 +41,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage")
 	TSubclassOf<UDamageType> DamageTypeClass;
 
+	void SetDamageType(TSubclassOf<UDamageType> InDamageType)
+	{
+		DamageTypeClass = InDamageType;
+	}
+
 	void ProjectileFire(FVector FireDir, AActor* Onwer);
 	void SetProjectileVelocity(float Velocity);
 	float GetProjectileDamage() { return projectileDamage; };
