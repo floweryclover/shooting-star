@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "TeamComponent.h"
 #include "WeaponData.h"
 #include "CompetitivePlayerCharacter.generated.h"
 
@@ -12,9 +11,9 @@ class UCharacter_AnimInstance;
 class ACompetitivePlayerController;
 class AGun;
 class AKnife;
-class UInventoryComponent;
 class APickAxe;
 class UWidgetComponent;
+class UTeamComponent;
 
 enum class ETeam :uint8;
 struct FWeaponData;
@@ -35,6 +34,8 @@ public:
 	// Called every frame.
 	virtual void Tick(float DeltaSeconds) override;
 
+	virtual void Destroyed() override;
+
 	/** Returns TopDownCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
 	/** Returns CameraBoom subobject **/
@@ -42,9 +43,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Direction", meta = (AllowPrivateAccess = "true"))
 	class UArrowComponent* FacingArrow;
-
-	UFUNCTION(BlueprintCallable)
-	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 
 	UPROPERTY(EditDefaultsOnly)
 	TArray<AGun*> WeaponList;
@@ -131,7 +129,6 @@ public:
 	void EquipGun(AGun* Equip);
 	void EquipKnife(AKnife* Equip);
 	void EquipRocketLauncher();
-	void PlayDeadAnim();
 	void DestroyCharacter();
 	UFUNCTION(BlueprintCallable, Category = "Bush")
 	void SetInBush(bool bIsInBush);
@@ -191,7 +188,7 @@ private:
 
 	FTimerHandle timer;
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(Replicated)
 	float MaxHealth = 100;
 
 	UPROPERTY(Replicated, VisibleAnywhere)
@@ -223,9 +220,6 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	AKnife* Knife = nullptr;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
-	UInventoryComponent* InventoryComponent;
-
 	// 애니메이션 동기화용 카운트. 값 변경시켜 클라이언트에서 감지하는 것 이외에는 값에 의미 없음
 	UPROPERTY(ReplicatedUsing=OnRep_FireCount)
 	int32 FireCount;
@@ -235,6 +229,9 @@ private:
 	
 	UPROPERTY(ReplicatedUsing=OnRep_HitCount)
 	int32 HitCount;
+	
+	UPROPERTY(ReplicatedUsing=OnRep_MiningCount)
+	int32 MiningCount;
 	
 	UPROPERTY(ReplicatedUsing=OnRep_bDeadNotify)
 	bool bDeadNotify;
@@ -262,6 +259,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_PlayerName();
+	
+	UFUNCTION()
+	void OnRep_MiningCount();
 
 	UFUNCTION()
 	void OnTeamChanged(ETeam Team);

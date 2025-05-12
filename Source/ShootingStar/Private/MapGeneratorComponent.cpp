@@ -8,7 +8,7 @@
 #include "DecorationGenerator.h"
 #include "Engine/StaticMeshActor.h"
 #include "CompetitiveGameMode.h"
-#include "SafeZoneComponent.h"
+#include "SafeZoneActor.h"
 
 DEFINE_LOG_CATEGORY(MapGenerator);
 
@@ -247,7 +247,7 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
     FActorSpawnParameters SpawnParams;
     SpawnParams.Owner = GetOwner();
     AStaticMeshActor* NewActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams);
-
+    
     if (NewActor)
     {
         NewActor->SetReplicates(true);
@@ -260,7 +260,9 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
         // 메쉬 이름이 "SM_tumbleweed_001"인 경우 Player와 Overlap되도록 설정
         FString MeshName = ObjectMesh->GetName();
         if (MeshName.Equals(TEXT("SM_tumbleweed_001")))
-            MeshComp->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
+        {
+            //MeshComp->SetCollisionProfileName(TEXT("OverlapOnlyPawn")); 
+        }
 
         NewActor->SetActorLocation(Location);
 
@@ -360,7 +362,7 @@ FVector UMapGeneratorComponent::GetRandomSupplySpawnLocation()
 {
     // 맵 중앙 기준으로 현재 자기장 반경 내 랜덤 위치 선정
     const float RandomAngle = FMath::RandRange(0.f, 360.f);
-    const float CurrentRadius = Cast<ACompetitiveGameMode>(GetOwner())->GetSafeZoneComponent()->GetCurrentRadius() * 50.f; // scale 고려하여 곱셈
+    const float CurrentRadius = Cast<ACompetitiveGameMode>(GetOwner())->GetSafeZone()->GetRadius() * 50.f; // scale 고려하여 곱셈
     const float RandomRadius = FMath::RandRange(0.f, CurrentRadius * 0.8f);  // 자기장 80% 이내 위치에 생성
     FVector DropLocation(
         RandomRadius * FMath::Cos(RandomAngle),

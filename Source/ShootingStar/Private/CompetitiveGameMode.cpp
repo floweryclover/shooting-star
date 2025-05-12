@@ -12,13 +12,10 @@
 #include "MapGeneratorComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "ShootingStar/ShootingStar.h"
-#include "Kismet/GameplayStatics.h"
 #include "Components/StaticMeshComponent.h"
-#include "Engine/StaticMeshActor.h"
-#include "SafeZoneComponent.h"
+#include "SafeZoneActor.h"
 #include "SupplyActor.h"
 #include "ResourceActor.h"
-#include "Kismet/KismetSystemLibrary.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
 	: NumPlayers{1} // 호스트 항상 포함
@@ -41,23 +38,14 @@ void ACompetitiveGameMode::InitGame(const FString& MapName, const FString& Optio
 	// MapGeneratorComponent 초기화
 	MapGeneratorComponent->Initialize();
 
-	// 태그로 SafeZone 액터 찾기
-	TArray<AActor*> TaggedActors;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("SafeZone"), TaggedActors);
-	if (TaggedActors.Num() > 0)
+	// SafeZone 액터 생성
+	SafeZoneActor = GetWorld()->SpawnActor<ASafeZoneActor>(SafeZoneActorClass);
+	if (!IsValid(SafeZoneActor))
 	{
-		SafeZoneComponent = Cast<USafeZoneComponent>(TaggedActors[0]->GetComponentByClass(USafeZoneComponent::StaticClass()));
-		if (SafeZoneComponent)
-		{
-			UE_LOG(LogShootingStar, Log, TEXT("Found SafeZoneComponent using tag"));
-		}
+		UE_LOG(LogShootingStar, Error, TEXT("Failed to create SafeZone."));
 	}
 
-	if (!SafeZoneComponent)
-	{
-		UE_LOG(LogShootingStar, Error, TEXT("Failed to find SafeZoneComponent - Make sure SafeZone actor has the 'SafeZone' tag"));
-	}
-
+	CompetitiveSystemComponent->Init([this]() { return SafeZoneActor->GetRadius(); });
 	CompetitiveSystemComponent->OnGameStarted.AddDynamic(this, &ACompetitiveGameMode::OnGameStarted);
 	CompetitiveSystemComponent->OnSupplyDropped.AddDynamic(this, &ACompetitiveGameMode::HandleSupplyDrop);
 }
@@ -81,7 +69,13 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 	{
 		GetWorld()->ServerTravel(ExitLevel.ToString());
 	}
+	else if (CurrentPhase == ECompetitiveGamePhase::Game)
+	{
+		// 자기장 업데이트
+		SafeZoneActor->SetRadiusByAlpha(CompetitiveSystemComponent->GetSafeZoneAlpha());
+	}
 
+	// 리스폰해야 하는 플레이어 리스폰
 	for (APlayerState* const PlayerState : GameState->PlayerArray)
 	{
 		APlayerController* const PlayerController = PlayerState->GetPlayerController();
@@ -175,6 +169,8 @@ void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 		OldPawn->Destroy();
 	}
 
+	CompetitivePlayerController->GetInventoryComponent()->ClearInventory();
+
 	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(CompetitivePlayerController);
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = Cast<ACompetitivePlayerCharacter>(
 		SpawnDefaultPawnAtTransform(NewPlayer, FTransform{SpawnPoint + FVector{0.0, 0.0, 100.0}}));
@@ -229,7 +225,7 @@ void ACompetitiveGameMode::InteractResource(AController* const Controller)
 	{
 		return;
 	}
-	
+
 	if (!IsValid(Controller))
 	{
 		UE_LOG(LogTemp, Error, TEXT("Controller is Invalid!"));
@@ -430,11 +426,11 @@ void ACompetitiveGameMode::OnGameStarted()
 
 void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
 {
-    if (!SupplyActorClass)
-    {
-        UE_LOG(LogShootingStar, Error, TEXT("SupplyActorClass is not set in GameMode"));
-        return;
-    }
+	if (!SupplyActorClass)
+	{
+		UE_LOG(LogShootingStar, Error, TEXT("SupplyActorClass is not set in GameMode"));
+		return;
+	}
 
     // SupplyActor 스폰
     FActorSpawnParameters SpawnParams;
@@ -447,4 +443,16 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
     }
     else
         UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
+
+	// 플레이어들에게 통지
+	for (APlayerState* const PlayerState : GameState->PlayerArray)
+	{
+		ACompetitivePlayerController* const PlayerController = Cast<ACompetitivePlayerController>(PlayerState->GetPlayerController());
+		if (!IsValid(PlayerController))
+		{
+			continue;
+		}
+
+		PlayerController->GetClientComponent()->NotifySupplyDropped(Location);
+	}
 }

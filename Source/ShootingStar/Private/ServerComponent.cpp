@@ -50,3 +50,8 @@ void UServerComponent::RequestDash_Implementation()
 {
 	ExecuteOnControlledCharacter<&ACompetitivePlayerCharacter::DashStart>(GetOwner());
 }
+
+void UServerComponent::RequestMining_Implementation()
+{
+	ExecuteOnControlledCharacter<&ACompetitivePlayerCharacter::PlayMiningAnim>(GetOwner());
+}

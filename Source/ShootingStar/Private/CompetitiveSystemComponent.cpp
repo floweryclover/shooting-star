@@ -4,8 +4,7 @@
 #include "CompetitiveSystemComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "CompetitiveGameMode.h"
-#include "SafeZoneComponent.h"
-#include "MapGeneratorComponent.h"
+#include "SafeZoneActor.h"
 
 UCompetitiveSystemComponent::UCompetitiveSystemComponent()
 	: BlueTeamKillScore{0},
@@ -19,10 +18,14 @@ UCompetitiveSystemComponent::UCompetitiveSystemComponent()
 	SupplyDropsTriggered.Init(false, 3);
 }
 
+void UCompetitiveSystemComponent::Init(TFunction<float()> InGetSafeZoneRadius)
+{
+	GetSafeZoneRadius = MoveTemp(InGetSafeZoneRadius);
+}
+
 void UCompetitiveSystemComponent::BeginPlay()
 {
     Super::BeginPlay();
-    GameMode = Cast<ACompetitiveGameMode>(GetOwner());
 }
 
 void UCompetitiveSystemComponent::Update(const float DeltaTime)
@@ -147,49 +150,27 @@ void UCompetitiveSystemComponent::Update_Game()
 		WinTeam(Team);
 	}
 
-	// 자기장 및 보급품 업데이트
-	UpdateSafeZoneAlpha(CurrentPhaseTime);
-	CheckAndTriggerSupplyDrop(CurrentPhaseTime);
+	// 보급품 업데이트
+	CheckAndTriggerSupplyDrop();
 }
 
-void UCompetitiveSystemComponent::UpdateSafeZoneAlpha(const float CurrentTime)
+void UCompetitiveSystemComponent::CheckAndTriggerSupplyDrop()
 {
-    if (CurrentTime < SafeZoneShrinkStartTime)
-    {
-        SafeZoneAlpha = 0.f;
-        return;
-    }
-
-    const float ShrinkTime = CurrentTime - SafeZoneShrinkStartTime;
-	SafeZoneAlpha = FMath::Clamp(ShrinkTime / SafeZoneShrinkDuration, 0.f, 1.f);
-}
-
-void UCompetitiveSystemComponent::CheckAndTriggerSupplyDrop(const float CurrentTime)
-{
-    if (!GameMode)
-	{
-		UE_LOG(LogTemp, Log, TEXT("GameMode is not valid"));
-        return;
-	}
-
-	if (!GameMode->GetSafeZoneComponent())
-	{
-		UE_LOG(LogTemp, Log, TEXT("SafeZoneComponent is not valid"));
-        return;
-	}
-
-	if (!IsValid(GameMode->GetMapGeneratorComponent()))
-	{
-		UE_LOG(LogTemp, Log, TEXT("MapGanerator In CompetitiveGameMode is not valid"));
-		return;
-	}
-
     for (int32 i = 0; i < SupplyDropsTriggered.Num(); ++i)
     {
-        if (!SupplyDropsTriggered[i] && CurrentTime >= SupplyDropTimes[i])
+        if (!SupplyDropsTriggered[i] && CurrentPhaseTime >= SupplyDropTimes[i])
         {
             SupplyDropsTriggered[i] = true;
-			FVector DropLocation = GameMode->GetMapGeneratorComponent()->GetSupplySpawnLocation();
+            
+            // 맵 중앙 기준으로 현재 자기장 반경 내 랜덤 위치 선정
+            const float RandomAngle = FMath::RandRange(0.f, 360.f);
+            const float CurrentRadius = GetSafeZoneRadius() * 50.f; // scale 고려하여 곱셈
+            const float RandomRadius = FMath::RandRange(0.f, CurrentRadius * 0.8f);  // 자기장 80% 이내 위치에 생성
+            const FVector DropLocation(
+                RandomRadius * FMath::Cos(RandomAngle),
+                RandomRadius * FMath::Sin(RandomAngle),
+                0.f
+            );
             
 			UE_LOG(LogTemp, Log, TEXT("Supply drop triggered at %s"), *DropLocation.ToString());
             OnSupplyDropped.Broadcast(DropLocation);

@@ -4,7 +4,6 @@
 #include "CompetitivePlayerController.h"
 
 #include "ClientComponent.h"
-#include "CompetitiveGameMode.h"
 #include "TeamComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Pawn.h"
@@ -16,10 +15,6 @@
 #include "Blueprint/UserWidget.h"
 #include "InventoryComponent.h"
 #include "ServerComponent.h"
-#include "GameFramework/GameModeBase.h"
-#include "GameFramework/PlayerState.h"
-#include "ShootingStar/ShootingStar.h"
-#include "CompetitiveSystemComponent.h"
 #include "SupplyIndicatorUI.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
@@ -94,16 +89,6 @@ void ACompetitivePlayerController::BeginPlay()
 			{
 				GameStateUI->AddToViewport();
 			}
-		}
-	}
-
-	// Supply Gen, Destory Event Call
-	if (ACompetitiveGameMode* GameMode = GetWorld()->GetAuthGameMode<ACompetitiveGameMode>())
-	{
-		if (UCompetitiveSystemComponent* SystemComp = GameMode->GetCompetitiveSystemComponent())
-		{
-			SystemComp->OnSupplyDropped.AddDynamic(this, &ACompetitivePlayerController::RenderSupplyIndicator);
-			SystemComp->OnSupplyOpened.AddDynamic(this, &ACompetitivePlayerController::DestorySupplyIndicator);
 		}
 	}
 }
@@ -251,7 +236,9 @@ void ACompetitivePlayerController::Mining()
 
 	if (!IsValid(CompetitiveCharacter))
 		return;
-	CompetitiveCharacter->PlayMiningAnim();
+	
+	ServerComponent->RequestMining();
+	
 	FTimerHandle TimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(
 		TimerHandle,

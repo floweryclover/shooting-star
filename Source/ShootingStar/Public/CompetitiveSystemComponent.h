@@ -5,7 +5,6 @@
 #include "TeamComponent.h"
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "CompetitiveGameMode.h"
 #include "CompetitiveSystemComponent.generated.h"
 
 UENUM(BlueprintType)
@@ -77,6 +76,8 @@ public:
 	FSupplyOpenEvent OnSupplyOpened;
 	
 	UCompetitiveSystemComponent();
+
+	void Init(TFunction<float()> InGetSafeZoneRadius);
 	
 	/**
 	 * 언리얼 내장 Tick(), TickComponent() 대신 유연한 구현을 위한 별도 틱 함수입니다.
@@ -156,7 +157,17 @@ public:
 
 	// 자기장 알파값 getter
 	UFUNCTION(BlueprintCallable)
-	float GetSafeZoneAlpha() const { return SafeZoneAlpha; }
+	float GetSafeZoneAlpha() const
+	{
+		if (CurrentPhase != ECompetitiveGamePhase::Game
+			|| CurrentPhaseTime < SafeZoneShrinkStartTime)
+		{
+			return 0.0f;
+		}
+
+		const float ShrinkTime = CurrentPhaseTime - SafeZoneShrinkStartTime;
+		return FMath::Clamp(ShrinkTime / SafeZoneShrinkDuration, 0.f, 1.f);
+	}
 
 	ETeam GetLastRoundWinTeam() const
 	{
@@ -186,17 +197,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	ETeam LastRoundWinTeam{};
-	
-	// 현재 자기장 알파값 (0: 초기 크기, 1: 최종 크기)
-	UPROPERTY()
-	float SafeZoneAlpha;
 
 	// 보급품 트리거 배열
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<bool> SupplyDropsTriggered;
-
-	UPROPERTY()
-	class ACompetitiveGameMode* GameMode;
 
 private:
 	void Update_WaitingForStart();
@@ -209,9 +213,9 @@ private:
 	
 	void Update_GameDestroyed();
 
-	void UpdateSafeZoneAlpha(float GameTime);
-
-	void CheckAndTriggerSupplyDrop(float GameTime);
+	void CheckAndTriggerSupplyDrop();
 
 	void WinTeam(ETeam Team);
+
+	TFunction<float()> GetSafeZoneRadius;
 };

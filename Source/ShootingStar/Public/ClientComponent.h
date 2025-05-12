@@ -23,4 +23,7 @@ class SHOOTINGSTAR_API UClientComponent final : public UActorComponent
 public:
 	UFUNCTION(BlueprintCallable, Reliable, Client)
 	void GainResource(UResourceDataAsset* Resource);
+
+	UFUNCTION(BlueprintCallable, Reliable, Client)
+	void NotifySupplyDropped(FVector Location);
 };
