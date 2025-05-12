@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerState.h"
 #include "CompetitiveGameMode.h"
 #include "SafeZoneComponent.h"
+#include "MapGeneratorComponent.h"
 
 UCompetitiveSystemComponent::UCompetitiveSystemComponent()
 	: BlueTeamKillScore{0},
@@ -177,21 +178,18 @@ void UCompetitiveSystemComponent::CheckAndTriggerSupplyDrop(const float CurrentT
         return;
 	}
 
+	if (!IsValid(GameMode->GetMapGeneratorComponent()))
+	{
+		UE_LOG(LogTemp, Log, TEXT("MapGanerator In CompetitiveGameMode is not valid"));
+		return;
+	}
+
     for (int32 i = 0; i < SupplyDropsTriggered.Num(); ++i)
     {
         if (!SupplyDropsTriggered[i] && CurrentTime >= SupplyDropTimes[i])
         {
             SupplyDropsTriggered[i] = true;
-            
-            // 맵 중앙 기준으로 현재 자기장 반경 내 랜덤 위치 선정
-            const float RandomAngle = FMath::RandRange(0.f, 360.f);
-            const float CurrentRadius = GameMode->GetSafeZoneComponent()->GetCurrentRadius() * 50.f; // scale 고려하여 곱셈
-            const float RandomRadius = FMath::RandRange(0.f, CurrentRadius * 0.8f);  // 자기장 80% 이내 위치에 생성
-            const FVector DropLocation(
-                RandomRadius * FMath::Cos(RandomAngle),
-                RandomRadius * FMath::Sin(RandomAngle),
-                0.f
-            );
+			FVector DropLocation = GameMode->GetMapGeneratorComponent()->GetSupplySpawnLocation();
             
 			UE_LOG(LogTemp, Log, TEXT("Supply drop triggered at %s"), *DropLocation.ToString());
             OnSupplyDropped.Broadcast(DropLocation);
