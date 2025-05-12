@@ -10,8 +10,8 @@ class ACompetitivePlayerController;
 class ACompetitivePlayerCharacter;
 class UCompetitiveSystemComponent;
 class UMapGeneratorComponent;
-class USafeZoneComponent;
 class ASupplyActor;
+class ASafeZoneActor;
 
 /**
  * 2대2 3선승 게임 모드입니다.
@@ -73,6 +73,11 @@ public:
 		return MapGeneratorComponent;
 	}
 
+	ASafeZoneActor* GetSafeZone() const
+	{
+		return SafeZoneActor;
+	}
+
 	UFUNCTION(BlueprintCallable)
 	void InteractResource(AController* Controller);
 
@@ -86,8 +91,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector GetMostIsolatedSpawnPointFor(APlayerController* Player) const;
 
-	USafeZoneComponent* GetSafeZoneComponent() const { return SafeZoneComponent; }
-	
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	int32 NumPlayers;
@@ -104,14 +107,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UMapGeneratorComponent> MapGeneratorComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	USafeZoneComponent* SafeZoneComponent;
-    
 	UPROPERTY(EditDefaultsOnly, Category = "Supply")
 	TSubclassOf<ASupplyActor> SupplyActorClass;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<ASafeZoneActor> SafeZoneActorClass;
+
 	UPROPERTY()
 	int32 CurrentSupplyIndex;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<ASafeZoneActor> SafeZoneActor;
 
 private:
 	void AssignTeamIfNone(APlayerController* Player);
