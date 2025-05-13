@@ -22,22 +22,24 @@ APickAxe::APickAxe()
     if (STATICPICKAXE.Succeeded()) {
         StaticBodyMesh->SetStaticMesh(STATICPICKAXE.Object);
     }
-    
-    // 히트박스 설정
-    if (!AttackHitBox)
+    if (AttackHitBox)
     {
-        AttackHitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
+        UE_LOG(LogTemp, Warning, TEXT("AttackHitBox is valid in PickAxe"));
     }
-    AttackHitBox->SetupAttachment(RootComponent);
-    AttackHitBox->OnComponentBeginOverlap.Clear(); // 이전 바인딩 제거
-    AttackHitBox->OnComponentBeginOverlap.AddDynamic(this, &APickAxe::OnOverlapBegin_Body);
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("AttackHitBox is NULL in PickAxe!"));
+    }
+    AttackHitBox->SetupAttachment(StaticBodyMesh);
+    AttackHitBox->SetGenerateOverlapEvents(false);
+
 }
 
 // Called when the game starts or when spawned
 void APickAxe::BeginPlay()
 {
     Super::BeginPlay();
-
+    SetupOverlapEvent();
 }
 
 // Called every frame
@@ -58,7 +60,6 @@ void APickAxe::Tick(float DeltaTime)
         );
     }
 }
-
 void APickAxe::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     Super::OnOverlapBegin_Body(OverlappedComp, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
@@ -66,5 +67,4 @@ void APickAxe::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* 
     {
         return;
     }
-    UE_LOG(LogTemp, Warning, TEXT("Pickaxe Overlap with: %s"), *OtherActor->GetName());
 }

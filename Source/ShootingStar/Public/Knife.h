@@ -26,6 +26,8 @@ public:
 		int32 OtherBodyIndex, bool bFromSweep, 
 		const FHitResult& SweepResult);
 
+	virtual void SetupOverlapEvent();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Base)
 	class USkeletalMeshComponent* BodyMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = StaticMesh)

@@ -33,7 +33,6 @@ AKnife::AKnife()
     AttackHitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
     AttackHitBox->SetupAttachment(BodyMesh);
     AttackHitBox->SetGenerateOverlapEvents(false);
-    AttackHitBox->OnComponentBeginOverlap.AddDynamic(this, &AKnife::OnOverlapBegin_Body);
 
     Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("AUDIO"));
     Sound->SetupAttachment(RootComponent);
@@ -44,14 +43,13 @@ AKnife::AKnife()
 void AKnife::BeginPlay()
 {
 	Super::BeginPlay();
-	
+    SetupOverlapEvent();
 }
 
 // Called every frame
 void AKnife::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -83,6 +81,17 @@ void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* Ot
         bHasDamaged = true;
     }
 }
+
+void AKnife::SetupOverlapEvent()
+{
+    if (AttackHitBox)
+    {
+        AttackHitBox->SetCollisionProfileName("OverlapAllDynamic");
+        AttackHitBox->SetGenerateOverlapEvents(false);
+        AttackHitBox->OnComponentBeginOverlap.AddDynamic(this, &AKnife::OnOverlapBegin_Body);
+    }
+}
+
 void AKnife::ResetDamageFlag()
 {
     bHasDamaged = false;
