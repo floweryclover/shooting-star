@@ -25,10 +25,10 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing=OnRep_CollisionType)
-	uint8 CollisionType;
+	uint8 CollisionType = ECollisionEnabled::QueryAndPhysics;
 
 	UPROPERTY(BlueprintReadWrite, ReplicatedUsing=OnRep_CollisionProfileName)
-	FName CollisionProfileName;
+	FName CollisionProfileName = TEXT("BlockAll");
 	
 private:
 	UFUNCTION()
