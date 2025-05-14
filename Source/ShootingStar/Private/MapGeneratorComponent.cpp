@@ -6,7 +6,7 @@
 #include "FenceGenerator.h"
 #include "ResourceGenerator.h"
 #include "DecorationGenerator.h"
-#include "Engine/StaticMeshActor.h"
+#include "MapObjectActor.h"
 #include "CompetitiveGameMode.h"
 #include "SafeZoneActor.h"
 
@@ -246,7 +246,7 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
     // StaticMeshActor 생성
     FActorSpawnParameters SpawnParams;
     SpawnParams.Owner = GetOwner();
-    AStaticMeshActor* NewActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams);
+    AMapObjectActor* NewActor = GetWorld()->SpawnActor<AMapObjectActor>(AMapObjectActor::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams);
     
     if (NewActor)
     {
@@ -261,12 +261,12 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
         FString MeshName = ObjectMesh->GetName();
         if (MeshName.Equals(TEXT("SM_tumbleweed_001")))
         {
-            //MeshComp->SetCollisionProfileName(TEXT("OverlapOnlyPawn")); 
+            NewActor->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
         }
 
         NewActor->SetActorLocation(Location);
 
-        UE_LOG(MapGenerator, Log, TEXT("Placed StaticMeshActor at %s"), *Location.ToString());
+        UE_LOG(MapGenerator, Log, TEXT("Placed AMapObjectActor at %s"), *Location.ToString());
         return true;
     }
 
