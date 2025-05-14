@@ -33,8 +33,6 @@ public:
 	void AnimNotify_AttackStart();
 	UFUNCTION()
 	void AnimNotify_AttackEnd();
-	UFUNCTION()
-	void AnimNotify_MiningComplete();
 
 	void PlayMiningMontage();
 	void PlayHitMontage();

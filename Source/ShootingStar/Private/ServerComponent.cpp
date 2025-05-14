@@ -17,13 +17,6 @@ void ExecuteOnControlledCharacter(UObject* Owner)
 	}
 }
 
-void UServerComponent::RequestInteractResource_Implementation()
-{
-	ACompetitiveGameMode* GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
-	AController* const Controller = Cast<AController>(GetOwner());
-	GameMode->InteractResource(Controller);
-}
-
 void UServerComponent::RequestCraftWeapon_Implementation(const FWeaponData& Weapon, const TArray<int32>& Resources)
 {
 	ACompetitiveGameMode* GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());

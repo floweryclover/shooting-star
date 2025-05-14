@@ -167,9 +167,7 @@ void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 		NewPlayer->UnPossess();
 		OldPawn->Destroy();
 	}
-
-	CompetitivePlayerController->GetInventoryComponent()->ClearInventory();
-
+	
 	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(CompetitivePlayerController);
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = Cast<ACompetitivePlayerCharacter>(
 		SpawnDefaultPawnAtTransform(NewPlayer, FTransform{SpawnPoint + FVector{0.0, 0.0, 100.0}}));
@@ -220,79 +218,7 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee
 
 void ACompetitiveGameMode::InteractResource(AController* const Controller)
 {
-	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
-	{
-		return;
-	}
 
-	if (!IsValid(Controller))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Controller is Invalid!"));
-		return;
-	}
-	APawn* const Pawn = Controller->GetPawn();
-	if (!IsValid(Pawn))
-	{
-		UE_LOG(LogTemp, Error, TEXT("Pawn is Invalid!"));
-		return;
-	}
-	
-	UInventoryComponent* const InventoryComponent = Cast<UInventoryComponent>(
-		Controller->GetComponentByClass(UInventoryComponent::StaticClass()));
-
-	FVector Start = Pawn->GetActorLocation();
-	Start.Z = 0.f;
-	FRotator Rotation = Pawn->GetActorRotation();
-
-	FVector End = Start + Rotation.Vector() * 130.f;
-
-	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
-	FHitResult Hit;
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
-	{
-		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
-		UE_LOG(LogTemp, Log, TEXT("Hit Actor: %s"), *Hit.GetActor()->GetName());
-
-		// Supply 태그 확인
-		if (Hit.GetActor()->ActorHasTag("Supply"))
-		{
-			if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()))
-			{
-				// 캐릭터 가져오기
-				ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(Controller->GetCharacter());
-				if (!Character)
-				{
-					UE_LOG(LogTemp, Error, TEXT("Supply: Character not found"));
-					return;
-				}
-
-				// 보급품 상자가 이미 열려있는지 확인
-				if (!SupplyActor->IsOpened())
-				{
-					// 무기 데이터 설정 및 장착
-					Character->SetWeaponData(SupplyActor->GetStoredWeapon());
-					Character->EquipRocketLauncher();
-					SupplyActor->PlayOpeningAnimation();
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("SupplyActor not found"));
-			}
-		}
-		else
-		{
-			// 기존 자원 처리
-			AResourceActor* Resource = Cast<AResourceActor>(Hit.GetActor());
-			if (Resource)
-			{
-				ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(Controller->GetCharacter());
-				Character->PlayMiningAnim();
-				InventoryComponent->AddResource(Resource->ResourceData);
-				Resource->UpdateMesh_AfterHarvest();
-			}
-		}
-	}
 }
 
 void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWeaponData& Weapon,

@@ -21,9 +21,6 @@ class SHOOTINGSTAR_API UServerComponent final : public UActorComponent
 
 public:
 	UFUNCTION(BlueprintCallable, Reliable, Server)
-	void RequestInteractResource();
-
-	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void RequestCraftWeapon(const FWeaponData& Weapon, const TArray<int32>& Resources);
 
 	UFUNCTION(BlueprintCallable, Reliable, Server)

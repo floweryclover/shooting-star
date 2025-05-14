@@ -65,15 +65,11 @@ public:
 	{
 		return TeamComponent;
 	}
-	
+
 	UServerComponent* GetServerComponent() const
 	{
 		return ServerComponent;
 	}
-
-	/** Inventory */
-	UFUNCTION(BlueprintCallable)
-	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UUserWidget> InventoryWidget;
@@ -83,7 +79,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleInventoryWidget();
-	
+
 	/**
 	 * Actor에 부착되어 공격 판정 등에 이용되는 일반적인 TeamComponent와는 달리,
 	 * 이 컴포넌트는 게임 동안의 플레이어의 소속 팀을 정의하며, 레벨 이동시 소속 팀 유지를 위해 사용됩니다.
@@ -91,12 +87,7 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UTeamComponent> TeamComponent;
 
-	bool bCanMove = true;
-	bool GetCanMove() const { return bCanMove; };
-	void SetCanMove(bool CanMove) { bCanMove = CanMove; };
-
 protected:
-
 	virtual void SetupInputComponent() override;
 
 	// To add mapping context
@@ -111,8 +102,9 @@ protected:
 	void EquipWeapon();
 	void EquipKnifeWeapon();
 	void EquipRocketLauncher();
+
+	UFUNCTION(Reliable, Server)
 	void InteractResource();
-	void Mining();
 
 	// HUD
 	UPROPERTY(BlueprintReadOnly)
@@ -120,9 +112,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UUserWidget> ScoreBoardUI;
-
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
-	UInventoryComponent* InventoryComponent;
 
 	UPROPERTY(BlueprintReadOnly)
 	TSubclassOf<USupplyIndicatorUI> SupplyIndicatorUIClass;
@@ -138,4 +127,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UServerComponent> ServerComponent;
+
+	bool IsMovable();
 };
