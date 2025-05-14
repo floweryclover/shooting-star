@@ -3,7 +3,6 @@
 
 #include "CompetitivePlayerController.h"
 
-#include "ClientComponent.h"
 #include "CompetitiveGameState.h"
 #include "TeamComponent.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -24,7 +23,6 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 {
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 	ServerComponent = CreateDefaultSubobject<UServerComponent>(TEXT("ServerComponent"));
-	ClientComponent = CreateDefaultSubobject<UClientComponent>(TEXT("ClientComponent"));
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
 

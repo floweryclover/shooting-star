@@ -4,7 +4,6 @@
 #include "CompetitivePlayerController.h"
 #include "CompetitiveGameState.h"
 #include "CompetitiveSystemComponent.h"
-#include "ClientComponent.h"
 #include "CompetitivePlayerCharacter.h"
 #include "InventoryComponent.h"
 #include "WeaponData.h"
@@ -237,15 +236,9 @@ void ACompetitiveGameMode::InteractResource(AController* const Controller)
 		UE_LOG(LogTemp, Error, TEXT("Pawn is Invalid!"));
 		return;
 	}
-
-	UClientComponent* const ClientComponent = Cast<UClientComponent>(
-		Controller->GetComponentByClass(UClientComponent::StaticClass()));
+	
 	UInventoryComponent* const InventoryComponent = Cast<UInventoryComponent>(
 		Controller->GetComponentByClass(UInventoryComponent::StaticClass()));
-	if (!IsValid(ClientComponent) || !IsValid(InventoryComponent))
-	{
-		return;
-	}
 
 	FVector Start = Pawn->GetActorLocation();
 	Start.Z = 0.f;
@@ -312,11 +305,8 @@ void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWea
 
 	UInventoryComponent* const InventoryComponent = Cast<UInventoryComponent>(
 		Controller->GetComponentByClass(UInventoryComponent::StaticClass()));
-	UClientComponent* const ClientComponent = Cast<UClientComponent>(
-		Controller->GetComponentByClass(UClientComponent::StaticClass()));
 	ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(Controller->GetCharacter());
 	if (!IsValid(InventoryComponent)
-		|| !IsValid(ClientComponent)
 		|| !IsValid(Character))
 	{
 		return;

@@ -8,7 +8,6 @@
 #include "InputActionValue.h"
 #include "CompetitivePlayerController.generated.h"
 
-class UClientComponent;
 class UServerComponent;
 class UNiagaraSystem;
 class UInputMappingContext;
@@ -70,11 +69,6 @@ public:
 	UServerComponent* GetServerComponent() const
 	{
 		return ServerComponent;
-	}
-
-	UClientComponent* GetClientComponent() const
-	{
-		return ClientComponent;
 	}
 
 	/** Inventory */
@@ -144,7 +138,4 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UServerComponent> ServerComponent;
-
-	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<UClientComponent> ClientComponent;
 };
