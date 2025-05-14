@@ -367,8 +367,7 @@ FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* co
 		OtherPlayerPositions.Add(Pawn->GetActorLocation());
 	}
 
-	FVector ReturnValue{};
-	double MaximumDistanceSquared = 0.0;
+	TArray<FVector> SpawnPointsDescending; // Z값은 거리합으로 사용, 거리합이 큰 순서대로 정렬됨
 	const TArray<FVector>& PlayerSpawnPoints = MapGeneratorComponent->GetPlayerSpawnPoints();
 	for (const FVector& SpawnPoint : PlayerSpawnPoints)
 	{
@@ -377,14 +376,28 @@ FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* co
 		{
 			DistanceSquaredSum += FVector::DistSquaredXY(SpawnPoint, OtherPlayerPosition);
 		}
-
-		if (DistanceSquaredSum >= MaximumDistanceSquared)
-		{
-			MaximumDistanceSquared = DistanceSquaredSum;
-			ReturnValue = SpawnPoint;
-		}
+		
+		SpawnPointsDescending.Add({ SpawnPoint.X, SpawnPoint.Y, DistanceSquaredSum });
 	}
+	
+	Algo::Sort(SpawnPointsDescending, [](const FVector& Lhs, const FVector& Rhs) { return Lhs.Z > Rhs.Z; });
 
+	FVector ReturnValue;
+	const float SafeZoneRadius = SafeZoneActor->GetRadius();
+	
+	for (const FVector& SpawnPoint : SpawnPointsDescending)
+	{
+		ReturnValue = SpawnPoint;
+		ReturnValue.Z = 0.0f;
+
+		if (SpawnPoint.SizeSquared2D() < SafeZoneRadius * SafeZoneRadius)
+		{
+			break;
+		}
+		
+		UE_LOG(LogShootingStar, Log, TEXT("%f, %f는 자기장 밖에 있습니다."), SpawnPoint.X, SpawnPoint.Y);
+	}
+	
 	return ReturnValue;
 }
 
