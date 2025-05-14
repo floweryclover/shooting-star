@@ -14,8 +14,6 @@ UCompetitiveSystemComponent::UCompetitiveSystemComponent()
 	  CurrentPhaseTime{0.0f},
 	  CurrentPhase{ECompetitiveGamePhase::WaitingForStart}
 {
-	// 보급품 트리거 배열 초기화
-	SupplyDropsTriggered.Init(false, 3);
 }
 
 void UCompetitiveSystemComponent::Init(TFunction<float()> InGetSafeZoneRadius)
@@ -60,6 +58,7 @@ void UCompetitiveSystemComponent::StartGame()
 
 	CurrentPhase = ECompetitiveGamePhase::Game;
 	CurrentPhaseTime = 0.0f;
+	SupplyDropsTriggered.Init(false, 3);
 	OnGameStarted.Broadcast();
 }
 
@@ -186,6 +185,7 @@ void UCompetitiveSystemComponent::Update_RoundEnd()
 		BlueTeamKillScore = 0;
 		RedTeamKillScore = 0;
 		CurrentPhaseTime = 0.0f;
+		SupplyDropsTriggered.Init(false, 3);
 		OnGameStarted.Broadcast();
 	}
 }

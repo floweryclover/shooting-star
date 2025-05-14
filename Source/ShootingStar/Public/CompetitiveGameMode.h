@@ -78,6 +78,11 @@ public:
 		return SafeZoneActor;
 	}
 
+	const TArray<ASupplyActor*>& GetSupplyActors() const
+	{
+		return SupplyActors;
+	}
+
 	UFUNCTION(BlueprintCallable)
 	void InteractResource(AController* Controller);
 
@@ -114,7 +119,7 @@ protected:
 	TSubclassOf<ASafeZoneActor> SafeZoneActorClass;
 
 	UPROPERTY()
-	int32 CurrentSupplyIndex;
+	TArray<ASupplyActor*> SupplyActors;
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<ASafeZoneActor> SafeZoneActor;

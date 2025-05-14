@@ -21,18 +21,7 @@ void ACompetitiveGameState::Tick(float DeltaSeconds)
 	ensure(GetWorld());
 
 	ACompetitiveGameMode* const CompetitiveGameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
-	ensure(CompetitiveGameMode);
-	if (!CompetitiveGameMode)
-	{
-		return;
-	}
-
 	UCompetitiveSystemComponent* const CompetitiveSystem = CompetitiveGameMode->GetCompetitiveSystemComponent();
-	ensure(CompetitiveSystem);
-	if (!CompetitiveSystem)
-	{
-		return;
-	}
 
 	WaitingForGameStartTime = CompetitiveGameMode->GetWaitingForGameStartSeconds();
 	BlueTeamKills = CompetitiveSystem->GetBlueTeamKillScore();
@@ -44,6 +33,19 @@ void ACompetitiveGameState::Tick(float DeltaSeconds)
 	bIsGoldenKillTime = CompetitiveSystem->IsGoldenKillTime();
 	RemainingGameTime = CompetitiveSystem->GetRemainingGameTime();
 	LastRoundWinTeam = CompetitiveSystem->GetLastRoundWinTeam();
+}
+
+void ACompetitiveGameState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
+	ACompetitiveGameMode* const CompetitiveGameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+	CompetitiveGameMode->GetCompetitiveSystemComponent()->OnSupplyDropped.AddDynamic(this, &ACompetitiveGameState::OnSupplyDroppedHandler);
 }
 
 void ACompetitiveGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -60,4 +62,11 @@ void ACompetitiveGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(ACompetitiveGameState, bIsGoldenKillTime);
 	DOREPLIFETIME(ACompetitiveGameState, RemainingGameTime);
 	DOREPLIFETIME(ACompetitiveGameState, LastRoundWinTeam);
+	DOREPLIFETIME(ACompetitiveGameState, SupplyActors);
+}
+
+void ACompetitiveGameState::OnSupplyDroppedHandler(FVector)
+{
+	ACompetitiveGameMode* const CompetitiveGameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+	SupplyActors = CompetitiveGameMode->GetSupplyActors();
 }
