@@ -16,7 +16,7 @@ class SHOOTINGSTAR_API ASupplyActor : public AActor
 public:
     ASupplyActor();
 
-    UFUNCTION(BlueprintCallable)
+    UFUNCTION(BlueprintCallable, Reliable, NetMulticast)
     void PlayOpeningAnimation();
 
     UFUNCTION(BlueprintImplementableEvent)

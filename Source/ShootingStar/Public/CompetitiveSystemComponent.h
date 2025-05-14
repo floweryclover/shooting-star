@@ -21,7 +21,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGameStarted);
 
 // 보급 이벤트 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSupplyDropEvent, FVector, Location);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSupplyOpenEvent, FVector, Location);
 
 /**
 * 3선승 게임인 경쟁 모드의 동작과 상태를 정의하는 컴포넌트입니다.
@@ -70,10 +69,6 @@ public:
 	// 보급품 생성 이벤트
 	UPROPERTY(BlueprintAssignable)
 	FSupplyDropEvent OnSupplyDropped;
-
-	// 보급품 오픈 이벤트
-	UPROPERTY(BlueprintAssignable)
-	FSupplyOpenEvent OnSupplyOpened;
 	
 	UCompetitiveSystemComponent();
 
