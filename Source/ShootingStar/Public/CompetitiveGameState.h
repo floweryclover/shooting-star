@@ -7,6 +7,8 @@
 #include "GameFramework/GameStateBase.h"
 #include "CompetitiveGameState.generated.h"
 
+class ASupplyActor;
+
 UCLASS()
 class SHOOTINGSTAR_API ACompetitiveGameState final : public AGameStateBase
 {
@@ -57,9 +59,16 @@ public:
 		return LastRoundWinTeam;
 	}
 
-protected:
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	const TArray<ASupplyActor*>& GetSupplyActors() const
+	{
+		return SupplyActors;
+	}
 
+protected:
+	virtual void BeginPlay() override;
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	float WaitingForGameStartTime;
 	
@@ -89,4 +98,11 @@ protected:
 
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	ECompetitiveGamePhase Phase;
+
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	TArray<ASupplyActor*> SupplyActors;
+
+private:
+	UFUNCTION()
+	void OnSupplyDroppedHandler(FVector Location);
 };

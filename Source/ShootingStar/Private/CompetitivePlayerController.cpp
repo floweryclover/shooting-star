@@ -4,6 +4,7 @@
 #include "CompetitivePlayerController.h"
 
 #include "ClientComponent.h"
+#include "CompetitiveGameState.h"
 #include "TeamComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Pawn.h"
@@ -15,7 +16,9 @@
 #include "Blueprint/UserWidget.h"
 #include "InventoryComponent.h"
 #include "ServerComponent.h"
+#include "SupplyActor.h"
 #include "SupplyIndicatorUI.h"
+#include "ShootingStar/ShootingStar.h"
 
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
@@ -102,6 +105,51 @@ void ACompetitivePlayerController::Tick(float DeltaTime)
 	{
 		LookMouse();
 	}
+
+	ACompetitiveGameState* const GameState = Cast<ACompetitiveGameState>(GetWorld()->GetGameState());
+	if (!IsValid(GameState))
+	{
+		return;
+	}
+	
+	for (ASupplyActor* const GameStateSupplyActor : GameState->GetSupplyActors())
+	{
+		// 새로 그려야 할 것이 있다면 그리기
+		bool bIsDrawing = false;
+		for (int i = SupplyIndicatorUIArray.Num()-1; i>=0; --i)
+		{
+			USupplyIndicatorUI* const UI = SupplyIndicatorUIArray[i];
+			
+			// 확인하는 겸 삭제해야 한다면 삭제하기
+			if (!IsValid(UI->GetTargetSupplyActor()))
+			{
+				UI->RemoveFromParent();
+				SupplyIndicatorUIArray.RemoveAt(i);
+				continue;
+			}
+			
+			if (UI->GetTargetSupplyActor() == GameStateSupplyActor)
+			{
+				bIsDrawing = true;
+				break;
+			}
+		}
+		
+		if (!bIsDrawing)
+		{
+			if (SupplyIndicatorUIClass)
+			{
+				USupplyIndicatorUI* UI = CreateWidget<USupplyIndicatorUI>(GetWorld(), SupplyIndicatorUIClass);
+				if (UI)
+				{
+					SupplyIndicatorUIArray.Push(UI);
+					UI->AddToViewport();
+					UI->InitSupply(GameStateSupplyActor);
+					UE_LOG(LogShootingStar, Log, TEXT("Push Supply"));
+				}
+			}
+		}
+	}
 }
 
 void ACompetitivePlayerController::ToggleInventoryWidget()
@@ -119,38 +167,6 @@ void ACompetitivePlayerController::ToggleInventoryWidget()
 		if (InventoryWidget)
 		{
 			InventoryWidget->AddToViewport();
-		}
-	}
-}
-
-void ACompetitivePlayerController::RenderSupplyIndicator(FVector Location)
-{
-	if (SupplyIndicatorUIClass)
-	{
-		USupplyIndicatorUI* UI = CreateWidget<USupplyIndicatorUI>(GetWorld(), SupplyIndicatorUIClass);
-		if (UI)
-		{
-			SupplyIndicatorUIArray.Push(UI);
-			UI->AddToViewport();
-			UI->Init_SupplyPos(Location);
-			UE_LOG(LogShootingStar, Log, TEXT("Push Supply"));
-		}
-	}
-}
-
-void ACompetitivePlayerController::DestorySupplyIndicator(FVector Location)
-{
-	for (int32 i = 0; i < SupplyIndicatorUIArray.Num();)
-	{
-		if (SupplyIndicatorUIArray[i] && SupplyIndicatorUIArray[i]->IsDestorySupply(Location))
-		{
-			SupplyIndicatorUIArray[i]->RemoveFromParent();
-			SupplyIndicatorUIArray.RemoveAt(i);
-			UE_LOG(LogShootingStar, Log, TEXT("Destory Supply %d"), i);
-		}
-		else
-		{
-			i++;
 		}
 	}
 }

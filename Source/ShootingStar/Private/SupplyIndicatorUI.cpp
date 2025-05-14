@@ -2,3 +2,8 @@
 
 
 #include "SupplyIndicatorUI.h"
+
+void USupplyIndicatorUI::InitSupply(ASupplyActor* const SupplyActor)
+{
+	TargetSupplyActor = SupplyActor;
+}

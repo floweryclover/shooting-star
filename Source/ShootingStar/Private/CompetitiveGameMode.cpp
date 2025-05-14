@@ -425,6 +425,7 @@ void ACompetitiveGameMode::AssignTeamIfNone(APlayerController* Player)
 
 void ACompetitiveGameMode::OnGameStarted()
 {
+	// 플레이어들 재시작
 	for (APlayerState* const PlayerState : GameState->PlayerArray)
 	{
 		APlayerController* const Player = PlayerState->GetPlayerController();
@@ -435,6 +436,13 @@ void ACompetitiveGameMode::OnGameStarted()
 
 		RestartPlayer(Player);
 	}
+
+	// 보급품 제거
+	for (ASupplyActor* const SupplyActor : SupplyActors)
+	{
+		SupplyActor->Destroy();
+	}
+	SupplyActors.Empty();
 }
 
 void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
@@ -452,21 +460,9 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
     if (ASupplyActor* SupplyActor = GetWorld()->SpawnActor<ASupplyActor>(SupplyActorClass, Location, FRotator::ZeroRotator, SpawnParams))
     {
     	SupplyActor->SetReplicates(true);
-        CurrentSupplyIndex++;
-        UE_LOG(LogShootingStar, Log, TEXT("Supply %d spawned at %s"), CurrentSupplyIndex, *Location.ToString());
+    	SupplyActors.Add(SupplyActor);
+        UE_LOG(LogShootingStar, Log, TEXT("Supply %d spawned at %s"), SupplyActors.Num()-1, *Location.ToString());
     }
     else
         UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
-
-	// 플레이어들에게 통지
-	for (APlayerState* const PlayerState : GameState->PlayerArray)
-	{
-		ACompetitivePlayerController* const PlayerController = Cast<ACompetitivePlayerController>(PlayerState->GetPlayerController());
-		if (!IsValid(PlayerController))
-		{
-			continue;
-		}
-
-		PlayerController->GetClientComponent()->NotifySupplyDropped(Location);
-	}
 }

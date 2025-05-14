@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "SupplyIndicatorUI.generated.h"
 
+class ASupplyActor;
 /**
  * 
  */
@@ -15,9 +16,14 @@ class SHOOTINGSTAR_API USupplyIndicatorUI : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void Init_SupplyPos(FVector WorldPos);
+	void InitSupply(ASupplyActor* const SupplyActor);
 
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	bool IsDestorySupply(FVector WorldPos);
+	ASupplyActor* GetTargetSupplyActor() const
+	{
+		return TargetSupplyActor;
+	}
+
+protected:
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<ASupplyActor> TargetSupplyActor;
 };
