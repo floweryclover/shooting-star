@@ -164,7 +164,7 @@ void UCompetitiveSystemComponent::CheckAndTriggerSupplyDrop()
             // 맵 중앙 기준으로 현재 자기장 반경 내 랜덤 위치 선정
             const float RandomAngle = FMath::RandRange(0.f, 360.f);
             const float CurrentRadius = GetSafeZoneRadius();
-            const float RandomRadius = FMath::RandRange(0.f, CurrentRadius * 0.8f);  // 자기장 80% 이내 위치에 생성
+            const float RandomRadius = FMath::RandRange(0.f, FMath::Min(CurrentRadius * 0.8f, 3000.0f));  // 자기장 80% 이내 위치에 생성하되, 이동 가능한 맵을 벗어나지 않게
             const FVector DropLocation(
                 RandomRadius * FMath::Cos(RandomAngle),
                 RandomRadius * FMath::Sin(RandomAngle),
