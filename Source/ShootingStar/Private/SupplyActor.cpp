@@ -2,8 +2,6 @@
 
 
 #include "SupplyActor.h"
-#include "CompetitiveGameMode.h"
-#include "CompetitiveSystemComponent.h"
 #include "Components/StaticMeshComponent.h"
 
 ASupplyActor::ASupplyActor()
@@ -19,18 +17,12 @@ ASupplyActor::ASupplyActor()
         StoredWeapon.UsedResourceCounts.Emplace(1);
 }
 
-void ASupplyActor::PlayOpeningAnimation()
+void ASupplyActor::PlayOpeningAnimation_Implementation()
 {
     if (!bIsOpened)
     {
         bIsOpened = true;
         PlayOpenTimeline();
         UE_LOG(LogTemp, Log, TEXT("Playing Supply Open Animation"));
-        
-        if (ACompetitiveGameMode* GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode()))
-        {
-            if (UCompetitiveSystemComponent* CompSystem = GameMode->GetCompetitiveSystemComponent())
-                CompSystem->OnSupplyOpened.Broadcast(GetActorLocation());
-        }
     }
 }
