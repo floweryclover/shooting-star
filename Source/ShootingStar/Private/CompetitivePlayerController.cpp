@@ -13,7 +13,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "Blueprint/UserWidget.h"
-#include "InventoryComponent.h"
 #include "ServerComponent.h"
 #include "SupplyActor.h"
 #include "SupplyIndicatorUI.h"
@@ -41,9 +40,6 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 	{
 		InventoryWidgetClass = InventoryWidgetBPFinder.Class;
 	}
-	
-	// Attach Inventory Component
-	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 
 	//* SupplyIndicator UI
 	static ConstructorHelpers::FClassFinder<UUserWidget> SupplyIndicatorBPFinder(TEXT("/Game/Blueprints/UI/BP_SupplyIndicatorUI"));
@@ -97,12 +93,13 @@ void ACompetitivePlayerController::BeginPlay()
 void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	SetIgnoreMoveInput(!bCanMove);
 
-	if (bCanMove) 
+	if (!IsLocalController())
 	{
-		LookMouse();
+		return;
 	}
+	
+	LookMouse();
 
 	ACompetitiveGameState* const GameState = Cast<ACompetitiveGameState>(GetWorld()->GetGameState());
 	if (!IsValid(GameState))
@@ -198,8 +195,8 @@ void ACompetitivePlayerController::SetupInputComponent()
 void ACompetitivePlayerController::Move(const FInputActionValue& Value)
 {
     // 자신에게 할당된 캐릭터에 대한 이동 입력은 자동 동기화, 즉시 이 함수에서 진행
-	ACharacter* const ControllingCharacter = GetCharacter();
-	if (!IsValid(ControllingCharacter))
+	ACompetitivePlayerCharacter* const ControllingCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
+	if (!IsValid(ControllingCharacter) || !ControllingCharacter->IsMovable())
 	{
 		return;
 	}
@@ -218,7 +215,7 @@ void ACompetitivePlayerController::Move(const FInputActionValue& Value)
 	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
 	
-	// add movement 
+	// add movement
 	ControllingCharacter->AddMovementInput(ForwardDirection, MovementVector.Y);
 	ControllingCharacter->AddMovementInput(RightDirection, MovementVector.X);
 }
@@ -226,6 +223,10 @@ void ACompetitivePlayerController::Move(const FInputActionValue& Value)
 void ACompetitivePlayerController::LookMouse()
 {
 	// Move와 마찬가지로 회전 입력은 리플리케이션 없이 즉시 반영
+	if (!IsMovable())
+	{
+		return;
+	}
 	
 	FHitResult Hit;
 	GetHitResultUnderCursor(ECC_GameTraceChannel2, false, Hit);
@@ -242,51 +243,61 @@ void ACompetitivePlayerController::LookMouse()
 		}
 	}
 }
-void ACompetitivePlayerController::Mining()
-{
-	SetCanMove(false);
-	ACharacter* const ControllingCharacter = GetCharacter();
-	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(ControllingCharacter);
 
-	if (!IsValid(CompetitiveCharacter))
-		return;
-	
-	ServerComponent->RequestMining();
-	
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(
-		TimerHandle,
-		this,
-		&ACompetitivePlayerController::InteractResource,
-		1.0f,
-		false
-	);
-}
 void ACompetitivePlayerController::EquipRocketLauncher()
 {
 	ACharacter* const ControllingCharacter = GetCharacter();
 	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(ControllingCharacter);
 	CompetitiveCharacter->EquipRocketLauncher();
 }
+
+bool ACompetitivePlayerController::IsMovable()
+{
+	ACompetitivePlayerCharacter* const ControllingCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
+	return IsValid(ControllingCharacter) && ControllingCharacter->IsMovable();
+}
+
 void ACompetitivePlayerController::Dash()
 {
 	ServerComponent->RequestDash();
 }
-void ACompetitivePlayerController::InteractResource()
+void ACompetitivePlayerController::InteractResource_Implementation()
 {
-	ServerComponent->RequestInteractResource();
+#pragma region Server
+	if (!IsMovable())
+	{
+		return;
+	}
+	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
+	CompetitiveCharacter->InteractResource();
+#pragma endregion Server
 }
 
 void ACompetitivePlayerController::Attack()
 {
+	if (!IsMovable())
+	{
+		return;
+	}
+	
 	ServerComponent->RequestAttack();
 }
 
 void ACompetitivePlayerController::EquipWeapon()
 {
+	if (!IsMovable())
+	{
+		return;
+	}
+	
 	ServerComponent->RequestEquipWeapon();
 }
 void ACompetitivePlayerController::EquipKnifeWeapon()
 {
+	if (!IsMovable())
+	{
+		return;
+	}
+	
 	ServerComponent->RequestEquipKnifeWeapon();
 }

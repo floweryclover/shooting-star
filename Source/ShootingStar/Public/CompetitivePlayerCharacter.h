@@ -7,6 +7,7 @@
 #include "WeaponData.h"
 #include "CompetitivePlayerCharacter.generated.h"
 
+class UInventoryComponent;
 class UCharacter_AnimInstance;
 class ACompetitivePlayerController;
 class AGun;
@@ -117,7 +118,6 @@ public:
 	void EquipPickAxe();
 	void UnEquipPickAxe();
 	void PlayMiningAnim();
-	void HandleMiningComplete();
 	void PullTrigger();
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetHealthPercent() const;
@@ -146,8 +146,34 @@ public:
 	void PickAxeAttackEnd();
 
 	//
+	// 자원 관련
+	//
+
+	// 자원 하나를 캐는 동안 걸리는 시간입니다.
+	constexpr static float InteractTimeRequired = 3.0f;
+
+	void InteractResource();
+	
+
+	//
 	// Getter, Setter
 	//
+
+	/**
+	 * 이동 및 회전이 가능한지 반환.
+	 * @return
+	 */
+	UFUNCTION(BlueprintCallable)
+	bool IsMovable() const
+	{
+		if (bDeadNotify)
+		{
+			return false;
+		}
+		
+		const float CurrentTime = GetWorld()->GetTimeSeconds();
+		return LastInteractTime == 0.0f || CurrentTime > LastInteractTime + InteractTimeRequired;
+	}
 
 	UFUNCTION(BlueprintCallable)
 	void SetPlayerName(const FString& Name);
@@ -156,7 +182,12 @@ public:
 	{
 		return AnimInstance;
 	}
-
+	
+	UInventoryComponent* GetInventoryComponent() const
+	{
+		return InventoryComponent;
+	}
+	
 	UTeamComponent* GetTeamComponent() const
 	{
 		return TeamComponent;
@@ -171,11 +202,20 @@ protected:
 	class UCharacter_AnimInstance* AnimInstance = nullptr;
 
 	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UInventoryComponent> InventoryComponent;
+	
+	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UTeamComponent> TeamComponent;
 
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_PlayerName)
 	FString PlayerName;
 
+	//
+	// 자원 관련
+	//
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	float LastInteractTime = 0.0f;
+	
 private:
 
 	/** Top down camera */

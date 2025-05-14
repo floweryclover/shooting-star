@@ -20,11 +20,16 @@
 #include "Engine/World.h"
 #include "ResourceActor.h"
 #include "Character_AnimInstance.h"
+#include "CompetitiveGameMode.h"
+#include "CompetitiveSystemComponent.h"
+#include "InventoryComponent.h"
+#include "SupplyActor.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
 
 ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
 	// Set size for player capsule
 	GetCapsuleComponent()->InitCapsuleSize(70.f, 96.0f);
@@ -44,11 +49,10 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 
 	GetMesh()->SetCollisionProfileName(TEXT("BodyMesh"));
 	GetMesh()->SetGenerateOverlapEvents(true);
-
-	// Don't rotate character to camera direction
-	// bUseControllerRotationPitch = false;
-	// bUseControllerRotationYaw = false;
-	// bUseControllerRotationRoll = false;
+	
+	bUseControllerRotationPitch = true;
+	bUseControllerRotationYaw = true;
+	bUseControllerRotationRoll = true;
 
 	// Configure character movement
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f);
@@ -109,6 +113,7 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, Health);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, MaxHealth);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, MiningCount);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, LastInteractTime);
 }
 
 void ACompetitivePlayerCharacter::SetTeamMaterial(ETeam Team)
@@ -141,9 +146,82 @@ float ACompetitivePlayerCharacter::GetHealth() const
 	return Health;
 }
 
-void ACompetitivePlayerCharacter::Tick(float DeltaSeconds)
+void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+#pragma region Server
+	// 이번이 자원 채집모션이 끝난 후의 첫 틱이라면 자원 채집 실시
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (LastInteractTime == 0.0f || CurrentTime < LastInteractTime + InteractTimeRequired)
+	{
+		return;
+	}
+	LastInteractTime = 0.0f;
+	ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+	UCompetitiveSystemComponent* const CompetitiveSystemComponent = GameMode->GetCompetitiveSystemComponent();
+	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
+	{
+		return;
+	}
+	
+	FVector Start = GetActorLocation();
+	Start.Z = 0.f;
+	FRotator Rotation = GetActorRotation();
+
+	FVector End = Start + Rotation.Vector() * 130.f;
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+	FHitResult Hit;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
+	{
+		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
+		UE_LOG(LogTemp, Log, TEXT("Hit Actor: %s"), *Hit.GetActor()->GetName());
+
+		// Supply 태그 확인
+		if (Hit.GetActor()->ActorHasTag("Supply"))
+		{
+			if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()))
+			{
+				// 캐릭터 가져오기
+				ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(Controller->GetCharacter());
+				if (!Character)
+				{
+					UE_LOG(LogTemp, Error, TEXT("Supply: Character not found"));
+					return;
+				}
+
+				// 보급품 상자가 이미 열려있는지 확인
+				if (!SupplyActor->IsOpened())
+				{
+					// 무기 데이터 설정 및 장착
+					Character->SetWeaponData(SupplyActor->GetStoredWeapon());
+					Character->EquipRocketLauncher();
+					SupplyActor->PlayOpeningAnimation();
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("SupplyActor not found"));
+			}
+		}
+		else
+		{
+			// 기존 자원 처리
+			AResourceActor* const Resource = Cast<AResourceActor>(Hit.GetActor());
+			if (Resource)
+			{
+				InventoryComponent->AddResource(Resource->ResourceData);
+				Resource->UpdateMesh_AfterHarvest();
+			}
+		}
+	}
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::Destroyed()
@@ -361,19 +439,16 @@ void ACompetitivePlayerCharacter::UnEquipPickAxe()
 }
 void ACompetitivePlayerCharacter::PlayMiningAnim()
 {
+	FAIL_IF_NOT_SERVER();
+	
+#pragma region Server
 	EquipPickAxe();
 
 	MiningCount += 1;
 	OnRep_MiningCount();
+#pragma endregion Server
 }
-void ACompetitivePlayerCharacter::HandleMiningComplete()
-{
-	ACompetitivePlayerController* PlayerController = Cast<ACompetitivePlayerController>(GetController());
-	if (PlayerController)
-	{
-		PlayerController->SetCanMove(true);
-	}
-}
+
 void ACompetitivePlayerCharacter::PullTrigger()
 {
 	if (EquippedGun)
@@ -628,6 +703,38 @@ void ACompetitivePlayerCharacter::PickAxeAttackEnd()
 		UE_LOG(LogTemp, Warning, TEXT("PickAxeAttackEnd"));
 		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(false);
 	}
+}
+
+void ACompetitivePlayerCharacter::InteractResource()
+{
+	FAIL_IF_NOT_SERVER();
+	
+#pragma region Server
+	ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+	UCompetitiveSystemComponent* const CompetitiveSystemComponent = GameMode->GetCompetitiveSystemComponent();
+	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
+	{
+		return;
+	}
+	
+	FVector Start = GetActorLocation();
+	Start.Z = 0.f;
+	FRotator Rotation = GetActorRotation();
+	FVector End = Start + Rotation.Vector() * 130.f;
+	FHitResult Hit;
+	if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
+	{
+		return;
+	}
+	
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime < LastInteractTime + InteractTimeRequired)
+	{
+		return;
+	}
+	LastInteractTime = CurrentTime;
+	PlayMiningAnim();
+#pragma endregion Server;
 }
 
 void ACompetitivePlayerCharacter::SetPlayerName(const FString& Name)
