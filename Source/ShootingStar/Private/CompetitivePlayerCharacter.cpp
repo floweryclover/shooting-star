@@ -86,8 +86,7 @@ void ACompetitivePlayerCharacter::BeginPlay()
 	Health = MaxHealth;
 	if (TeamComponent)
 	{
-		PlayerTeam = TeamComponent->GetTeam();
-		SetTeamMaterial(PlayerTeam);
+		SetTeamMaterial(TeamComponent->GetTeam());
 		TeamComponent->OnTeamChanged.AddDynamic(this, &ACompetitivePlayerCharacter::OnTeamChanged);
 	}
 }
@@ -118,6 +117,7 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 
 void ACompetitivePlayerCharacter::SetTeamMaterial(ETeam Team)
 {
+	UMaterialInterface* TeamColor = nullptr;
 	switch (Team)
 	{
 	case ETeam::Blue:
@@ -298,7 +298,7 @@ void ACompetitivePlayerCharacter::WeaponKnifeChange()
 
 void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 {
-	UE_LOG(LogTemp, Warning, TEXT("PlayerTeam: %d"), (int32)PlayerTeam);
+	UE_LOG(LogTemp, Warning, TEXT("PlayerTeam: %d"), (int32)TeamComponent->GetTeam());
 	UnEquipPickAxe();
 	if (IsValid(EquippedKnife))
 	{

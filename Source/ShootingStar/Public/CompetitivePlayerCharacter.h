@@ -16,10 +16,6 @@ class APickAxe;
 class UWidgetComponent;
 class UTeamComponent;
 
-enum class ETeam :uint8;
-struct FWeaponData;
-enum class EResourceType :uint8;
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponData);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPlayerNameChanged, const FString&, PlayerName);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FKilled, AActor*, Killer, AActor*, Killee);
@@ -55,10 +51,9 @@ public:
 	FKilled OnKilled;
 
 	// 팀 관련
-	ETeam PlayerTeam;
 	UFUNCTION()
 	void SetTeamMaterial(ETeam Team);
-	UMaterialInterface* TeamColor = nullptr;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Team")
 	UMaterialInterface* RedTeamMaterial;
 
