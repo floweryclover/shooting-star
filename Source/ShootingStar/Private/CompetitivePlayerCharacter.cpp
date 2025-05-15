@@ -163,11 +163,21 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const bool bIsInteracting = LastInteractTime != 0.0f && CurrentTime < LastInteractTime + InteractTimeRequired;
+	if (IsValid(EquippedGun))
+	{
+		EquippedGun->SetActorHiddenInGame(bIsInteracting);
+	}
+	if (IsValid(EquippedKnife))
+	{
+		EquippedKnife->SetActorHiddenInGame(bIsInteracting);
+	}
+
 	if (!HasAuthority())
 	{
 		return;
 	}
-
 #pragma region Server
 	Tick_HandleResourceInteraction(DeltaSeconds);
 	Tick_HandleKnifeAttack(DeltaSeconds);
@@ -718,6 +728,20 @@ void ACompetitivePlayerCharacter::InteractResource()
 	{
 		return;
 	}
+
+	// Supply 태그 확인
+	if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()); Hit.GetActor()->ActorHasTag("Supply") && IsValid(SupplyActor))
+	{
+		// 보급품 상자가 이미 열려있는지 확인
+		if (!SupplyActor->IsOpened())
+		{
+			// 무기 데이터 설정 및 장착
+			SetWeaponData(SupplyActor->GetStoredWeapon());
+			EquipRocketLauncher();
+			SupplyActor->PlayOpeningAnimation();
+		}
+		return;
+	}
 	
 	const float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime < LastInteractTime + InteractTimeRequired)
@@ -837,19 +861,12 @@ void ACompetitivePlayerCharacter::RefreshAnimInstance()
 
 void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float DeltaSeconds)
 {
-	if (IsDead())
+	if (IsDead() || LastInteractTime == 0.0f)
 	{
 		LastInteractTime = 0.0f;
 		return;
 	}
 	
-	// 이번이 자원 채집모션이 끝난 후의 첫 틱이라면 자원 채집 실시
-	const float CurrentTime = GetWorld()->GetTimeSeconds();
-	if (LastInteractTime == 0.0f || CurrentTime < LastInteractTime + InteractTimeRequired)
-	{
-		return;
-	}
-	LastInteractTime = 0.0f;
 	ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
 	UCompetitiveSystemComponent* const CompetitiveSystemComponent = GameMode->GetCompetitiveSystemComponent();
 	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
@@ -862,43 +879,27 @@ void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float Del
 	FRotator Rotation = GetActorRotation();
 
 	FVector End = Start + Rotation.Vector() * 130.f;
-
-	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+	
 	FHitResult Hit;
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
+	if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
 	{
-		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
-		UE_LOG(LogTemp, Log, TEXT("Hit Actor: %s"), *Hit.GetActor()->GetName());
+		// 캐고 있는데 자원 사라짐
+		LastInteractTime = 0.0f;
+		return;
+	}
 
-		// Supply 태그 확인
-		if (Hit.GetActor()->ActorHasTag("Supply"))
-		{
-			if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()))
-			{
-				// 보급품 상자가 이미 열려있는지 확인
-				if (!SupplyActor->IsOpened())
-				{
-					// 무기 데이터 설정 및 장착
-					SetWeaponData(SupplyActor->GetStoredWeapon());
-					EquipRocketLauncher();
-					SupplyActor->PlayOpeningAnimation();
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("SupplyActor not found"));
-			}
-		}
-		else
-		{
-			// 기존 자원 처리
-			AResourceActor* const Resource = Cast<AResourceActor>(Hit.GetActor());
-			if (Resource)
-			{
-				InventoryComponent->AddResource(Resource->ResourceData);
-				Resource->UpdateMesh_AfterHarvest();
-			}
-		}
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime < LastInteractTime + InteractTimeRequired) // 아직 자원 채집 완료되지 않음
+	{
+		return;
+	}
+	LastInteractTime = 0.0f;
+
+	AResourceActor* const Resource = Cast<AResourceActor>(Hit.GetActor());
+	if (Resource)
+	{
+		InventoryComponent->AddResource(Resource->ResourceData);
+		Resource->UpdateMesh_AfterHarvest();
 	}
 }
 
