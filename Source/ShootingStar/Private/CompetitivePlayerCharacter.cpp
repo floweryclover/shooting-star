@@ -91,7 +91,8 @@ void ACompetitivePlayerCharacter::BeginPlay()
 		return;
 	}
 #pragma region Server
-	SpawnPickAxe();
+	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
+	SpawnedPickAxe->SetReplicates(true);
 	Health = MaxHealth;
 	OnRep_Health();
 #pragma endregion Server
@@ -107,6 +108,7 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ACompetitivePlayerCharacter, SpawnedPickAxe);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, EquippedGun);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, EquippedKnife);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, KnifeAttackCount);
@@ -366,38 +368,23 @@ void ACompetitivePlayerCharacter::Attack()
 #pragma endregion Server
 }
 
-void ACompetitivePlayerCharacter::SpawnPickAxe()
+void ACompetitivePlayerCharacter::EquipPickAxe_Implementation()
 {
-	FAIL_IF_NOT_SERVER();
-	
-#pragma region Server
-	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
-	SpawnedPickAxe->SetReplicates(true);
-
-	FTransform RelativeTransform;
-	RelativeTransform.SetRotation(FQuat(FVector(-1, 0, 0), FMath::DegreesToRadians(90.f)));
-
-	SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		TEXT("Weapon_R_Socket"));
-	SpawnedPickAxe->SetActorRelativeTransform(RelativeTransform);
-#pragma endregion Server
-}
-
-void ACompetitivePlayerCharacter::EquipPickAxe()
-{
-	FAIL_IF_NOT_SERVER();
-
-#pragma region Server
 	if (SpawnedPickAxe)
 	{
+		if (!HasAuthority())
+		{
+			SpawnedPickAxe->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+			SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+								  TEXT("Weapon_R_Socket"));
+		}
 		FTransform RelativeTransform;
 		RelativeTransform.SetRotation(FQuat(FVector(-1, 0, 0), FMath::DegreesToRadians(90.f)));
 
 		SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		                                  TEXT("Weapon_R_Socket"));
+										  TEXT("Weapon_R_Socket"));
 		SpawnedPickAxe->SetActorRelativeTransform(RelativeTransform);
 	}
-#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::UnEquipPickAxe()
@@ -779,10 +766,7 @@ void ACompetitivePlayerCharacter::OnRep_EquippedKnife()
 	{
 		if (!HasAuthority())
 		{
-			if (!HasAuthority())
-			{
-				EquippedKnife->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-			}
+			EquippedKnife->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		}
 		EquippedKnife->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 					TEXT("Weapon_R_Socket"));

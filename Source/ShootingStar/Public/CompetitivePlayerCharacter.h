@@ -163,7 +163,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<APickAxe> PickAxeClass;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Replicated)
 	TObjectPtr<APickAxe> SpawnedPickAxe;
 	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedGun)
 	TObjectPtr<AGun> EquippedGun;
@@ -260,7 +260,7 @@ private:
 	
 	void ApplyDoTDamage(AController* InInstigator, AActor* InCauser);
 	void ApplyDoTTick();
-	void SpawnPickAxe();
+	UFUNCTION(Reliable, NetMulticast)
 	void EquipPickAxe();
 	void UnEquipPickAxe();
 	void PlayMiningAnim();
@@ -299,7 +299,7 @@ private:
 
 	UFUNCTION()
 	void OnRep_EquippedKnife();
-
+	
 	UFUNCTION()
 	void OnRep_FireCount();
 

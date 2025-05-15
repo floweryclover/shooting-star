@@ -32,7 +32,7 @@ APickAxe::APickAxe()
     }
     AttackHitBox->SetupAttachment(StaticBodyMesh);
     AttackHitBox->SetGenerateOverlapEvents(false);
-
+    StaticBodyMesh->SetIsReplicated(true);
 }
 
 // Called when the game starts or when spawned
