@@ -41,12 +41,11 @@ public:
 	virtual void RestartPlayer(AController* NewPlayer) override;
 
 	/**
-	 * Killer에게 점수를 줍니다. 실제로 액터를 죽이거나 하지 않습니다.
-	 * @param Killer 
+	 * Killee의 반대편 팀에 점수를 줍니다. 실제로 액터를 죽이거나 하지 않습니다.
 	 * @param Killee 
 	 */
 	UFUNCTION(BlueprintCallable)
-	void HandleKill(AActor* Killer, AActor* Killee);
+	void HandleKill(AActor* Killee);
 	
 	virtual int32 GetNumPlayers() override
 	{

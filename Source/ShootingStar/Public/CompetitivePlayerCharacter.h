@@ -20,8 +20,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponD
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPlayerNameChanged, const FString&, PlayerName);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FKilled, AActor*, Killer, AActor*, Killee);
-
 UCLASS(Blueprintable)
 class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
 {
@@ -59,9 +57,6 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FPlayerNameChanged OnPlayerNameChanged;
-
-	UPROPERTY(BlueprintAssignable)
-	FKilled OnKilled;
 
 	UPROPERTY(BlueprintAssignable)
 	FWeaponChanged OnWeaponChanged;

@@ -20,6 +20,7 @@
 #include "ResourceActor.h"
 #include "Character_AnimInstance.h"
 #include "CompetitiveGameMode.h"
+#include "CompetitiveGameState.h"
 #include "CompetitiveSystemComponent.h"
 #include "InventoryComponent.h"
 #include "SupplyActor.h"
@@ -500,10 +501,14 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		GetMesh()->WakeAllRigidBodies();
 		GetMesh()->bBlendPhysics = true;
 
+		ACompetitiveGameState* const GameState = Cast<ACompetitiveGameState>(GetWorld()->GetGameState());
+		GameState->OnPlayerDead.Broadcast(GetController(), EventInstigator, IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr);
+
 		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
 		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, DeadTime, false);
-	
-		OnKilled.Broadcast(EventInstigator, GetController());
+
+		ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+		GameMode->HandleKill(GetController());
 	}
 
 	return DamageToApply;
@@ -597,7 +602,6 @@ void ACompetitivePlayerCharacter::DashEnd()
 void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData)
 {
 	FAIL_IF_NOT_SERVER();
-
 #pragma region Server
 	CurrentWeapon = NewWeaponData;
 	OnRep_CurrentWeapon();
