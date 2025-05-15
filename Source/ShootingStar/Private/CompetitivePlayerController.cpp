@@ -13,7 +13,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "Blueprint/UserWidget.h"
-#include "ServerComponent.h"
 #include "SupplyActor.h"
 #include "SupplyIndicatorUI.h"
 #include "ShootingStar/ShootingStar.h"
@@ -21,7 +20,6 @@
 ACompetitivePlayerController::ACompetitivePlayerController()
 {
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
-	ServerComponent = CreateDefaultSubobject<UServerComponent>(TEXT("ServerComponent"));
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
 
@@ -244,11 +242,13 @@ void ACompetitivePlayerController::LookMouse()
 	}
 }
 
-void ACompetitivePlayerController::EquipRocketLauncher()
+void ACompetitivePlayerController::EquipRocketLauncher_Implementation()
 {
+#pragma region Server
 	ACharacter* const ControllingCharacter = GetCharacter();
 	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(ControllingCharacter);
 	CompetitiveCharacter->EquipRocketLauncher();
+#pragma endregion Server
 }
 
 bool ACompetitivePlayerController::IsMovable()
@@ -257,10 +257,18 @@ bool ACompetitivePlayerController::IsMovable()
 	return IsValid(ControllingCharacter) && ControllingCharacter->IsMovable();
 }
 
-void ACompetitivePlayerController::Dash()
+void ACompetitivePlayerController::Dash_Implementation()
 {
-	ServerComponent->RequestDash();
+#pragma region Server
+	if (!IsMovable())
+	{
+		return;
+	}
+	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
+	CompetitiveCharacter->DashStart();
+#pragma endregion Server
 }
+
 void ACompetitivePlayerController::InteractResource_Implementation()
 {
 #pragma region Server
@@ -273,31 +281,40 @@ void ACompetitivePlayerController::InteractResource_Implementation()
 #pragma endregion Server
 }
 
-void ACompetitivePlayerController::Attack()
+void ACompetitivePlayerController::Attack_Implementation()
 {
+#pragma region Server
 	if (!IsMovable())
 	{
 		return;
 	}
-	
-	ServerComponent->RequestAttack();
+
+	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
+	CompetitiveCharacter->Attack();
+#pragma endregion Server
 }
 
-void ACompetitivePlayerController::EquipWeapon()
+void ACompetitivePlayerController::EquipWeapon_Implementation()
 {
+#pragma region Server
 	if (!IsMovable())
 	{
 		return;
 	}
 	
-	ServerComponent->RequestEquipWeapon();
+	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
+	CompetitiveCharacter->WeaponChange();
+#pragma endregion Server
 }
-void ACompetitivePlayerController::EquipKnifeWeapon()
+void ACompetitivePlayerController::EquipKnifeWeapon_Implementation()
 {
+#pragma region Server
 	if (!IsMovable())
 	{
 		return;
 	}
 	
-	ServerComponent->RequestEquipKnifeWeapon();
+	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
+	CompetitiveCharacter->WeaponKnifeChange();
+#pragma endregion Server
 }

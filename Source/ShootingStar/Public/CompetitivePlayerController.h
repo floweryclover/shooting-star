@@ -8,7 +8,6 @@
 #include "InputActionValue.h"
 #include "CompetitivePlayerController.generated.h"
 
-class UServerComponent;
 class UNiagaraSystem;
 class UInputMappingContext;
 class UInputAction;
@@ -66,11 +65,6 @@ public:
 		return TeamComponent;
 	}
 
-	UServerComponent* GetServerComponent() const
-	{
-		return ServerComponent;
-	}
-
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UUserWidget> InventoryWidget;
 
@@ -95,12 +89,22 @@ protected:
 
 	// Move fuction
 	void Move(const FInputActionValue& Value);
-	void Dash();
 	// Rotation Control
 	void LookMouse();
+
+	UFUNCTION(Reliable, Server)
 	void Attack();
+	
+	UFUNCTION(Reliable, Server)
+	void Dash();
+	
+	UFUNCTION(Reliable, Server)
 	void EquipWeapon();
+	
+	UFUNCTION(Reliable, Server)
 	void EquipKnifeWeapon();
+	
+	UFUNCTION(Reliable, Server)
 	void EquipRocketLauncher();
 
 	UFUNCTION(Reliable, Server)
@@ -124,9 +128,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UUserWidget> GameStateUI;
-
-	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<UServerComponent> ServerComponent;
 
 	bool IsMovable();
 };

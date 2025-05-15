@@ -192,20 +192,12 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 		{
 			if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()))
 			{
-				// 캐릭터 가져오기
-				ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(Controller->GetCharacter());
-				if (!Character)
-				{
-					UE_LOG(LogTemp, Error, TEXT("Supply: Character not found"));
-					return;
-				}
-
 				// 보급품 상자가 이미 열려있는지 확인
 				if (!SupplyActor->IsOpened())
 				{
 					// 무기 데이터 설정 및 장착
-					Character->SetWeaponData(SupplyActor->GetStoredWeapon());
-					Character->EquipRocketLauncher();
+					SetWeaponData(SupplyActor->GetStoredWeapon());
+					EquipRocketLauncher();
 					SupplyActor->PlayOpeningAnimation();
 				}
 			}
@@ -734,6 +726,35 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 	{
 		UE_LOG(LogTemp, Warning, TEXT("알 수 없는 무기입니다: %s"), *WeaponNameStr);
 	}
+#pragma endregion Server
+}
+
+void ACompetitivePlayerCharacter::CraftWeapon_Implementation(const FWeaponData& SelectWeapon,
+	const TArray<int32>& ClickedResources)
+{
+#pragma region Server
+	// 실제로 자원을 가졌는지 검증
+	const TArray<FResourceInventoryData>& ResourcesHave = InventoryComponent->GetAllResources();
+	for (int i = 0; i < static_cast<int>(EResourceType::End); ++i)
+	{
+		if (ClickedResources[i] <= 0)
+		{
+			continue;
+		}
+
+		if (!ResourcesHave[i].Resource)
+		{
+			return;
+		}
+
+		if (ResourcesHave[i].Count < ClickedResources[i])
+		{
+			return;
+		}
+	}
+
+	const FWeaponData CraftedWeapon = InventoryComponent->Craft_Weapon(SelectWeapon, ClickedResources);
+	SetWeaponData(CraftedWeapon);
 #pragma endregion Server
 }
 

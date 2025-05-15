@@ -66,9 +66,10 @@ public:
 	void WeaponChange();
 	void WeaponShotgunChange();
 	void WeaponKnifeChange();
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void SetWeaponData(const FWeaponData& NewWeaponData);
 
+	UFUNCTION(BlueprintCallable, Reliable, Server)
+	void CraftWeapon(const FWeaponData& SelectWeapon, const TArray<int32>& ClickedResources);
+	
 	//
 	// 자원 관련
 	//
@@ -239,6 +240,9 @@ protected:
 	FTimerHandle KnifeAttackCoolDownTimer;
 	float KnifeAttackCooldown = 1.0f;
 	bool bCanKnifeAttack = true;
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void SetWeaponData(const FWeaponData& NewWeaponData);
 
 	//
 	// 전투 관련

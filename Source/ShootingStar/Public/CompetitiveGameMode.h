@@ -82,13 +82,7 @@ public:
 	{
 		return SupplyActors;
 	}
-
-	UFUNCTION(BlueprintCallable)
-	void InteractResource(AController* Controller);
-
-	UFUNCTION(BlueprintCallable)
-	void CraftWeapon(AController* Controller, const FWeaponData& Weapon, const TArray<int32>& Resources);
-
+	
 	/**
 	 * MapGeneratorComponent::GetPlayerPoints()의 좌표들 중 Player를 제외한 모든 플레이어와의 거리값 합이 최대인 좌표를 반환하는 함수.
 	 * @return 

@@ -216,52 +216,6 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee
 	CompetitiveSystemComponent->GiveKillScoreForTeam(Team_Attacker);
 }
 
-void ACompetitiveGameMode::InteractResource(AController* const Controller)
-{
-
-}
-
-void ACompetitiveGameMode::CraftWeapon(AController* const Controller, const FWeaponData& Weapon,
-                                       const TArray<int32>& Resources)
-{
-	if (!IsValid(Controller))
-	{
-		return;
-	}
-
-	UInventoryComponent* const InventoryComponent = Cast<UInventoryComponent>(
-		Controller->GetComponentByClass(UInventoryComponent::StaticClass()));
-	ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(Controller->GetCharacter());
-	if (!IsValid(InventoryComponent)
-		|| !IsValid(Character))
-	{
-		return;
-	}
-
-	// 실제로 자원을 가졌는지 검증
-	const TArray<FResourceInventoryData>& ResourcesHave = InventoryComponent->GetAllResources();
-	for (int i = 0; i < static_cast<int>(EResourceType::End); ++i)
-	{
-		if (Resources[i] <= 0)
-		{
-			continue;
-		}
-
-		if (!ResourcesHave[i].Resource)
-		{
-			return;
-		}
-
-		if (ResourcesHave[i].Count < Resources[i])
-		{
-			return;
-		}
-	}
-
-	const FWeaponData CraftedWeapon = InventoryComponent->Craft_Weapon(Weapon, Resources);
-	Character->SetWeaponData(CraftedWeapon);
-}
-
 FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* const Player) const
 {
 	if (!IsValid(Player))
