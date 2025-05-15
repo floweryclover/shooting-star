@@ -1,7 +1,6 @@
 // Copyright 2025 ShootingStar. All Rights Reserved.
 
 #include "CompetitivePlayerCharacter.h"
-#include "CompetitivePlayerController.h"
 #include "PickAxe.h"
 #include "Gun.h"
 #include "Knife.h"
@@ -81,14 +80,20 @@ void ACompetitivePlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SpawnPickAxe();
-
-	Health = MaxHealth;
 	if (TeamComponent)
 	{
 		SetTeamMaterial(TeamComponent->GetTeam());
 		TeamComponent->OnTeamChanged.AddDynamic(this, &ACompetitivePlayerCharacter::OnTeamChanged);
 	}
+
+	if (!HasAuthority())
+	{
+		return;
+	}
+#pragma region Server
+	SpawnPickAxe();
+	Health = MaxHealth;
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::PostInitializeComponents()
@@ -115,9 +120,12 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, LastInteractTime);
 }
 
-void ACompetitivePlayerCharacter::SetTeamMaterial(ETeam Team)
+void ACompetitivePlayerCharacter::SetTeamMaterial(const ETeam Team)
 {
-	UMaterialInterface* TeamColor = nullptr;
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
+	UMaterialInterface* TeamColor;
 	switch (Team)
 	{
 	case ETeam::Blue:
@@ -134,6 +142,7 @@ void ACompetitivePlayerCharacter::SetTeamMaterial(ETeam Team)
 	{
 		GetMesh()->SetMaterial(0, TeamColor);
 	}
+#pragma endregion Server
 }
 
 float ACompetitivePlayerCharacter::GetHealthPercent() const
@@ -226,17 +235,20 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 
 void ACompetitivePlayerCharacter::Destroyed()
 {
-	if (SpawnedPickAxe)
+	if (HasAuthority())
 	{
-		SpawnedPickAxe->Destroy();
-	}
-	if (EquippedGun)
-	{
-		EquippedGun->Destroy();
-	}
-	if (EquippedKnife)
-	{
-		EquippedKnife->Destroy();
+		if (SpawnedPickAxe)
+		{
+			SpawnedPickAxe->Destroy();
+		}
+		if (EquippedGun)
+		{
+			EquippedGun->Destroy();
+		}
+		if (EquippedKnife)
+		{
+			EquippedKnife->Destroy();
+		}
 	}
 	
 	Super::Destroyed();
@@ -244,6 +256,9 @@ void ACompetitivePlayerCharacter::Destroyed()
 
 void ACompetitivePlayerCharacter::WeaponChange()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (!RifleClass)
 	{
 		UE_LOG(LogTemp, Error, TEXT("RifleClass is nullptr! Check the Blueprint setting."));
@@ -258,9 +273,13 @@ void ACompetitivePlayerCharacter::WeaponChange()
 	AGun* SpawnedRifle = GetWorld()->SpawnActor<AGun>(RifleClass, Params);
 	SpawnedRifle->SetReplicates(true);
 	EquipGun(SpawnedRifle);
+#pragma endregion Server
 }
 void ACompetitivePlayerCharacter::WeaponShotgunChange()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (!ShotgunClass)
 	{
 		UE_LOG(LogTemp, Error, TEXT("RifleClass is nullptr! Check the Blueprint setting."));
@@ -275,10 +294,14 @@ void ACompetitivePlayerCharacter::WeaponShotgunChange()
 	AGun* SpawnedRifle = GetWorld()->SpawnActor<AGun>(ShotgunClass, Params);
 	SpawnedRifle->SetReplicates(true);
 	EquipGun(SpawnedRifle);
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::WeaponKnifeChange()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (!KnifeClass)
 	{
 		UE_LOG(LogTemp, Error, TEXT("KnifeClass is nullptr! Check the Blueprint setting."));
@@ -294,10 +317,14 @@ void ACompetitivePlayerCharacter::WeaponKnifeChange()
 	SpawnedKnife->SetReplicates(true);
 	SpawnedKnife->SetActorEnableCollision(true);
 	EquipKnife(SpawnedKnife);
+#pragma endregion  Server
 }
 
 void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	UE_LOG(LogTemp, Warning, TEXT("PlayerTeam: %d"), (int32)TeamComponent->GetTeam());
 	UnEquipPickAxe();
 	if (IsValid(EquippedKnife))
@@ -314,9 +341,13 @@ void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 	EquippedGun = GunToEquip;
 	OnRep_EquippedGun();
 	OnRep_EquippedKnife();
+#pragma endregion Server
 }
 void ACompetitivePlayerCharacter::EquipRocketLauncher()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	UnEquipPickAxe();
 	if (IsValid(EquippedKnife))
 	{
@@ -338,10 +369,14 @@ void ACompetitivePlayerCharacter::EquipRocketLauncher()
 	EquippedGun = SpawnedRocketLauncher;
 	OnRep_EquippedGun();
 	OnRep_EquippedKnife();
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	UnEquipPickAxe();
 	if (IsValid(EquippedGun))
 	{
@@ -362,10 +397,14 @@ void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 	EquippedKnife = KnifeToEquip;
 	OnRep_EquippedKnife();
 	OnRep_EquippedGun();
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::Attack()
 {
+	FAIL_IF_NOT_SERVER();
+	
+#pragma region Server
 	AnimInstance->IsAttack = true;
 
 	if (EquippedGun == nullptr && EquippedKnife == nullptr)
@@ -401,10 +440,14 @@ void ACompetitivePlayerCharacter::Attack()
 		OnRep_KnifeAttackCount();
 		KnifeAttackCount += 1;
 	}
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::SpawnPickAxe()
 {
+	FAIL_IF_NOT_SERVER();
+	
+#pragma region Server
 	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
 	SpawnedPickAxe->SetReplicates(true);
 
@@ -414,10 +457,14 @@ void ACompetitivePlayerCharacter::SpawnPickAxe()
 	SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		TEXT("Weapon_R_Socket"));
 	SpawnedPickAxe->SetActorRelativeTransform(RelativeTransform);
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::EquipPickAxe()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (SpawnedPickAxe)
 	{
 		FTransform RelativeTransform;
@@ -427,6 +474,7 @@ void ACompetitivePlayerCharacter::EquipPickAxe()
 		                                  TEXT("Weapon_R_Socket"));
 		SpawnedPickAxe->SetActorRelativeTransform(RelativeTransform);
 	}
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::UnEquipPickAxe()
@@ -451,6 +499,9 @@ void ACompetitivePlayerCharacter::PlayMiningAnim()
 
 void ACompetitivePlayerCharacter::PullTrigger()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (EquippedGun)
 	{
 		// 총에서 소켓 위치와 회전 가져오기
@@ -463,11 +514,15 @@ void ACompetitivePlayerCharacter::PullTrigger()
 		FireCount += 1;
 		OnRep_FireCount();
 	}
+#pragma endregion Server
 }
 
 float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
                                               class AController* EventInstigator, AActor* DamageCauser)
 {
+	FAIL_IF_NOT_SERVER_V(0.0f);
+
+#pragma region Server
 	if (!IsValid(EventInstigator))
 	{
 		UE_LOG(LogShootingStar, Error, TEXT("EventInstigator is invalid!"));
@@ -530,18 +585,28 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 	}
 
 	return DamageToApply;
+#pragma endregion Server
 }
+
 void ACompetitivePlayerCharacter::ApplyDoTDamage(AController* InInstigator, AActor* InCauser)
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (GetWorldTimerManager().IsTimerActive(DoTTimerHandle))
 		return; // 이미 적용 중이면 무시하
 
 	DoTInstigator = InInstigator;
 	DoTCauser = InCauser;
 	GetWorldTimerManager().SetTimer(DoTTimerHandle, this, &ACompetitivePlayerCharacter::ApplyDoTTick, 1.0f, true, 0.0f);
+#pragma endregion Server
 }
+
 void ACompetitivePlayerCharacter::ApplyDoTTick()
 {
+	FAIL_IF_NOT_SERVER();
+	
+#pragma region Server
 	const float TickDamage = 5.0f;
 	const float TotalDuration = 5.0f;
 	const float TickInterval = 1.0f;
@@ -559,15 +624,23 @@ void ACompetitivePlayerCharacter::ApplyDoTTick()
 		GetWorldTimerManager().ClearTimer(DoTTimerHandle);
 		CurrentDoTTime = 0.0f;
 	}
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::DestroyCharacter()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	Destroy();
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::DashStart()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	FVector Velocity = GetVelocity();
 
 	FVector DashDirection = FVector(Velocity.X, Velocity.Y, 0.f);
@@ -586,16 +659,24 @@ void ACompetitivePlayerCharacter::DashStart()
 	GetCharacterMovement()->BrakingFrictionFactor = 0.f;
 	LaunchCharacter(DashDirection * 5000.f, true, true);
 	GetWorldTimerManager().SetTimer(DashTimer, this, &ACompetitivePlayerCharacter::DashEnd, 0.1f, false);
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::DashEnd()
 {
+	FAIL_IF_NOT_SERVER();
+	
+#pragma region Server
 	GetCharacterMovement()->StopMovementImmediately();
 	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData)
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	CurrentWeapon = NewWeaponData;
 	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
 	MaxHealth = 100;
@@ -661,9 +742,12 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 	{
 		UE_LOG(LogTemp, Warning, TEXT("알 수 없는 무기입니다: %s"), *WeaponNameStr);
 	}
+#pragma endregion Server
 }
+
 void ACompetitivePlayerCharacter::SetInBush(bool bIsInBush)
 {
+	FAIL_IF_NOT_SERVER();
 }
 
 FWeaponData ACompetitivePlayerCharacter::GetWeaponData()
@@ -673,36 +757,52 @@ FWeaponData ACompetitivePlayerCharacter::GetWeaponData()
 
 void ACompetitivePlayerCharacter::KnifeAttackStart()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (EquippedKnife)
 	{
 		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(true);
 	}
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::KnifeAttackEnd()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (EquippedKnife)
 	{
 		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(false);
 	}
+#pragma endregion Server
 }
 void ACompetitivePlayerCharacter::PickAxeAttackStart()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (SpawnedPickAxe)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PickAxe Onwer: %s"), *SpawnedPickAxe->GetAttachParentActor()->GetName());
 		UE_LOG(LogTemp, Warning, TEXT("PickAxeAttackStart"));
 		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(true);
 	}
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::PickAxeAttackEnd()
 {
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
 	if (SpawnedPickAxe)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PickAxeAttackEnd"));
 		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(false);
 	}
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::InteractResource()
@@ -739,19 +839,20 @@ void ACompetitivePlayerCharacter::InteractResource()
 
 void ACompetitivePlayerCharacter::SetPlayerName(const FString& Name)
 {
-	if (!HasAuthority())
-	{
-		return;
-	}
+	FAIL_IF_NOT_SERVER();
 
+#pragma region Server
 	PlayerName = Name;
 	OnRep_PlayerName();
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::ResetKnifeAttackCooldown()
 {
+#pragma region Server
 	bCanKnifeAttack = true;
 	UE_LOG(LogTemp, Log, TEXT("Knife attack cooldown reset."));
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::OnRep_EquippedGun()
