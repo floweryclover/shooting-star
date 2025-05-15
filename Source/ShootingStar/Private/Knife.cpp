@@ -88,8 +88,7 @@ void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* Ot
     {
         return;
     }
-
-    ->GetName());
+    
     UTeamComponent* const OtherTeamComponent = OtherActor->FindComponentByClass<UTeamComponent>();
     
     if (OtherActor == GetAttachParentActor() || !bDamageableFlag)
