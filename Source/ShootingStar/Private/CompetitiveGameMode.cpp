@@ -175,24 +175,18 @@ void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 	UTeamComponent* const TeamComponent = CompetitivePlayerController->GetTeamComponent();
 	CompetitivePlayerCharacter->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
 	CompetitivePlayerCharacter->SetPlayerName(NewPlayer->GetPlayerState<APlayerState>()->GetPlayerName());
-	CompetitivePlayerCharacter->OnKilled.AddDynamic(this, &ACompetitiveGameMode::HandleKill);
 
 	NewPlayer->Possess(CompetitivePlayerCharacter);
 }
 
-void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee)
+void ACompetitiveGameMode::HandleKill(AActor* const Killee)
 {
 	// 지금 게임 중인지 검증
 	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
 	{
 		return;
 	}
-
-	if (!IsValid(Killer))
-	{
-		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - Killer is invalid."));
-		return;
-	}
+	
 	if (!IsValid(Killee))
 	{
 		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - Killee is invalid."));
@@ -200,20 +194,14 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee
 	}
 
 	// 팀이 유효한지 검증
-	UTeamComponent* const TeamComponent_Killer = Cast<UTeamComponent>(
-		Killer->GetComponentByClass(UTeamComponent::StaticClass()));
 	UTeamComponent* const TeamComponent_Killee = Cast<UTeamComponent>(
 		Killee->GetComponentByClass(UTeamComponent::StaticClass()));
-	if (!IsValid(TeamComponent_Killer) || !IsValid(TeamComponent_Killee)
-		|| TeamComponent_Killer->GetTeam() == ETeam::None || TeamComponent_Killee->GetTeam() == ETeam::None
-		|| TeamComponent_Killer->GetTeam() == TeamComponent_Killee->GetTeam())
+	if (!IsValid(TeamComponent_Killee) || TeamComponent_Killee->GetTeam() == ETeam::None)
 	{
-		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - One or more TeamComponent is invalid or None."));
 		return;
 	}
-
-	const ETeam Team_Attacker = TeamComponent_Killer->GetTeam();
-	CompetitiveSystemComponent->GiveKillScoreForTeam(Team_Attacker);
+	
+	CompetitiveSystemComponent->GiveKillScoreForTeam(TeamComponent_Killee->GetTeam() == ETeam::Blue ? ETeam::Red : ETeam::Blue);
 }
 
 FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* const Player) const
