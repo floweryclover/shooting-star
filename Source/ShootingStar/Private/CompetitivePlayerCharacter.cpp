@@ -603,6 +603,7 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 	OnRep_CurrentWeapon();
 	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
 	MaxHealth = 100;
+	Health = FMath::Min(Health, MaxHealth);
 	IncreasedDamage = 1;
 	DamageTypeClass = UBullet_DamageType::StaticClass();
 	OnRep_CurrentWeapon();
