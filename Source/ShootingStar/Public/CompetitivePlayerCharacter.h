@@ -37,6 +37,9 @@ public:
 
 	// 리스폰 시간.
 	constexpr static float DeadTime = 3.0f;
+
+	// 근접 무기 공격 쿨타임.
+	constexpr static float KnifeCoolTime = 1.0f;
 	
 	ACompetitivePlayerCharacter();
 
@@ -81,19 +84,6 @@ public:
 	void CraftWeapon(const FWeaponData& SelectWeapon, const TArray<int32>& ClickedResources);
 
 	void InteractResource();
-
-	//
-	// 전투 관련
-	//
-
-	UFUNCTION()
-	void KnifeAttackStart();
-	UFUNCTION()
-	void KnifeAttackEnd();
-	UFUNCTION()
-	void PickAxeAttackStart();
-	UFUNCTION()
-	void PickAxeAttackEnd();
 
 	//
 	// Getter, Setter
@@ -240,10 +230,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	float IncreasedDamage = 1;
 
-	FTimerHandle KnifeAttackCoolDownTimer;
-	float KnifeAttackCooldown = 1.0f;
-	bool bCanKnifeAttack = true;
-
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void SetWeaponData(const FWeaponData& NewWeaponData);
 
@@ -263,6 +249,8 @@ protected:
 	TObjectPtr<AActor> DoTCauser = nullptr;
 
 	float CurrentDoTTime = 0.0f;
+
+	float LastKnifeAttackTime = 0.0f;
 	
 private:
 	
@@ -285,7 +273,6 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "Bush")
 	void SetInBush(bool bIsInBush);
 	bool bInBush;
-	bool bIsKnifeAttacking;
 
 	//
 	// Replication Notifies
@@ -336,7 +323,9 @@ private:
 
 	void RefreshAnimInstance();
 
-	void ResetKnifeAttackCooldown();
-
 	void SetTeamMaterial(ETeam Team);
+
+	void Tick_HandleResourceInteraction(float DeltaSeconds);
+
+	void Tick_HandleKnifeAttack(float DeltaSeconds);
 };
