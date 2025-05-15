@@ -91,8 +91,14 @@ void ACompetitivePlayerCharacter::BeginPlay()
 		return;
 	}
 #pragma region Server
-	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
+	FActorSpawnParameters Params;
+	Params.Owner = GetController();
+	Params.Instigator = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
+	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass, Params);
 	SpawnedPickAxe->SetReplicates(true);
+	SpawnedPickAxe->SetActorEnableCollision(true);
 	Health = MaxHealth;
 	OnRep_Health();
 #pragma endregion Server
@@ -326,7 +332,7 @@ void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 
 	if (IsValid(KnifeToEquip))
 	{
-		KnifeToEquip->SetknifeDamage(KnifeToEquip->GetknifeDamage() * IncreasedDamage);
+		KnifeToEquip->SetKnifeDamage(KnifeToEquip->GetKnifeDamage() * IncreasedDamage);
 	}
 
 	EquippedKnife = KnifeToEquip;
@@ -900,12 +906,30 @@ void ACompetitivePlayerCharacter::Tick_HandleKnifeAttack(const float DeltaSecond
 	}
 	const float CurrentTime = GetWorld()->GetTimeSeconds();
 	const bool bIsKnifeAttacking = CurrentTime < LastKnifeAttackTime + KnifeCoolTime;
-	if (IsValid(EquippedKnife))
+
+	if (bIsKnifeAttacking)
 	{
-		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(bIsKnifeAttacking);
+		if (IsValid(EquippedKnife))
+		{
+			EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(true);
+		}
+		if (IsValid(SpawnedPickAxe))
+		{
+			SpawnedPickAxe->SetOwner(GetController());
+			SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(true);
+		}
 	}
-	if (IsValid(SpawnedPickAxe))
+	else
 	{
-		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(bIsKnifeAttacking);
+		if (IsValid(EquippedKnife))
+		{
+			EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(false);
+			EquippedKnife->ResetDamageableFlag();
+		}
+		if (IsValid(SpawnedPickAxe))
+		{
+			SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(false);
+			SpawnedPickAxe->ResetDamageableFlag();
+		}
 	}
 }
