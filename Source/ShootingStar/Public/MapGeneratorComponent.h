@@ -115,7 +115,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "20"))
 	int32 numFences = 5;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
-	int32 numResources = 30;
+	int32 numResources = 25;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
 	int32 numDecos = 20;
 
