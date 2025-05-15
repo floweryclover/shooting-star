@@ -450,17 +450,6 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 	FAIL_IF_NOT_SERVER_V(0.0f);
 
 #pragma region Server
-	if (!IsValid(EventInstigator))
-	{
-		UE_LOG(LogShootingStar, Error, TEXT("EventInstigator is invalid!"));
-		return 0.0f;
-	}
-	if (!IsValid(DamageCauser))
-	{
-		UE_LOG(LogShootingStar, Error, TEXT("DamageCauser is invalid!"));
-		return 0.0f;
-	}
-
 	ACompetitivePlayerCharacter* InstigatorCharacter = Cast<ACompetitivePlayerCharacter>(EventInstigator->GetPawn());
 	if (IsValid(InstigatorCharacter) && InstigatorCharacter->GetTeamComponent()->GetTeam() == this->GetTeamComponent()->GetTeam())
 		return 0.0f;
@@ -502,12 +491,16 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		GetMesh()->bBlendPhysics = true;
 
 		ACompetitiveGameState* const GameState = Cast<ACompetitiveGameState>(GetWorld()->GetGameState());
-		GameState->OnPlayerDead.Broadcast(GetController(), EventInstigator, IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr);
+		GameState->OnPlayerDead.Broadcast(Cast<APlayerController>(GetController()), Cast<APlayerController>(EventInstigator), IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr);
 
 		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
 		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, DeadTime, false);
 
 		ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+		UE_LOG(LogShootingStar, Log, TEXT("Dead: %s, Killer: %s, Reason: %s"),
+			(IsValid(GetController()) ? *GetController()->GetClass()->GetName() : TEXT("Unknown")),
+			(IsValid(EventInstigator) ? *EventInstigator->GetClass()->GetName() : TEXT("Unknown")),
+			(IsValid(DamageCauser) ? *DamageCauser->GetClass()->GetName() : TEXT("Unknown")));
 		GameMode->HandleKill(GetController());
 	}
 
