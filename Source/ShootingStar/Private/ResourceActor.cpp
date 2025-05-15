@@ -9,11 +9,35 @@
 // Sets default values
 AResourceActor::AResourceActor()
 {
+    PrimaryActorTick.bStartWithTickEnabled = true;
+    PrimaryActorTick.bCanEverTick = true;
+    
     bReplicates = true;
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	RootComponent = MeshComponent;
 
     MeshComponent->SetCollisionResponseToChannel(CollisionChannels::ResourceActor, ECR_Block);
+}
+
+void AResourceActor::Tick(const float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    
+    if (RemainingHitShakeTime <= 0.0f)
+    {
+        SetActorLocation(OriginLocation);
+        return;
+    }
+    
+    const float Alpha = (HitShakeTime - RemainingHitShakeTime) / HitShakeTime;  // 0 -> 1
+    const float Scalar = HitShakeRadius * FMath::Sin(Alpha * 4 * PI) * (1.0f - Alpha);
+    
+    const FVector DeltaLocation = HitLocation - OriginLocation;
+    const FVector DeltaLocationRotated = FVector{DeltaLocation.Y, -DeltaLocation.X, DeltaLocation.Z};
+    
+    SetActorLocation(OriginLocation + DeltaLocationRotated.GetSafeNormal2D() * Scalar);
+
+    RemainingHitShakeTime -= DeltaSeconds;
 }
 
 void AResourceActor::OnConstruction(const FTransform& Transform)
@@ -31,6 +55,12 @@ void AResourceActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 }
 
 #endif
+
+void AResourceActor::Hit(const FVector& InHitLocation)
+{
+    RemainingHitShakeTime = HitShakeTime;
+    HitLocation = InHitLocation;
+}
 
 void AResourceActor::UpdateMesh_AfterHarvest()
 {
@@ -89,12 +119,22 @@ void AResourceActor::UpdateVisual()
     }
 }
 
+void AResourceActor::BeginPlay()
+{
+    Super::BeginPlay();
+
+    OriginLocation = GetActorLocation();
+}
+
 void AResourceActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(AResourceActor, ResourceData);
     DOREPLIFETIME(AResourceActor, ResourceState);
+    DOREPLIFETIME(AResourceActor, RemainingHitShakeTime);
+    DOREPLIFETIME(AResourceActor, OriginLocation);
+    DOREPLIFETIME(AResourceActor, HitLocation);
 }
 
 void AResourceActor::OnRep_ResourceData()
