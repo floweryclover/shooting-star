@@ -6,6 +6,8 @@
 #include "Animation/AnimInstance.h"
 #include "Character_AnimInstance.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMiningAnimationHit);
+
 /**
  * 
  */
@@ -16,6 +18,9 @@ class SHOOTINGSTAR_API UCharacter_AnimInstance : public UAnimInstance
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(BlueprintAssignable)
+	FOnMiningAnimationHit OnMiningAnimationHit;
+	
 	UCharacter_AnimInstance();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
@@ -43,6 +48,12 @@ public:
 	// void PlayAKIdleMontage();
 	// void StopAKIdleMontage();
 
+	void StopMiningMontage();
+
+protected:
+	UFUNCTION()
+	void AnimNotify_MiningHit(UAnimNotify* Notify);
+	
 private:
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> RocketLauncher_Shoot_Montage;

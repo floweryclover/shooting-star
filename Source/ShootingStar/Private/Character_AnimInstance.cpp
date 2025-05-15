@@ -90,6 +90,20 @@ void UCharacter_AnimInstance::PlayKnifeAttackMontage(float DesiredPlayTime, cons
 	PlayMontage(KnifeAttackMontage, DesiredPlayTime, LoopCount, true);
 }
 
+void UCharacter_AnimInstance::StopMiningMontage()
+{
+	if (CurrentMontage == MiningLoopMontage)
+	{
+		CurrentMontage = nullptr;
+	}
+	Montage_Stop(0.2f, MiningLoopMontage);
+}
+
+void UCharacter_AnimInstance::AnimNotify_MiningHit(UAnimNotify* Notify)
+{
+	OnMiningAnimationHit.Broadcast();
+}
+
 void UCharacter_AnimInstance::PlayMontage(UAnimMontage* Montage, float DesiredPlayTime, const int32 LoopCount, const bool bShouldStopOthers)
 {
 	if (Montage_IsPlaying(DeadMontage))

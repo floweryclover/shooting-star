@@ -102,6 +102,8 @@ void ACompetitivePlayerCharacter::BeginPlay()
 	SpawnedPickAxe->SetActorEnableCollision(true);
 	Health = MaxHealth;
 	OnRep_Health();
+
+	AnimInstance->OnMiningAnimationHit.AddDynamic(this, &ACompetitivePlayerCharacter::OnMiningAnimationHit);
 #pragma endregion Server
 }
 
@@ -845,9 +847,40 @@ void ACompetitivePlayerCharacter::OnRep_MiningCount()
 	AnimInstance->PlayMiningMontage(InteractTimeRequired, 4);
 }
 
+void ACompetitivePlayerCharacter::OnRep_LastInteractTime()
+{
+	if (LastInteractTime == 0.0f)
+	{
+		AnimInstance->StopMiningMontage();
+	}
+}
+
 void ACompetitivePlayerCharacter::OnTeamChanged(const ETeam Team)
 {
 	SetTeamMaterial(Team);
+}
+
+void ACompetitivePlayerCharacter::OnMiningAnimationHit()
+{
+#pragma region Server
+	FVector Start = GetActorLocation();
+	Start.Z = 0.f;
+	FRotator Rotation = GetActorRotation();
+
+	FVector End = Start + Rotation.Vector() * 130.f;
+	
+	FHitResult Hit;
+	if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor)
+		|| Hit.GetActor()->ActorHasTag("Supply"))
+	{
+		return;
+	}
+
+	if (AResourceActor* const Resource = Cast<AResourceActor>(Hit.GetActor()))
+	{
+		Resource->Hit(GetActorLocation());
+	}
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::RefreshAnimInstance()
@@ -883,6 +916,7 @@ void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float Del
 	{
 		// 캐고 있는데 자원 사라짐
 		LastInteractTime = 0.0f;
+		OnRep_LastInteractTime();
 		return;
 	}
 

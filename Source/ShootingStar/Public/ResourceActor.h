@@ -15,19 +15,26 @@ class SHOOTINGSTAR_API AResourceActor : public AActor
 {
 	GENERATED_BODY()
 	
-public:	
+public:
+	static constexpr float HitShakeTime = 0.1f;
+	static constexpr float HitShakeRadius = 30.0f;
 	// Sets default values for this actor's properties
 	AResourceActor();
+
+	virtual void Tick(float DeltaSeconds) override;
 
 	const UResourceDataAsset* GetResourceData() const
 	{
 		return ResourceData;
 	}
 
+	void Hit(const FVector& InHitLocation);
+
 	void UpdateMesh_AfterHarvest();
 	void UpdateVisual();
 
 protected:
+	virtual void BeginPlay() override;
 	// Called when the game starts or when spawned
 	virtual void OnConstruction(const FTransform& Transform) override;
 
@@ -55,4 +62,13 @@ private:
 
 	UFUNCTION()
 	void OnRep_ResourceState();
+
+	UPROPERTY(Replicated)
+	float RemainingHitShakeTime = 0.0f;
+
+	UPROPERTY(Replicated)
+	FVector OriginLocation;
+
+	UPROPERTY(Replicated)
+	FVector HitLocation;
 };

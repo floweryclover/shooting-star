@@ -202,7 +202,7 @@ protected:
 	// 자원 관련
 	//
 
-	UPROPERTY(Replicated, BlueprintReadOnly)
+	UPROPERTY(ReplicatedUsing=OnRep_LastInteractTime, BlueprintReadOnly)
 	float LastInteractTime = 0.0f;
 
 	//
@@ -314,8 +314,14 @@ private:
 	void OnRep_MiningCount();
 
 	UFUNCTION()
+	void OnRep_LastInteractTime();
+	
+	UFUNCTION()
 	void OnTeamChanged(ETeam Team);
 
+	UFUNCTION()
+	void OnMiningAnimationHit();
+	
 	void RefreshAnimInstance();
 
 	void SetTeamMaterial(ETeam Team);
