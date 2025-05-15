@@ -918,7 +918,6 @@ void ACompetitivePlayerCharacter::Tick_HandleKnifeAttack(const float DeltaSecond
 	const bool bIsKnifeAttacking = CurrentTime < LastKnifeAttackTime + KnifeCoolTime;
 	if (IsValid(EquippedKnife))
 	{
-		UE_LOG(LogShootingStar, Log, TEXT("칼 공격중: %d"), static_cast<int32>(bIsKnifeAttacking));
 		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(bIsKnifeAttacking);
 	}
 	if (IsValid(SpawnedPickAxe))
