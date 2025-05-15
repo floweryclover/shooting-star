@@ -93,6 +93,7 @@ void ACompetitivePlayerCharacter::BeginPlay()
 #pragma region Server
 	SpawnPickAxe();
 	Health = MaxHealth;
+	OnRep_Health();
 #pragma endregion Server
 }
 
@@ -535,21 +536,20 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 	if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass->IsChildOf(UDoT_DamageType::StaticClass()))
 	{
 		Health -= DamageToApply * 100 / Armor;
+		OnRep_Health();
 		ApplyDoTDamage(EventInstigator, DamageCauser);
 	}
 	else
 	{
 		// 데미지 타입이 명시되지 않았을 경우 기본 처리
 		Health -= DamageToApply * 100 / Armor;
+		OnRep_Health();
 	}
 	HitCount += 1;
 	OnRep_HitCount();
 
 	if (!bWasAlreadyDead && IsDead())
 	{
-		float MontageLength = AnimInstance->DeadMontage->GetPlayLength();
-		UE_LOG(LogTemp, Warning, TEXT("Dead montage length: %f"), MontageLength);
-
 		UCapsuleComponent* Capsule = GetCapsuleComponent();
 		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -563,7 +563,7 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		GetMesh()->bBlendPhysics = true;
 
 		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
-		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, MontageLength, false);
+		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, DeadTime, false);
 	
 		OnKilled.Broadcast(EventInstigator, GetController());
 	}
@@ -662,6 +662,7 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 
 #pragma region Server
 	CurrentWeapon = NewWeaponData;
+	OnRep_CurrentWeapon();
 	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
 	MaxHealth = 100;
 	IncreasedDamage = 1;
@@ -876,7 +877,7 @@ void ACompetitivePlayerCharacter::OnRep_Health()
 		bUseControllerRotationYaw = false;
 		bUseControllerRotationRoll = false;
 		
-		AnimInstance->PlayDeadMontage();
+		AnimInstance->PlayDeadMontage(DeadTime);
 	}
 }
 
@@ -947,7 +948,7 @@ void ACompetitivePlayerCharacter::OnRep_PlayerName()
 
 void ACompetitivePlayerCharacter::OnRep_MiningCount()
 {
-	AnimInstance->PlayMiningMontage();
+	AnimInstance->PlayMiningMontage(InteractTimeRequired);
 }
 
 void ACompetitivePlayerCharacter::OnTeamChanged(const ETeam Team)
