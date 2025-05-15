@@ -24,6 +24,7 @@
 #include "CompetitiveSystemComponent.h"
 #include "InventoryComponent.h"
 #include "SupplyActor.h"
+#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
 
@@ -493,15 +494,25 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		GetMesh()->bBlendPhysics = true;
 
 		ACompetitiveGameState* const GameState = Cast<ACompetitiveGameState>(GetWorld()->GetGameState());
-		GameState->OnPlayerDead.Broadcast(Cast<APlayerController>(GetController()), Cast<APlayerController>(EventInstigator), IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr);
+		FString KilleeName;
+		FString KillerName;
+		if (APlayerController* const KilleeController = Cast<APlayerController>(GetController()); IsValid(KilleeController) && IsValid(KilleeController->PlayerState))
+		{
+			KilleeName = KilleeController->PlayerState->GetPlayerName();
+		}
+		if (APlayerController* const KillerController = Cast<APlayerController>(EventInstigator); IsValid(KillerController) && IsValid(KillerController->PlayerState))
+		{
+			KillerName = KillerController->PlayerState->GetPlayerName();
+		}
+		GameState->MulticastPlayerDead(KilleeName, KillerName, IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr);
 
 		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
 		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, DeadTime, false);
 
 		ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
 		UE_LOG(LogShootingStar, Log, TEXT("Dead: %s, Killer: %s, Reason: %s"),
-			(IsValid(GetController()) ? *GetController()->GetClass()->GetName() : TEXT("Unknown")),
-			(IsValid(EventInstigator) ? *EventInstigator->GetClass()->GetName() : TEXT("Unknown")),
+			*KilleeName,
+			*KillerName,
 			(IsValid(DamageCauser) ? *DamageCauser->GetClass()->GetName() : TEXT("Unknown")));
 		GameMode->HandleKill(GetController());
 	}
