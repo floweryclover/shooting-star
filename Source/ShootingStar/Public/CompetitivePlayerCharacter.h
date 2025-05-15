@@ -17,7 +17,9 @@ class UWidgetComponent;
 class UTeamComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponData);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPlayerNameChanged, const FString&, PlayerName);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FKilled, AActor*, Killer, AActor*, Killee);
 
 UCLASS(Blueprintable)
@@ -33,16 +35,14 @@ public:
 
 	virtual void Destroyed() override;
 
-	/** Returns TopDownCameraComponent subobject **/
+	virtual float TakeDamage(float DamageAmount,
+	                         FDamageEvent const& DamageEvent,
+	                         AController* EventInstigator,
+	                         AActor* DamageCauser) override;
+	
 	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
-	/** Returns CameraBoom subobject **/
+
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Direction", meta = (AllowPrivateAccess = "true"))
-	class UArrowComponent* FacingArrow;
-
-	UPROPERTY(EditDefaultsOnly)
-	TArray<AGun*> WeaponList;
 
 	UPROPERTY(BlueprintAssignable)
 	FPlayerNameChanged OnPlayerNameChanged;
@@ -50,95 +50,24 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FKilled OnKilled;
 
-	// 팀 관련
-	UFUNCTION()
-	void SetTeamMaterial(ETeam Team);
-
-	UPROPERTY(EditDefaultsOnly, Category = "Team")
-	UMaterialInterface* RedTeamMaterial;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Team")
-	UMaterialInterface* BlueTeamMaterial;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Team")
-	UMaterialInterface* DefaultMaterial;
-	//대쉬 관련
-	FTimerHandle DashTimer;
-	void DashStart();
-	void DashEnd();
-
-	//무기 관련
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_CurrentWeapon, Category = "Weapon")
-	FWeaponData CurrentWeapon{};
-
-	UPROPERTY(EditDefaultsOnly)
-	float Armor = 100;
-
-	UPROPERTY(EditDefaultsOnly)
-	float IncreasedDamage = 1;
-
 	UPROPERTY(BlueprintAssignable)
 	FWeaponChanged OnWeaponChanged;
-	
-	FTimerHandle KnifeAttackCoolDownTimer;
-	float KnifeAttackCooldown = 1.0f;
-	bool bCanKnifeAttack = true;
-	void ResetKnifeAttackCooldown();
-
-	// 외부에서 무기 데이터를 세팅하는 함수
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void SetWeaponData(const FWeaponData& NewWeaponData);
 
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	FWeaponData GetWeaponData();
+	
+	FORCEINLINE bool IsDead() const { return Health == 0; }
 
-	UFUNCTION()
-	FORCEINLINE void AddWeaponToList(AGun* Weapon) { WeaponList.Add(Weapon); }
-
-	virtual float TakeDamage(float DamageAmount, 
-		struct FDamageEvent const& DamageEvent, 
-		class AController* EventInstigator, 
-		AActor* DamageCauser) override;
-
-	TSubclassOf<UDamageType> DamageTypeClass;
-	FTimerHandle DoTTimerHandle;
-	AController* DoTInstigator = nullptr;
-	AActor* DoTCauser = nullptr;
-	float CurrentDoTTime = 0.0f;
-	void ApplyDoTDamage(AController* InInstigator, AActor* InCauser);
-	void ApplyDoTTick();
-	FORCEINLINE bool IsDead() { return Health == 0; }
-	void Attack();
-	void SpawnPickAxe();
-	void EquipPickAxe();
-	void UnEquipPickAxe();
-	void PlayMiningAnim();
-	void PullTrigger();
-	UFUNCTION(BlueprintCallable, Category = "Health")
-	float GetHealthPercent() const;
-	UFUNCTION(BlueprintCallable, Category = "Health")
-	float GetHealth() const;
-	void WeaponChange();
-	void WeaponShotgunChange();
-	void WeaponKnifeChange();
+	void DashStart();
 	void EquipGun(AGun* Equip);
 	void EquipKnife(AKnife* Equip);
 	void EquipRocketLauncher();
-	void DestroyCharacter();
-	UFUNCTION(BlueprintCallable, Category = "Bush")
-	void SetInBush(bool bIsInBush);
-	bool bInBush;
-	// �ڿ� ��ȣ �ۿ�
-	void OnInteract();
-	bool bIsKnifeAttacking;
-	UFUNCTION()
-	void KnifeAttackStart();
-	UFUNCTION()
-	void KnifeAttackEnd();
-	UFUNCTION()
-	void PickAxeAttackStart();
-	UFUNCTION()
-	void PickAxeAttackEnd();
+	void Attack();
+	void WeaponChange();
+	void WeaponShotgunChange();
+	void WeaponKnifeChange();
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void SetWeaponData(const FWeaponData& NewWeaponData);
 
 	//
 	// 자원 관련
@@ -148,7 +77,19 @@ public:
 	constexpr static float InteractTimeRequired = 3.0f;
 
 	void InteractResource();
-	
+
+	//
+	// 전투 관련
+	//
+
+	UFUNCTION()
+	void KnifeAttackStart();
+	UFUNCTION()
+	void KnifeAttackEnd();
+	UFUNCTION()
+	void PickAxeAttackStart();
+	UFUNCTION()
+	void PickAxeAttackEnd();
 
 	//
 	// Getter, Setter
@@ -161,72 +102,57 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool IsMovable() const
 	{
-		if (bDeadNotify)
+		if (IsDead())
 		{
 			return false;
 		}
-		
+
 		const float CurrentTime = GetWorld()->GetTimeSeconds();
 		return LastInteractTime == 0.0f || CurrentTime > LastInteractTime + InteractTimeRequired;
 	}
 
 	UFUNCTION(BlueprintCallable)
 	void SetPlayerName(const FString& Name);
-	
+
 	UCharacter_AnimInstance* GetAnimInstance() const
 	{
 		return AnimInstance;
 	}
-	
+
 	UInventoryComponent* GetInventoryComponent() const
 	{
 		return InventoryComponent;
 	}
-	
+
 	UTeamComponent* GetTeamComponent() const
 	{
 		return TeamComponent;
+	}
+
+	float GetIncreasedDamage() const
+	{
+		return IncreasedDamage;
 	}
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
-	UPROPERTY()
-	class UCharacter_AnimInstance* AnimInstance = nullptr;
-
-	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<UInventoryComponent> InventoryComponent;
-	
-	UPROPERTY(BlueprintReadOnly)
-	TObjectPtr<UTeamComponent> TeamComponent;
-
-	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_PlayerName)
-	FString PlayerName;
-
-	//
-	// 자원 관련
-	//
-	UPROPERTY(Replicated, BlueprintReadOnly)
-	float LastInteractTime = 0.0f;
-	
-private:
 
 	/** Top down camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* TopDownCameraComponent;
+	TObjectPtr<UCameraComponent> TopDownCameraComponent;
 
 	/** Camera boom positioning the camera above the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
+	TObjectPtr<USpringArmComponent> CameraBoom;
 
-	FTimerHandle timer;
+	FTimerHandle Timer;
 
 	UPROPERTY(Replicated)
 	float MaxHealth = 100;
 
-	UPROPERTY(Replicated, VisibleAnywhere)
+	UPROPERTY(ReplicatedUsing=OnRep_Health, VisibleAnywhere)
 	float Health;
 
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
@@ -244,33 +170,136 @@ private:
 	TSubclassOf<APickAxe> PickAxeClass;
 
 	UPROPERTY(VisibleAnywhere)
-	APickAxe* SpawnedPickAxe;
+	TObjectPtr<APickAxe> SpawnedPickAxe;
 	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedGun)
-	AGun* EquippedGun;
+	TObjectPtr<AGun> EquippedGun;
 	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedKnife)
-	AKnife* EquippedKnife;
+	TObjectPtr<AKnife> EquippedKnife;
 
 	UPROPERTY(EditDefaultsOnly)
-	AGun* Gun = nullptr;
+	TObjectPtr<AGun> Gun;
 	UPROPERTY(EditDefaultsOnly)
-	AKnife* Knife = nullptr;
+	TObjectPtr<AKnife> Knife;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Direction", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UArrowComponent> FacingArrow;
 
-	// 애니메이션 동기화용 카운트. 값 변경시켜 클라이언트에서 감지하는 것 이외에는 값에 의미 없음
+	UPROPERTY()
+	TObjectPtr<UCharacter_AnimInstance> AnimInstance;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UInventoryComponent> InventoryComponent;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UTeamComponent> TeamComponent;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_PlayerName)
+	FString PlayerName;
+
+	//
+	// 팀 관련
+	//
+
+	UPROPERTY(EditDefaultsOnly, Category = "Team")
+	UMaterialInterface* RedTeamMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Team")
+	UMaterialInterface* BlueTeamMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Team")
+	UMaterialInterface* DefaultMaterial;
+
+	//
+	// 자원 관련
+	//
+
+	UPROPERTY(Replicated, BlueprintReadOnly)
+	float LastInteractTime = 0.0f;
+
+	//
+	// 대쉬 관련
+	//
+
+	FTimerHandle DashTimer;
+	void DashEnd();
+
+	//
+	//무기 관련
+	//
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_CurrentWeapon, Category = "Weapon")
+	FWeaponData CurrentWeapon{};
+
+	UPROPERTY(EditDefaultsOnly)
+	float Armor = 100;
+
+	UPROPERTY(EditDefaultsOnly)
+	float IncreasedDamage = 1;
+
+	FTimerHandle KnifeAttackCoolDownTimer;
+	float KnifeAttackCooldown = 1.0f;
+	bool bCanKnifeAttack = true;
+
+	//
+	// 전투 관련
+	//
+
+	UPROPERTY()
+	TSubclassOf<UDamageType> DamageTypeClass;
+	
+	FTimerHandle DoTTimerHandle;
+
+	UPROPERTY()
+	TObjectPtr<AController> DoTInstigator = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<AActor> DoTCauser = nullptr;
+
+	float CurrentDoTTime = 0.0f;
+	
+private:
+	
+	//
+	// 전투 관련
+	//
+	
+	void ApplyDoTDamage(AController* InInstigator, AActor* InCauser);
+	void ApplyDoTTick();
+	void SpawnPickAxe();
+	void EquipPickAxe();
+	void UnEquipPickAxe();
+	void PlayMiningAnim();
+	void PullTrigger();
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	float GetHealthPercent() const;
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	float GetHealth() const;
+	void DestroyCharacter();
+	UFUNCTION(BlueprintCallable, Category = "Bush")
+	void SetInBush(bool bIsInBush);
+	bool bInBush;
+	bool bIsKnifeAttacking;
+
+	//
+	// Replication Notifies
+	// 애니메이션 동기화용 카운트. 값에 의미 없음 - 변화를 감지해서 클라이언트에서 애니메이션 출력 등을 위함임
+	//
+
 	UPROPERTY(ReplicatedUsing=OnRep_FireCount)
 	int32 FireCount;
 
 	UPROPERTY(ReplicatedUsing=OnRep_KnifeAttackCount)
 	int32 KnifeAttackCount;
-	
+
 	UPROPERTY(ReplicatedUsing=OnRep_HitCount)
 	int32 HitCount;
-	
+
 	UPROPERTY(ReplicatedUsing=OnRep_MiningCount)
 	int32 MiningCount;
-	
-	UPROPERTY(ReplicatedUsing=OnRep_bDeadNotify)
-	bool bDeadNotify;
-	
+
+	UFUNCTION()
+	void OnRep_Health();
+
 	UFUNCTION()
 	void OnRep_EquippedGun();
 
@@ -287,21 +316,20 @@ private:
 	void OnRep_HitCount();
 
 	UFUNCTION()
-	void OnRep_bDeadNotify();
-
-	UFUNCTION()
 	void OnRep_CurrentWeapon();
 
 	UFUNCTION()
 	void OnRep_PlayerName();
-	
+
 	UFUNCTION()
 	void OnRep_MiningCount();
 
 	UFUNCTION()
 	void OnTeamChanged(ETeam Team);
-	
+
 	void RefreshAnimInstance();
+
+	void ResetKnifeAttackCooldown();
+
+	void SetTeamMaterial(ETeam Team);
 };
-
-

@@ -111,7 +111,6 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, KnifeAttackCount);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, FireCount);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, HitCount);
-	DOREPLIFETIME(ACompetitivePlayerCharacter, bDeadNotify);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, CurrentWeapon);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, PlayerName);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, Health);
@@ -122,9 +121,6 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 
 void ACompetitivePlayerCharacter::SetTeamMaterial(const ETeam Team)
 {
-	FAIL_IF_NOT_SERVER();
-
-#pragma region Server
 	UMaterialInterface* TeamColor;
 	switch (Team)
 	{
@@ -142,7 +138,6 @@ void ACompetitivePlayerCharacter::SetTeamMaterial(const ETeam Team)
 	{
 		GetMesh()->SetMaterial(0, TeamColor);
 	}
-#pragma endregion Server
 }
 
 float ACompetitivePlayerCharacter::GetHealthPercent() const
@@ -563,9 +558,6 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		float MontageLength = AnimInstance->DeadMontage->GetPlayLength();
 		UE_LOG(LogTemp, Warning, TEXT("Dead montage length: %f"), MontageLength);
 
-		bDeadNotify = true;
-		OnRep_bDeadNotify();
-
 		UCapsuleComponent* Capsule = GetCapsuleComponent();
 		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -579,7 +571,7 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		GetMesh()->bBlendPhysics = true;
 
 		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
-		GetWorldTimerManager().SetTimer(timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, MontageLength, false);
+		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, MontageLength, false);
 	
 		OnKilled.Broadcast(EventInstigator, GetController());
 	}
@@ -855,6 +847,18 @@ void ACompetitivePlayerCharacter::ResetKnifeAttackCooldown()
 #pragma endregion Server
 }
 
+void ACompetitivePlayerCharacter::OnRep_Health()
+{
+	if (Health <= 0.0f)
+	{
+		bUseControllerRotationPitch = false;
+		bUseControllerRotationYaw = false;
+		bUseControllerRotationRoll = false;
+		
+		AnimInstance->PlayDeadMontage();
+	}
+}
+
 void ACompetitivePlayerCharacter::OnRep_EquippedGun()
 {
 	if (IsValid(EquippedGun))
@@ -908,15 +912,6 @@ void ACompetitivePlayerCharacter::OnRep_KnifeAttackCount()
 void ACompetitivePlayerCharacter::OnRep_HitCount()
 {
 	AnimInstance->PlayHitMontage();
-}
-
-void ACompetitivePlayerCharacter::OnRep_bDeadNotify()
-{
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
-	
-	AnimInstance->PlayDeadMontage();
 }
 
 void ACompetitivePlayerCharacter::OnRep_CurrentWeapon()
