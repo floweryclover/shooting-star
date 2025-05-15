@@ -3,10 +3,6 @@
 #include "ObstacleGenerator.h"
 #include "MapGeneratorComponent.h"
 
-UObstacleGenerator::UObstacleGenerator()
-{
-}
-
 void UObstacleGenerator::Initialize(UMapGeneratorComponent* InOwner)
 {
     Owner = InOwner;
@@ -46,6 +42,9 @@ void UObstacleGenerator::GenerateObjects()
         if (!Owner->CheckLocation(RandomLocation))
         {
             RandomLocation = Owner->FindNearestValidLocation(RandomLocation, obstacleMinDistance, EObjectMask::ObstacleMask);
+
+            if (RandomLocation == FVector::ZeroVector)
+                continue;
         }
 
         int32 RandomIndex = FMath::RandRange(0, obstacleMeshes.Num() - 1);

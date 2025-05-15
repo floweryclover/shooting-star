@@ -61,6 +61,8 @@ public:
 	FORCEINLINE int32 GetMaxClusterNum() const { return maxClusterNum; }
 	FORCEINLINE TArray<UStaticMesh*> GetDecoMeshes() const { return decoMeshes; }
 
+	FORCEINLINE float GetFenceGenerationProbability() const { return fenceGenerationProbability; }
+
 	FORCEINLINE int32 GetMapHalfSize() const { return mapHalfSize; }
 	FORCEINLINE float GetPatternSpacing() const { return patternSpacing; }
 
@@ -68,19 +70,23 @@ public:
 
 	FORCEINLINE const TArray<FVector>& GetPlayerSpawnPoints() const { return PlayerSpawnPoints; }
 	
-	// Map Generation Functions
 	void Initialize();
 	void InitializeMapCoordinate(int32 GridSize);
 	void GenerateMap();
-	// void RegisterMapActors();
 	void SetObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType);
 	void SetObjectRegion(FVector Location, UStaticMesh* ObjectMesh, EObjectMask ObjectType);
+	void ClearObjectTypeFromMap(EObjectMask ObjectType);
 	bool HasObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType);
 	bool CheckLocation(FVector Location);
 	bool PlaceObject(FVector Location, UStaticMesh* ObjectMesh);
+
+	// 자원을 재생성하는 함수
+    void RegenerateResources();
+
 	FVector GetRandomPosition();
 	FVector GetRandomOffsetPosition(FVector origin, float offset);
 	FVector FindNearestValidLocation(FVector Origin, float SearchRadius, EObjectMask ObjectType);
+	
 	
 	FORCEINLINE int32 GetIndex(int32 X, int32 Y)
 	{
@@ -94,10 +100,6 @@ public:
 	FVector GetRandomSpawnLocation();
 
 	FVector GetSupplySpawnLocation();
-
-	// // Map Static Actors
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map Static Actors", meta = (AllowPrivateAccess = "true"))
-	// TArray<UStaticMesh*> MapStaticActors;
 
 protected:
 	FVector GetRandomSupplySpawnLocation();
@@ -113,7 +115,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "20"))
 	int32 numFences = 5;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
-	int32 numResources = 30;
+	int32 numResources = 25;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
 	int32 numDecos = 20;
 
@@ -126,6 +128,10 @@ protected:
 	float fenceMinDistance = 300.f;
 	UPROPERTY(EditAnywhere, Category = "Distance Settings", meta = (ClampMin = "10.0", ClampMax = "200.0"))
 	float decoMinDistance = 50.f;
+	
+	// 펜스 생성 확률
+	UPROPERTY(EditAnywhere, Category = "Fence Settings", meta = (ClampMin = "1", ClampMax = "100"))
+	float fenceGenerationProbability = 80.f;
 
 	// Pattern Settings
 	UPROPERTY(EditAnywhere, Category = "Pattern Settings", meta = (ClampMin = "50.0", ClampMax = "500.0"))

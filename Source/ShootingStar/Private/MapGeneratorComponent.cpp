@@ -81,48 +81,18 @@ void UMapGeneratorComponent::GenerateMap()
     UE_LOG(MapGenerator, Log, TEXT("Generate Map Completed"));
 }
 
-// void UMapGeneratorComponent::RegisterMapActors()
-// {
-//     if (MapStaticActors.Num() == 0)
-//     {
-//         UE_LOG(MapGenerator, Warning, TEXT("No static mesh actors to register"));
-//         return;
-//     }
-
-//     for (AStaticMeshActor* SM_Actor : MapStaticActors)
-//     {
-//         if (!IsValid(SM_Actor))
-//         {
-//             UE_LOG(MapGenerator, Warning, TEXT("Invalid static mesh actor found in MapStaticActors"));
-//             continue;
-//         }
-
-//         UStaticMeshComponent* MeshComp = SM_Actor->GetStaticMeshComponent();
-//         if (!IsValid(MeshComp))
-//         {
-//             UE_LOG(MapGenerator, Warning, TEXT("Invalid static mesh component in actor"));
-//             continue;
-//         }
-
-//         UStaticMesh* ActorStaticMesh = MeshComp->GetStaticMesh();
-//         if (!IsValid(ActorStaticMesh))
-//         {
-//             UE_LOG(MapGenerator, Warning, TEXT("Invalid static mesh in component"));
-//             continue;
-//         }
-//         FVector ActorLocation = SM_Actor->GetActorLocation();
-//         if (PlaceObject(ActorLocation, ActorStaticMesh))
-//         {
-//             SetObjectRegion(ActorLocation, ActorStaticMesh, EObjectMask::ObstacleMask);
-//         }
-//     }
-// }
-
 // 좌표 배열에 오브젝트를 설정하는 함수
 void UMapGeneratorComponent::SetObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType)
 {
     int32 Index = GetIndex(X, Y);
     mapCoordinate[Index] |= static_cast<uint8>(ObjectType); // 비트 설정
+}
+
+void UMapGeneratorComponent::ClearObjectTypeFromMap(EObjectMask ObjectType)
+{
+    uint8 mask = ~static_cast<uint8>(ObjectType); // 제거할 비트만 0으로 만드는 마스크
+    for (uint8& coordinate : mapCoordinate)
+        coordinate &= mask; // 해당 비트만 클리어
 }
 
 void UMapGeneratorComponent::SetObjectRegion(FVector Location, UStaticMesh* ObjectMesh, EObjectMask ObjectType)
@@ -131,7 +101,7 @@ void UMapGeneratorComponent::SetObjectRegion(FVector Location, UStaticMesh* Obje
 
     // 바운딩 박스 가져오기
     FBoxSphereBounds Bounds = ObjectMesh->GetBounds();
-    FVector Extent = Bounds.BoxExtent; // 바운딩 박스의 반경
+    FVector Extent = Bounds.BoxExtent + FVector(100.f, 100.f, 0.f); // 바운딩 박스의 반경, 실제 크기보다 약간 크게 설정
     FVector Min = Location - Extent;  // 최소 좌표
     FVector Max = Location + Extent;  // 최대 좌표
 
@@ -150,9 +120,7 @@ void UMapGeneratorComponent::SetObjectRegion(FVector Location, UStaticMesh* Obje
     for (int32 X = MinX; X <= MaxX; ++X)
     {
         for (int32 Y = MinY; Y <= MaxY; ++Y)
-        {
             SetObjectAtArray(X, Y, ObjectType);
-        }
     }
 }
 
@@ -179,8 +147,7 @@ FVector UMapGeneratorComponent::GetRandomOffsetPosition(FVector origin, float of
     return FVector(X, Y, 0.f);
 }
 
-/// 해당 위치가 유효한지 검사하는 함수 (충돌 방지)
-/// 충돌 검사에서 좌표 검사로 수정할 예정
+// 해당 위치가 유효한지 검사하는 함수 (충돌 방지)
 bool UMapGeneratorComponent::CheckLocation(FVector Location)
 {
     // 좌표를 맵 배열의 인덱스로 변환
@@ -231,7 +198,7 @@ FVector UMapGeneratorComponent::FindNearestValidLocation(FVector Origin, float S
         }
     }
     
-    return Origin;
+    return FVector::ZeroVector;
 }
 
 // 오브젝트를 원하는 위치에 설정하는 함수
@@ -340,30 +307,38 @@ FVector UMapGeneratorComponent::GetRandomSpawnLocation()
     const int32 RandomIndex = FMath::RandRange(0, PlayerSpawnPoints.Num() - 1);
     return PlayerSpawnPoints[RandomIndex];
 }
+#pragma endregion
+
+#pragma region Resource Spawn
 FVector UMapGeneratorComponent::GetSupplySpawnLocation()
 {
     FVector DropLocation = GetRandomSupplySpawnLocation();
 
     while (!CheckLocation(DropLocation))
     {
-        // FindNearestValidLocation(DropLocation, 1000.f, EObjectMask::ResourceMask) -> GetRandonSupplySpawnLocation();
-        DropLocation = GetRandomSupplySpawnLocation();
+        DropLocation = FindNearestValidLocation(DropLocation, 1500.f, EObjectMask::ResourceMask);
+        
+        if (DropLocation == FVector::ZeroVector)
+            DropLocation = GetRandomSupplySpawnLocation();
+        else
+            break;
     }
 
     SetObjectAtArray(
-        FMath::FloorToInt(DropLocation.X / GetPatternSpacing()),
-        FMath::FloorToInt(DropLocation.Y /GetPatternSpacing()),
+        FMath::FloorToInt(DropLocation.X),
+        FMath::FloorToInt(DropLocation.Y),
         EObjectMask::ResourceMask
     );
 
     return DropLocation;
 }
+
 FVector UMapGeneratorComponent::GetRandomSupplySpawnLocation()
 {
     // 맵 중앙 기준으로 현재 자기장 반경 내 랜덤 위치 선정
     const float RandomAngle = FMath::RandRange(0.f, 360.f);
     const float CurrentRadius = Cast<ACompetitiveGameMode>(GetOwner())->GetSafeZone()->GetRadius() * 50.f; // scale 고려하여 곱셈
-    const float RandomRadius = FMath::RandRange(0.f, CurrentRadius * 0.8f);  // 자기장 80% 이내 위치에 생성
+    const float RandomRadius = FMath::Min(FMath::RandRange(0.f, CurrentRadius * 0.8f), mapHalfSize);  // 자기장 80% 이내 위치에 생성
     FVector DropLocation(
         RandomRadius * FMath::Cos(RandomAngle),
         RandomRadius * FMath::Sin(RandomAngle),
@@ -373,3 +348,11 @@ FVector UMapGeneratorComponent::GetRandomSupplySpawnLocation()
     return DropLocation;
 }
 #pragma endregion
+
+void UMapGeneratorComponent::RegenerateResources()
+{
+    ClearObjectTypeFromMap(EObjectMask::ResourceMask);
+
+    if (IsValid(resourceGenerator))
+        resourceGenerator->GenerateObjects();
+}

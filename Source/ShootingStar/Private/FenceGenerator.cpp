@@ -3,10 +3,6 @@
 #include "FenceGenerator.h"
 #include "MapGeneratorComponent.h"
 
-UFenceGenerator::UFenceGenerator()
-{
-}
-
 void UFenceGenerator::Initialize(UMapGeneratorComponent* InOwner)
 {
 	Owner = InOwner;
@@ -15,6 +11,7 @@ void UFenceGenerator::Initialize(UMapGeneratorComponent* InOwner)
 	{
 		numFences = Owner->GetNumFences();
 		fenceMinDistance = Owner->GetFenceMinDistance();
+        fenceGenerationProbability = Owner->GetFenceGenerationProbability();
 		fenceMesh = Owner->GetFenceMesh();
 	}
 }
@@ -44,7 +41,10 @@ void UFenceGenerator::GenerateObjects()
 			FVector RandomLocation = Owner->GetRandomPosition();
 			if (!Owner->CheckLocation(RandomLocation))
 			{
-				RandomLocation = Owner->FindNearestValidLocation(RandomLocation, 500.f, EObjectMask::FenceMask);
+				RandomLocation = Owner->FindNearestValidLocation(RandomLocation, fenceMinDistance * 2, EObjectMask::FenceMask);
+
+                if (RandomLocation == FVector::ZeroVector)
+                    continue;
 			}
 
 			EPatternType RandomPattern = static_cast<EPatternType>(FMath::RandRange(0, 2));
@@ -52,9 +52,9 @@ void UFenceGenerator::GenerateObjects()
 			GenerateFencePattern(RandomLocation, RandomPattern, GetRandomFenceRadius(600.f, 1200.f), FencePositions);
 
 			if (FencePositions.Num() == 0)
-			{
-				UE_LOG(MapGenerator, Warning, TEXT("(Fence) No fence positions generated."));
-			}
+            {
+                UE_LOG(MapGenerator, Warning, TEXT("(Fence) No fence positions generated."));
+            }
 			else
 			{
 				PlaceFence(FencePositions);
@@ -73,7 +73,7 @@ void UFenceGenerator::GenerateObjects()
 void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType PatternType, float Radius,
                                            TArray<FFenceData>& OutPositions)
 {
-// fence의 위치를 조정하기 위한 offset
+    // fence의 위치를 조정하기 위한 offset
     float fenceDistOffset = fenceMinDistance * 0.5f;
     EPatternDirection direction = static_cast<EPatternDirection>(FMath::RandRange(0, 3));
     
@@ -84,7 +84,7 @@ void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType P
             // 세로 방향 펜스
             for (float X = -Radius; X <= Radius; X += fenceMinDistance)
             {
-                if (FMath::RandRange(1, 100) <= 80) // 80% 확률로 생성
+                if (FMath::RandRange(1, 100) <= fenceGenerationProbability) // 80% 확률로 생성
                 {
                     OutPositions.Add(FFenceData(
                         FVector(Center.X + X, Center.Y + Radius + fenceDistOffset, 0.f),
@@ -100,7 +100,7 @@ void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType P
             // 가로 방향 펜스
             for (float Y = -Radius; Y <= Radius; Y += fenceMinDistance)
             {
-                if (FMath::RandRange(1, 100) <= 80) // 80% 확률로 생성
+                if (FMath::RandRange(1, 100) <= fenceGenerationProbability) // 80% 확률로 생성
                 {
                     OutPositions.Add(FFenceData(
                         FVector(Center.X + Radius + fenceDistOffset, Center.Y + Y, 0.f),
@@ -134,13 +134,13 @@ void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType P
             {
                 for (int32 y = -UHeight; y <= UHeight; ++y)
                 {
-                    if (y == -UHeight && FMath::RandRange(1, 100) <= 80) // 80% 확률로 생성
+                    if (y == -UHeight && FMath::RandRange(1, 100) <= fenceGenerationProbability) // 80% 확률로 생성
                     {
                         FVector LocalPos(x * fenceMinDistance, y * fenceMinDistance - fenceDistOffset, 0.f);
                         FVector WorldPos = BaseRotation.RotateVector(LocalPos) + Center;
                         OutPositions.Add(FFenceData(WorldPos, BaseRotation));
                     }
-                    else if ((x == -UWidth || x == UWidth) && y != UHeight && FMath::RandRange(1, 100) <= 80) // 80% 확률로 생성
+                    else if ((x == -UWidth || x == UWidth) && y != UHeight && FMath::RandRange(1, 100) <= fenceGenerationProbability) // 80% 확률로 생성
                     {
                         FVector LocalPos(x * fenceMinDistance, y * fenceMinDistance + (x / FMath::Abs(x) * fenceDistOffset), 0.f);
                         FVector WorldPos = BaseRotation.RotateVector(LocalPos) + Center;
@@ -169,13 +169,13 @@ void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType P
             {
                 for (int32 y = -LHeight; y <= LHeight; ++y)
                 {
-                    if (y == -LHeight && FMath::RandRange(1, 100) <= 80) // 80% 확률로 생성
+                    if (y == -LHeight && FMath::RandRange(1, 100) <= fenceGenerationProbability) // 80% 확률로 생성
                     {
                         FVector LocalPos(x * fenceMinDistance, y * fenceMinDistance - fenceDistOffset, 0.f);
                         FVector WorldPos = BaseRotation.RotateVector(LocalPos) + Center;
                         OutPositions.Add(FFenceData(WorldPos, BaseRotation));
                     }
-                    else if (x == -LWidth && y != LHeight && FMath::RandRange(1, 100) <= 80) // 80% 확률로 생성
+                    else if (x == -LWidth && y != LHeight && FMath::RandRange(1, 100) <= fenceGenerationProbability) // 80% 확률로 생성
                     {
                         FVector LocalPos(x * fenceMinDistance - fenceDistOffset, y * fenceMinDistance, 0.f);
                         FVector WorldPos = BaseRotation.RotateVector(LocalPos) + Center;

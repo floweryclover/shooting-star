@@ -4,10 +4,6 @@
 #include "MapGeneratorComponent.h"
 #include "ResourceActor.h"
 
-UResourceGenerator::UResourceGenerator()
-{
-}
-
 void UResourceGenerator::Initialize(UMapGeneratorComponent* InOwner)
 {
     Owner = InOwner;
@@ -26,6 +22,9 @@ void UResourceGenerator::Initialize(UMapGeneratorComponent* InOwner)
 
 void UResourceGenerator::GenerateObjects()
 {
+    // 기존 자원들 제거
+    ClearSpawnedResources();
+    
     UE_LOG(MapGenerator, Log, TEXT("(Resource) Generating Resources Started"));
 
     if (!ResourceActorClass)
@@ -43,6 +42,9 @@ void UResourceGenerator::GenerateObjects()
         if (!Owner->CheckLocation(RandomLocation))
         {
             RandomLocation = Owner->FindNearestValidLocation(RandomLocation, 500.f, EObjectMask::ResourceMask);
+
+            if (RandomLocation == FVector::ZeroVector)
+                continue;
         }
 
         UResourceDataAsset* SelectedResource = SelectResourceDataAsset();
@@ -56,8 +58,6 @@ void UResourceGenerator::GenerateObjects()
         SpawnAttempts++;
     }
 
-    UE_LOG(MapGenerator, Log, TEXT("(Resource) Placed %d resources after %d attempts"), PlacedObjects, SpawnAttempts);
-
     UE_LOG(MapGenerator, Log, TEXT("(Resource) Generating Resources Completed"));
 }
 
@@ -69,16 +69,11 @@ UResourceDataAsset* UResourceGenerator::SelectResourceDataAsset()
     float RandomValue = FMath::FRand();
     float AccumulatedProbability = 0.0f;
 
-    UE_LOG(MapGenerator, Log, TEXT("Selecting resource data asset... in %d Resource Spawn Data "), ResourceSpawnData.Num());
     for (const FResourceSpawnData& SpawnData : ResourceSpawnData)
     {
         AccumulatedProbability += SpawnData.SpawnProbability;
         if (RandomValue <= AccumulatedProbability)
-        {
-            UE_LOG(MapGenerator, Log, TEXT("Selected resource: %s with probability: %.2f"), 
-                *SpawnData.ResourceData->DisplayName.ToString(), SpawnData.SpawnProbability);
             return SpawnData.ResourceData;
-        }
     }
 
     UE_LOG(MapGenerator, Warning, TEXT("No resource data selected based on probabilities, so returning 나무 as fallback."));
@@ -107,8 +102,22 @@ bool UResourceGenerator::SpawnResourceActor(const FVector& Location, UResourceDa
     {
         ResourceActor->ResourceData = ResourceData;
         ResourceActor->UpdateVisual();
+        SpawnedResources.Add(ResourceActor);
         return true;
     }
 
     return false;
+}
+
+void UResourceGenerator::ClearSpawnedResources()
+{
+    // 기존에 스폰된 자원들 제거
+    for (AResourceActor* Resource : SpawnedResources)
+    {
+        if (IsValid(Resource))
+            Resource->Destroy();
+    }
+    SpawnedResources.Empty();
+
+    UE_LOG(MapGenerator, Log, TEXT("(Resource) Cleared all spawned resources"));
 }

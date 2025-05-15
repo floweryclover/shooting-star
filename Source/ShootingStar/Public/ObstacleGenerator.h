@@ -12,10 +12,8 @@ class SHOOTINGSTAR_API UObstacleGenerator : public UObject, public IObjectGenera
     GENERATED_BODY()
 
 public:
-    UObstacleGenerator();
-
-    virtual void GenerateObjects() override;
     virtual void Initialize(class UMapGeneratorComponent* InOwner) override;
+    virtual void GenerateObjects() override;
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numObstacles = 20;
