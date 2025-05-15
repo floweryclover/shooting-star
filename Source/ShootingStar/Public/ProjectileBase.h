@@ -26,7 +26,10 @@ public:
 
 	UPROPERTY()
 	ETeam ShooterTeam;
-
+	
+	UPROPERTY()
+	TObjectPtr<AActor> WeaponFired;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

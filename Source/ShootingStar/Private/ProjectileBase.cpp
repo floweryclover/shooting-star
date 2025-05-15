@@ -121,7 +121,7 @@ void AProjectileBase::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, A
 		if (ShooterTeam != OtherTeamComponent->GetTeam())
 		{
 			DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
-			UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, Cast<APlayerController>(GetOwner()), GetOwner(), DamageTypeClass);
+			UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, Cast<APlayerController>(GetOwner()), WeaponFired, DamageTypeClass);
 		}
 	}
 

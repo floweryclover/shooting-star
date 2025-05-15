@@ -100,7 +100,7 @@ void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* Ot
         DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
 
         // 데미지 적용
-        UGameplayStatics::ApplyDamage(OtherActor, KnifeDamage, Cast<APlayerController>(GetOwner()), GetOwner(), nullptr);
+        UGameplayStatics::ApplyDamage(OtherActor, KnifeDamage, Cast<APlayerController>(GetOwner()), this, nullptr);
         UE_LOG(LogTemp, Warning, TEXT("Knife Hit: Player Hit"));
         
         bDamageableFlag = false;

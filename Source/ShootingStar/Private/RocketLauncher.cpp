@@ -69,6 +69,7 @@ void ARocketLauncher::ProjectileFire(FVector loc, FRotator rot, FRotator bulletR
 		if (UTeamComponent* TeamComp = Shooter->FindComponentByClass<UTeamComponent>())
 		{
 			projectile->ShooterTeam = TeamComp->GetTeam(); // 발사자의 팀 정보를 저장
+			projectile->WeaponFired = this;
 		}
 
 		FVector FireDirection = bulletRot.Vector();
