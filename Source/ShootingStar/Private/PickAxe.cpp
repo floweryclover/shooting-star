@@ -9,37 +9,17 @@ APickAxe::APickAxe()
     // Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
     
-    if (BodyMesh)
-    {
-        BodyMesh->SetVisibility(false);
-        BodyMesh->SetHiddenInGame(true);
-        BodyMesh->SetComponentTickEnabled(false);
-        BodyMesh->Deactivate();
-        BodyMesh = nullptr;
-    }
+    BodyMesh->SetVisibility(false);
+    BodyMesh->SetHiddenInGame(true);
+    BodyMesh->SetComponentTickEnabled(false);
+    BodyMesh->Deactivate();
+
+    AttackHitBox->SetupAttachment(StaticBodyMesh);
     
     static ConstructorHelpers::FObjectFinder<UStaticMesh> STATICPICKAXE(TEXT("StaticMesh'/Game/lowpoly-mine-assets/source/Pickaxe.Pickaxe'"));
     if (STATICPICKAXE.Succeeded()) {
         StaticBodyMesh->SetStaticMesh(STATICPICKAXE.Object);
     }
-    if (AttackHitBox)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("AttackHitBox is valid in PickAxe"));
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("AttackHitBox is NULL in PickAxe!"));
-    }
-    AttackHitBox->SetupAttachment(StaticBodyMesh);
-    AttackHitBox->SetGenerateOverlapEvents(false);
-    StaticBodyMesh->SetIsReplicated(true);
-}
-
-// Called when the game starts or when spawned
-void APickAxe::BeginPlay()
-{
-    Super::BeginPlay();
-    SetupOverlapEvent();
 }
 
 // Called every frame
@@ -67,4 +47,10 @@ void APickAxe::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* 
     {
         return;
     }
+}
+
+void APickAxe::BeginPlay()
+{
+    Super::BeginPlay();
+    SetKnifeDamage(20.0f);
 }
