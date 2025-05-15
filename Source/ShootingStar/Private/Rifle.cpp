@@ -85,7 +85,7 @@ void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 		if (ACompetitivePlayerCharacter* OwnerCharacter = Cast<ACompetitivePlayerCharacter>(GetOwner()))
 		{
 			// 캐릭터의 공격력을 총알에 전달
-			float NewDamage = OwnerCharacter->IncreasedDamage * projectile->GetProjectileDamage();
+			float NewDamage = OwnerCharacter->GetIncreasedDamage() * projectile->GetProjectileDamage();
 			projectile->SetProjectileDamage(NewDamage);
 			projectile->SetDamageType(DamageTypeClass);
 		}

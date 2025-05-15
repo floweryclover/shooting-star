@@ -42,12 +42,19 @@ public:
 	void PlayKnifeAttackMontage();
 	void PlayAKIdleMontage();
 	void StopAKIdleMontage();
-	
-	UAnimMontage* RocketLauncher_Shoot_Montage;
-	UAnimMontage* MiningLoopMontage;
-	UAnimMontage* AK_Idle_Montage;
-	UAnimMontage* AK_Fire_Montage;
-	UAnimMontage* KnifeAttackMontage;
-	UAnimMontage* HitMontage;
-	UAnimMontage* DeadMontage;
+
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> RocketLauncher_Shoot_Montage;
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> MiningLoopMontage;
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> AK_Idle_Montage;
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> AK_Fire_Montage;
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> KnifeAttackMontage;
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> HitMontage;
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> DeadMontage;
 };

@@ -88,7 +88,7 @@ void AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 			FireDirection.Normalize();
 
 			if (ACompetitivePlayerCharacter* OwnerCharacter = Cast<ACompetitivePlayerCharacter>(GetOwner())) {
-				float NewDamage = OwnerCharacter->IncreasedDamage * projectile->GetProjectileDamage();
+				float NewDamage = OwnerCharacter->GetIncreasedDamage() * projectile->GetProjectileDamage();
 				projectile->SetProjectileDamage(NewDamage);
 				projectile->SetDamageType(DamageTypeClass);
 			}
