@@ -23,56 +23,62 @@ UCharacter_AnimInstance::UCharacter_AnimInstance()
 	if (GetRocketShoot.Succeeded()) RocketLauncher_Shoot_Montage = GetRocketShoot.Object;
 }
 
-void UCharacter_AnimInstance::NativeUpdateAnimation(float DeltaSeconds)
+void UCharacter_AnimInstance::NativeUpdateAnimation(const float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
 }
-void UCharacter_AnimInstance::PlayMiningMontage()
+void UCharacter_AnimInstance::PlayMiningMontage(const float DesiredPlayTime)
 {
-	Montage_Play(MiningLoopMontage);
+	const float PlayRate = DesiredPlayTime <= 0.0f ? 1.0f : MiningLoopMontage->GetPlayLength() / DesiredPlayTime;
+	Montage_Play(MiningLoopMontage, PlayRate);
 }
-void UCharacter_AnimInstance::PlayHitMontage()
+void UCharacter_AnimInstance::PlayHitMontage(const float DesiredPlayTime)
 {
-	Montage_Play(HitMontage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, false);
+	const float PlayRate = DesiredPlayTime <= 0.0f ? 1.0f : HitMontage->GetPlayLength() / DesiredPlayTime;
+	Montage_Play(HitMontage, PlayRate, EMontagePlayReturnType::MontageLength, 0.0f, false);
 }
 
-void UCharacter_AnimInstance::PlayDeadMontage()
+void UCharacter_AnimInstance::PlayDeadMontage(const float DesiredPlayTime)
 {
-	Montage_Play(DeadMontage);
+	const float PlayRate = DesiredPlayTime <= 0.0f ? 1.0f : DeadMontage->GetPlayLength() / DesiredPlayTime;
+	Montage_Play(DeadMontage, PlayRate);
 	DeadMontage->BlendOut.SetBlendTime(0.f);
 }
-void UCharacter_AnimInstance::PlayFireMontage()
+void UCharacter_AnimInstance::PlayFireMontage(const float DesiredPlayTime)
 {
-	float MontageLength = AK_Fire_Montage->GetPlayLength();
-	Montage_Play(AK_Fire_Montage, MontageLength, EMontagePlayReturnType::MontageLength, 0.0f, false);
+	//const float MontageLength = AK_Fire_Montage->GetPlayLength();
+	const float PlayRate = DesiredPlayTime <= 0.0f ? 1.0f : AK_Fire_Montage->GetPlayLength() / DesiredPlayTime;
+	Montage_Play(AK_Fire_Montage, PlayRate, EMontagePlayReturnType::MontageLength, 0.0f, false);
 }
-void UCharacter_AnimInstance::PlayRocketFireMontage()
+void UCharacter_AnimInstance::PlayRocketFireMontage(const float DesiredPlayTime)
 {
-	float MontageLength = RocketLauncher_Shoot_Montage->GetPlayLength();
-	Montage_Play(RocketLauncher_Shoot_Montage, MontageLength, EMontagePlayReturnType::MontageLength, 0.0f, false);
+	//float MontageLength = RocketLauncher_Shoot_Montage->GetPlayLength();
+	const float PlayRate = DesiredPlayTime <= 0.0f ? 1.0f : RocketLauncher_Shoot_Montage->GetPlayLength() / DesiredPlayTime;
+	Montage_Play(RocketLauncher_Shoot_Montage, PlayRate, EMontagePlayReturnType::MontageLength, 0.0f, false);
 }
-void UCharacter_AnimInstance::PlayKnifeAttackMontage()
+void UCharacter_AnimInstance::PlayKnifeAttackMontage(float DesiredPlayTime)
 {
-	float MontageLength = KnifeAttackMontage->GetPlayLength();
-	Montage_Play(KnifeAttackMontage, MontageLength, EMontagePlayReturnType::MontageLength, 0.0f, false);
-}
-
-void UCharacter_AnimInstance::PlayAKIdleMontage()
-{
-	if (AK_Idle_Montage && !Montage_IsPlaying(AK_Idle_Montage))
-	{
-		Montage_Play(AK_Idle_Montage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
-	}
+	//float MontageLength = KnifeAttackMontage->GetPlayLength();
+	const float PlayRate = DesiredPlayTime <= 0.0f ? 1.0f : RocketLauncher_Shoot_Montage->GetPlayLength() / DesiredPlayTime;
+	Montage_Play(KnifeAttackMontage, PlayRate, EMontagePlayReturnType::MontageLength, 0.0f, false);
 }
 
-void UCharacter_AnimInstance::StopAKIdleMontage()
-{
-	if (AK_Idle_Montage && Montage_IsPlaying(AK_Idle_Montage))
-	{
-		Montage_Stop(0.2f, AK_Idle_Montage);
-	}
-}
+// void UCharacter_AnimInstance::PlayAKIdleMontage()
+// {
+// 	if (AK_Idle_Montage && !Montage_IsPlaying(AK_Idle_Montage))
+// 	{
+// 		Montage_Play(AK_Idle_Montage, 1.0f, EMontagePlayReturnType::MontageLength, 0.0f, true);
+// 	}
+// }
+//
+// void UCharacter_AnimInstance::StopAKIdleMontage()
+// {
+// 	if (AK_Idle_Montage && Montage_IsPlaying(AK_Idle_Montage))
+// 	{
+// 		Montage_Stop(0.2f, AK_Idle_Montage);
+// 	}
+// }
 void UCharacter_AnimInstance::AnimNotify_AttackStart()
 {
 	ACompetitivePlayerCharacter* Character = Cast<ACompetitivePlayerCharacter>(TryGetPawnOwner());

@@ -28,6 +28,16 @@ class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
+	//
+	// 캐릭터 상수들
+	//
+
+	// 자원 캐는 시간.
+	constexpr static float InteractTimeRequired = 3.0f;
+
+	// 리스폰 시간.
+	constexpr static float DeadTime = 3.0f;
+	
 	ACompetitivePlayerCharacter();
 
 	// Called every frame.
@@ -69,13 +79,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void CraftWeapon(const FWeaponData& SelectWeapon, const TArray<int32>& ClickedResources);
-	
-	//
-	// 자원 관련
-	//
-
-	// 자원 하나를 캐는 동안 걸리는 시간입니다.
-	constexpr static float InteractTimeRequired = 3.0f;
 
 	void InteractResource();
 
@@ -225,7 +228,7 @@ protected:
 	void DashEnd();
 
 	//
-	//무기 관련
+	// 무기 관련
 	//
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_CurrentWeapon, Category = "Weapon")

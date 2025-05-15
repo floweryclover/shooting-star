@@ -34,15 +34,24 @@ public:
 	UFUNCTION()
 	void AnimNotify_AttackEnd();
 
-	void PlayMiningMontage();
-	void PlayHitMontage();
-	void PlayDeadMontage();
-	void PlayFireMontage();
-	void PlayRocketFireMontage();
-	void PlayKnifeAttackMontage();
-	void PlayAKIdleMontage();
-	void StopAKIdleMontage();
+	void PlayMiningMontage(float DesiredPlayTime = 0.0f);
+	void PlayHitMontage(float DesiredPlayTime = 0.0f);
+	void PlayDeadMontage(float DesiredPlayTime = 0.0f);
+	void PlayFireMontage(float DesiredPlayTime = 0.0f);
+	void PlayRocketFireMontage(float DesiredPlayTime = 0.0f);
+	void PlayKnifeAttackMontage(float DesiredPlayTime = 0.0f);
+	// void PlayAKIdleMontage();
+	// void StopAKIdleMontage();
 
+	// UAnimMontage* GetMontageRocketLauncherShoot() const { return RocketLauncher_Shoot_Montage; }
+	// UAnimMontage* GetMontageRocketLauncherShoot() const { return MiningLoopMontage; }
+	// UAnimMontage* GetMontageRocketLauncherShoot() const { return AK_Idle_Montage; }
+	// UAnimMontage* GetMontageRocketLauncherShoot() const { return AK_Fire_Montage; }
+	// UAnimMontage* GetMontageRocketLauncherShoot() const { return KnifeAttackMontage; }
+	// UAnimMontage* GetMontageRocketLauncherShoot() const { return HitMontage; }
+	// UAnimMontage* GetMontageRocketLauncherShoot() const { return DeadMontage; }
+
+private:
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> RocketLauncher_Shoot_Montage;
 	UPROPERTY()
