@@ -422,8 +422,8 @@ void ACompetitivePlayerCharacter::PullTrigger()
 	{
 		// 총에서 소켓 위치와 회전 가져오기
 		FVector FireLoc = EquippedGun->BodyMesh->GetSocketLocation("Muzzle");
-		FRotator FireRot = Owner->GetActorRotation();
-		FRotator BulletFireRot = FireRot; // 총구 방향 그대로 발사
+		FRotator FireRot = GetActorRotation();
+		FRotator BulletFireRot = GetActorRotation();
 
 		EquippedGun->ProjectileFire(FireLoc, FireRot, BulletFireRot);
 
@@ -783,6 +783,11 @@ void ACompetitivePlayerCharacter::OnRep_EquippedKnife()
 
 void ACompetitivePlayerCharacter::OnRep_FireCount()
 {
+	if (!IsValid(EquippedGun))
+	{
+		return;
+	}
+	
 	if (EquippedGun->IsA(RocketLauncherClass))
 	{
 		AnimInstance->PlayRocketFireMontage();

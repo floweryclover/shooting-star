@@ -55,6 +55,7 @@ void ARocketLauncher::ProjectileFire(FVector loc, FRotator rot, FRotator bulletR
 	FActorSpawnParameters spawnParameter;
 	spawnParameter.Owner = GetOwner();
 	spawnParameter.Instigator = GetInstigator();
+	spawnParameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	auto projectile = GetWorld()->SpawnActor<ARocket_Projectile>(RocketClass, loc, rot, spawnParameter);
 	if (projectile) {
