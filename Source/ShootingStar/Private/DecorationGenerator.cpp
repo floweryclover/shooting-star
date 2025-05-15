@@ -3,10 +3,6 @@
 #include "DecorationGenerator.h"
 #include "MapGeneratorComponent.h"
 
-UDecorationGenerator::UDecorationGenerator()
-{
-}
-
 void UDecorationGenerator::Initialize(UMapGeneratorComponent* InOwner)
 {
     Owner = InOwner;
@@ -45,6 +41,9 @@ void UDecorationGenerator::GenerateObjects()
         if (!Owner->CheckLocation(RandomLocation))
         {
             RandomLocation = Owner->FindNearestValidLocation(RandomLocation, decoMinDistance, EObjectMask::DecoMask);
+
+            if (RandomLocation == FVector::ZeroVector)
+                continue;
         }
 
         int32 RandomIndex = FMath::RandRange(0, decoMeshes.Num() - 1);
