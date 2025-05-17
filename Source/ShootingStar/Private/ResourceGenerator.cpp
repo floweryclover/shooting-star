@@ -36,25 +36,24 @@ void UResourceGenerator::GenerateObjects()
     int32 SpawnAttempts = 0;
     int32 PlacedObjects = 0;
 
-    while (PlacedObjects < numResources && SpawnAttempts < numResources * 5)
+    while (PlacedObjects < numResources && SpawnAttempts < numResources * 3)
     {
         FVector RandomLocation = Owner->GetRandomPosition();
-        if (!Owner->CheckLocation(RandomLocation))
+        UResourceDataAsset* SelectedResource = SelectResourceDataAsset();
+        
+        if (!Owner->CheckLocation(RandomLocation, SelectedResource->LargeMesh, EObjectMask::ResourceMask))
         {
-            RandomLocation = Owner->FindNearestValidLocation(RandomLocation, 500.f, EObjectMask::ResourceMask);
-
+            RandomLocation = Owner->FindNearestValidLocation(RandomLocation, 500.f, SelectedResource->LargeMesh, EObjectMask::ResourceMask);
             if (RandomLocation == FVector::ZeroVector)
                 continue;
         }
 
-        UResourceDataAsset* SelectedResource = SelectResourceDataAsset();
-        if (SelectedResource && SpawnResourceActor(RandomLocation, SelectedResource))
+        if (SpawnResourceActor(RandomLocation, SelectedResource))
         {
             PlacedObjects++;
             Owner->SetObjectRegion(RandomLocation, SelectedResource->LargeMesh, EObjectMask::ResourceMask);
-            UE_LOG(MapGenerator, Log, TEXT("(Resource) Generated %s at Location: X=%.1f Y=%.1f"), 
-                *SelectedResource->DisplayName.ToString(), RandomLocation.X, RandomLocation.Y);
         }
+
         SpawnAttempts++;
     }
 

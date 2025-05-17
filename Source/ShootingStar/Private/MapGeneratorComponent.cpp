@@ -70,6 +70,8 @@ void UMapGeneratorComponent::InitializeMapCoordinate(int32 GridSize)
 
 void UMapGeneratorComponent::GenerateMap()
 {
+    const double StartTime = FPlatformTime::Seconds();
+    
     UE_LOG(MapGenerator, Log, TEXT("Generate Map Started"));
 
     obstacleGenerator->GenerateObjects();
@@ -77,6 +79,9 @@ void UMapGeneratorComponent::GenerateMap()
     fenceGenerator->GenerateObjects();
     resourceGenerator->GenerateObjects();
     decorationGenerator->GenerateObjects();
+
+    const double EndTime = FPlatformTime::Seconds();
+    UE_LOG(MapGenerator, Log, TEXT("Map Generation completed in %.2f seconds"), EndTime - StartTime);
 
     UE_LOG(MapGenerator, Log, TEXT("Generate Map Completed"));
 }
@@ -88,44 +93,52 @@ void UMapGeneratorComponent::SetObjectAtArray(int32 X, int32 Y, EObjectMask Obje
     mapCoordinate[Index] |= static_cast<uint8>(ObjectType); // 비트 설정
 }
 
+void UMapGeneratorComponent::SetObjectRegion(const FVector& Location, const UStaticMesh* ObjectMesh, EObjectMask ObjectType)
+{
+    if (!ObjectMesh) return;
+
+    const FBoxSphereBounds& Bounds = ObjectMesh->GetBounds();
+
+    // 오브젝트 타입별로 다른 여유 공간을 static 배열로 캐싱
+    static const float SafetyMargins[] = {
+        300.f,              // ObstacleMask
+        200.f,              // SubObstacleMask
+        100.f,              // FenceMask
+        100.f,              // ResourceMask
+        50.f               // Default/DecoMask
+    };
+
+    const float SafetyMargin = SafetyMargins[static_cast<int>(ObjectType) - 1];
+    const FVector Extent = Bounds.BoxExtent + FVector(SafetyMargin, SafetyMargin, 0.f);
+    
+    // 범위 계산을 한 번만 수행
+    const int32 MinX = FMath::Max(FMath::FloorToInt(Location.X - Extent.X), -mapHalfSize);
+    const int32 MinY = FMath::Max(FMath::FloorToInt(Location.Y - Extent.Y), -mapHalfSize);
+    const int32 MaxX = FMath::Min(FMath::CeilToInt(Location.X + Extent.X), mapHalfSize - 1);
+    const int32 MaxY = FMath::Min(FMath::CeilToInt(Location.Y + Extent.Y), mapHalfSize - 1);
+
+    // 엄격한 검사를 위해 10으로 설정
+    const int32 GridStep = 10;
+
+    const uint8 ObjectMask = static_cast<uint8>(ObjectType);
+    for (int32 X = MinX; X <= MaxX; X += GridStep)
+    {
+        for (int32 Y = MinY; Y <= MaxY; Y += GridStep)
+            mapCoordinate[GetIndex(X, Y)] |= ObjectMask;
+    }
+}
+
 void UMapGeneratorComponent::ClearObjectTypeFromMap(EObjectMask ObjectType)
 {
-    uint8 mask = ~static_cast<uint8>(ObjectType); // 제거할 비트만 0으로 만드는 마스크
+    // 제거할 비트만 0으로 만드는 마스크
+    uint8 mask = ~static_cast<uint8>(ObjectType);
+
     for (uint8& coordinate : mapCoordinate)
         coordinate &= mask; // 해당 비트만 클리어
 }
 
-void UMapGeneratorComponent::SetObjectRegion(FVector Location, UStaticMesh* ObjectMesh, EObjectMask ObjectType)
-{
-    if (!ObjectMesh) return;
-
-    // 바운딩 박스 가져오기
-    FBoxSphereBounds Bounds = ObjectMesh->GetBounds();
-    FVector Extent = Bounds.BoxExtent + FVector(100.f, 100.f, 0.f); // 바운딩 박스의 반경, 실제 크기보다 약간 크게 설정
-    FVector Min = Location - Extent;  // 최소 좌표
-    FVector Max = Location + Extent;  // 최대 좌표
-
-    // 맵 좌표계로 변환
-    int32 MinX = FMath::FloorToInt(Min.X);
-    int32 MinY = FMath::FloorToInt(Min.Y);
-    int32 MaxX = FMath::CeilToInt(Max.X);
-    int32 MaxY = FMath::CeilToInt(Max.Y);
-
-    if (MinX < -mapHalfSize) MinX = -mapHalfSize;
-    if (MinY < -mapHalfSize) MinY = -mapHalfSize;
-    if (MaxX >= mapHalfSize) MaxX = mapHalfSize - 1;
-    if (MaxY >= mapHalfSize) MaxY = mapHalfSize - 1;
-
-    // 해당 영역의 모든 좌표를 설정
-    for (int32 X = MinX; X <= MaxX; ++X)
-    {
-        for (int32 Y = MinY; Y <= MaxY; ++Y)
-            SetObjectAtArray(X, Y, ObjectType);
-    }
-}
-
 //  좌표 배열에 설정된 오브젝트를 확인하는 함수
-bool UMapGeneratorComponent::HasObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType)
+bool UMapGeneratorComponent::HasObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType) const
 {
     int32 Index = GetIndex(X, Y);
     return (mapCoordinate[Index] & static_cast<uint8>(ObjectType)) != 0; // 비트 확인
@@ -140,60 +153,112 @@ FVector UMapGeneratorComponent::GetRandomPosition()
 }
 
 // 특정 좌표를 기준으로 Offset 이내의 좌표를 FVector로 반환하는 함수
-FVector UMapGeneratorComponent::GetRandomOffsetPosition(FVector origin, float offset)
+FVector UMapGeneratorComponent::GetRandomOffsetPosition(const FVector& Origin, float Offset) const
 {
-    float X = FMath::RandRange(origin.X - offset, origin.X + offset);
-    float Y = FMath::RandRange(origin.Y - offset, origin.Y + offset);
+    const float X = FMath::RandRange(Origin.X - Offset, Origin.X + Offset);
+    const float Y = FMath::RandRange(Origin.Y - Offset, Origin.Y + Offset);
     return FVector(X, Y, 0.f);
 }
 
-// 해당 위치가 유효한지 검사하는 함수 (충돌 방지)
-bool UMapGeneratorComponent::CheckLocation(FVector Location)
+// 위치 유효성 검사 함수
+bool UMapGeneratorComponent::CheckLocation(const FVector& Location) const
 {
-    // 좌표를 맵 배열의 인덱스로 변환
-    int32 X = FMath::RoundToInt(Location.X);
-    int32 Y = FMath::RoundToInt(Location.Y);
+    const int32 X = FMath::RoundToInt(Location.X);
+    const int32 Y = FMath::RoundToInt(Location.Y);
 
     // 1. 맵 범위를 벗어나는지 확인
-    if (X < -mapHalfSize || X >= mapHalfSize || Y < -mapHalfSize || Y >= mapHalfSize)
-    {
-        UE_LOG(MapGenerator, Warning, TEXT("Location (%d, %d) is out of bounds."), X, Y);
+    if (!IsInMap(Location))
         return false;
-    }
 
-    // 2. 해당 좌표에 이미 오브젝트가 있는지 확인
-    if (HasObjectAtArray(X, Y, EObjectMask::ObstacleMask) ||
-        HasObjectAtArray(X, Y, EObjectMask::SubObstacleMask) ||
-        HasObjectAtArray(X, Y, EObjectMask::FenceMask) ||
-        HasObjectAtArray(X, Y, EObjectMask::ResourceMask) ||
-        HasObjectAtArray(X, Y, EObjectMask::DecoMask))
+    // 실제 검사 수행
+    for (uint8 i = 0; i < static_cast<uint8>(EObjectMask::End); ++i)
     {
-        UE_LOG(MapGenerator, Warning, TEXT("Location (%d, %d) is already occupied."), X, Y);
-        return false;
+        const EObjectMask ObjectType = static_cast<EObjectMask>(1 << i);
+        if (HasObjectAtArray(X, Y, ObjectType))
+            return false;
     }
-
-    // 위치가 유효함
+    
     return true;
 }
 
-FVector UMapGeneratorComponent::FindNearestValidLocation(FVector Origin, float SearchRadius, EObjectMask ObjectType)
+bool UMapGeneratorComponent::CheckLocation(const FVector& Location, const UStaticMesh* ObjectMesh, EObjectMask ObjectType) const
 {
-    const int32 NumDirections = 8;
-    const float AngleStep = 360.0f / NumDirections;
-    
-    for (float CurrentRadius = 100.f; CurrentRadius <= SearchRadius; CurrentRadius += 100.f)
+    if (!ObjectMesh || !IsInMap(Location)) return false;
+
+    float checkMargin;
+    switch (ObjectType)
     {
+    case EObjectMask::ObstacleMask: checkMargin = 300.f; break;
+    case EObjectMask::SubObstacleMask: checkMargin = 200.f; break;
+    case EObjectMask::FenceMask: checkMargin = fenceMinDistance * 0.33f; break;
+    case EObjectMask::ResourceMask: checkMargin = 100.f; break;
+    default: checkMargin = 50.f; break;
+    }
+
+    const FBoxSphereBounds Bounds = ObjectMesh->GetBounds();
+    const FVector Extent = Bounds.BoxExtent + FVector(checkMargin, checkMargin, 0.f);
+
+    // 검사 범위 계산
+    int32 MinX = FMath::Max(FMath::FloorToInt(Location.X - Extent.X), -mapHalfSize);
+    int32 MinY = FMath::Max(FMath::FloorToInt(Location.Y - Extent.Y), -mapHalfSize);
+    int32 MaxX = FMath::Min(FMath::CeilToInt(Location.X + Extent.X), mapHalfSize - 1);
+    int32 MaxY = FMath::Min(FMath::CeilToInt(Location.Y + Extent.Y), mapHalfSize - 1);
+
+    // 최적화된 그리드 간격 (더 큰 간격으로 조정 가능)
+    const int32 GridStep = FMath::Max(20, FMath::FloorToInt(checkMargin * 0.1f));
+
+    // 모든 오브젝트 타입을 한 번에 검사하는 마스크
+    const uint8 CheckMask = static_cast<uint8>(EObjectMask::ObstacleMask) |
+                           static_cast<uint8>(EObjectMask::SubObstacleMask) |
+                           static_cast<uint8>(EObjectMask::FenceMask) |
+                           static_cast<uint8>(EObjectMask::ResourceMask) |
+                           static_cast<uint8>(EObjectMask::DecoMask);
+
+    for (int32 X = MinX; X <= MaxX; X += GridStep)
+    {
+        for (int32 Y = MinY; Y <= MaxY; Y += GridStep)
+        {
+            const int32 Index = GetIndex(X, Y);
+            if (mapCoordinate[Index] & CheckMask)
+                return false;
+        }
+    }
+
+    return true;
+}
+
+FVector UMapGeneratorComponent::FindNearestValidLocation(const FVector& Origin, float SearchRadius, const UStaticMesh* ObjectMesh, EObjectMask ObjectType) const
+{
+    static const int32 NumDirections = 8;
+    static const float AnglePerStep = 360.0f / NumDirections;
+    static const float RadiusPerStep = 100.f;
+    
+    // 방향 벡터를 미리 계산
+    static TArray<FVector2D> DirectionVectors;
+    if (DirectionVectors.Num() == 0)
+    {
+        DirectionVectors.SetNum(NumDirections);
         for (int32 i = 0; i < NumDirections; ++i)
         {
-            float Angle = i * AngleStep;
-            FVector Offset(
-                CurrentRadius * FMath::Cos(FMath::DegreesToRadians(Angle)),
-                CurrentRadius * FMath::Sin(FMath::DegreesToRadians(Angle)),
+            float Angle = i * AnglePerStep;
+            float Rad = FMath::DegreesToRadians(Angle);
+            DirectionVectors[i] = FVector2D(FMath::Cos(Rad), FMath::Sin(Rad));
+        }
+    }
+
+    // 1m부터 SearchRadius까지 점진적으로 검사
+    for (float CurrentRadius = RadiusPerStep; CurrentRadius <= SearchRadius; CurrentRadius += RadiusPerStep)
+    {
+        // 8방향 검사
+        for (int32 i = 0; i < NumDirections; ++i)
+        {
+            const FVector TestLocation(
+                Origin.X + CurrentRadius * DirectionVectors[i].X,
+                Origin.Y + CurrentRadius * DirectionVectors[i].Y,
                 0.0f
             );
             
-            FVector TestLocation = Origin + Offset;
-            if (CheckLocation(TestLocation))
+            if (IsInMap(TestLocation) && CheckLocation(TestLocation, ObjectMesh, ObjectType))
                 return TestLocation;
         }
     }
@@ -202,7 +267,7 @@ FVector UMapGeneratorComponent::FindNearestValidLocation(FVector Origin, float S
 }
 
 // 오브젝트를 원하는 위치에 설정하는 함수
-bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMesh)
+bool UMapGeneratorComponent::PlaceObject(const FVector& Location, const UStaticMesh* ObjectMesh)
 {
     if (!ObjectMesh || !GetOwner() || !GetWorld())
     {
@@ -221,7 +286,7 @@ bool UMapGeneratorComponent::PlaceObject(FVector Location, UStaticMesh* ObjectMe
         UStaticMeshComponent* MeshComp = NewActor->GetStaticMeshComponent();
         MeshComp->SetIsReplicated(true);
         MeshComp->SetMobility(EComponentMobility::Movable);
-        MeshComp->SetStaticMesh(ObjectMesh);
+        MeshComp->SetStaticMesh(const_cast<UStaticMesh*>(ObjectMesh));
 
         MeshComp->SetCanEverAffectNavigation(false);
         // 메쉬 이름이 "SM_tumbleweed_001"인 경우 Player와 Overlap되도록 설정
@@ -282,7 +347,7 @@ void UMapGeneratorComponent::InitializeSpawnPoints()
     UE_LOG(MapGenerator, Log, TEXT("Initialized %d spawn points"), PlayerSpawnPoints.Num());
 }
 
-bool UMapGeneratorComponent::IsValidSpawnLocation(const FVector& Location)
+bool UMapGeneratorComponent::IsValidSpawnLocation(const FVector& Location) const
 {
     // 이미 존재하는 스폰 포인트들과의 거리 체크
     for (const FVector& ExistingSpot : PlayerSpawnPoints)
@@ -316,7 +381,7 @@ FVector UMapGeneratorComponent::GetSupplySpawnLocation()
 
     while (!CheckLocation(DropLocation))
     {
-        DropLocation = FindNearestValidLocation(DropLocation, 1500.f, EObjectMask::ResourceMask);
+        DropLocation = FindNearestValidLocation(DropLocation, 1500.f, GetSupplyMesh(), EObjectMask::ResourceMask);
         
         if (DropLocation == FVector::ZeroVector)
             DropLocation = GetRandomSupplySpawnLocation();
@@ -347,7 +412,6 @@ FVector UMapGeneratorComponent::GetRandomSupplySpawnLocation()
 
     return DropLocation;
 }
-#pragma endregion
 
 void UMapGeneratorComponent::RegenerateResources()
 {
@@ -356,3 +420,4 @@ void UMapGeneratorComponent::RegenerateResources()
     if (IsValid(resourceGenerator))
         resourceGenerator->GenerateObjects();
 }
+#pragma endregion

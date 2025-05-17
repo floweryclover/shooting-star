@@ -16,6 +16,11 @@ class SHOOTINGSTAR_API UFenceGenerator : public UObject, public IObjectGenerator
 public:
     virtual void Initialize(class UMapGeneratorComponent* InOwner) override;
     virtual void GenerateObjects() override;
+    void GenerateFencePattern(const FVector& Center, EPatternType PatternType, float Radius, TArray<FFenceData>& OutPositions);
+    void PlaceFence(const TArray<FFenceData>& Positions);
+    bool GenerateFenceAroundObstacle();
+    float GetRandomFenceRadius(float minRadius, float maxRadius) const;
+    // bool CheckFenceNearby(const FVector& Location) const;
     
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numFences;
@@ -31,9 +36,4 @@ public:
 private:
     UPROPERTY()
     UMapGeneratorComponent* Owner;
-
-    void GenerateFencePattern(const FVector& Center, EPatternType PatternType, float Radius, TArray<FFenceData>& OutPositions);
-    void PlaceFence(const TArray<FFenceData>& Positions);
-    bool GenerateFenceAroundObstacle();
-    float GetRandomFenceRadius(float minRadius, float maxRadius) const;
 };
