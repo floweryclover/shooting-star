@@ -9,7 +9,8 @@ enum class EObjectMask : uint8
     SubObstacleMask = 1 << 1,
     FenceMask = 1 << 2,
     ResourceMask = 1 << 3,
-    DecoMask = 1 << 4
+    DecoMask = 1 << 4,
+    End
 };
 
 UENUM()
@@ -17,7 +18,8 @@ enum class EPatternType : uint8
 {
     Rectangle,
     UShape,
-    LShape
+    LShape, 
+    End
 };
 
 UENUM()
@@ -26,5 +28,6 @@ enum class EPatternDirection : uint8
     North,
     South,
     East,
-    West
+    West,
+    End
 };

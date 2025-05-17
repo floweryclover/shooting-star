@@ -4,6 +4,9 @@
 #include "ResourceActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "ShootingStar/ShootingStar.h"
 
 // Sets default values
@@ -56,10 +59,42 @@ void AResourceActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 
 #endif
 
+void AResourceActor::PlayHitParticle()
+{
+    if (!HasAuthority()) return;  // 서버에서만 실행
+
+    // 리소스 타입에 맞는 파티클 시스템 선택
+    UNiagaraSystem* ParticleToPlay = ResourceHitEffects.Contains(ResourceData->ResourceType) 
+        ? ResourceHitEffects[ResourceData->ResourceType]
+        : HitParticleSystem;
+
+    if (ParticleToPlay)
+    {
+        // 기존 파티클 시스템이 있다면 제거
+        if (ActiveParticleSystem)
+            ActiveParticleSystem->DestroyComponent();
+
+        // 새 파티클 시스템 스폰
+        ActiveParticleSystem = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+            GetWorld(),
+            ParticleToPlay,
+            OriginLocation,
+            FRotator::ZeroRotator
+        );
+    }
+}
+
 void AResourceActor::Hit(const FVector& InHitLocation)
 {
     RemainingHitShakeTime = HitShakeTime;
     HitLocation = InHitLocation;
+
+    PlayHitParticle();
+    UGameplayStatics::PlaySoundAtLocation(
+        GetWorld(),
+        HitSound,
+        OriginLocation
+    );
 }
 
 void AResourceActor::UpdateMesh_AfterHarvest()
