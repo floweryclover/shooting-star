@@ -9,6 +9,8 @@
 
 class UStaticMeshComponent;
 class UResource;
+class UNiagaraSystem;
+class UNiagaraComponent;
 
 UCLASS()
 class SHOOTINGSTAR_API AResourceActor : public AActor
@@ -28,6 +30,7 @@ public:
 		return ResourceData;
 	}
 
+	void PlayHitParticle();
 	void Hit(const FVector& InHitLocation);
 
 	void UpdateMesh_AfterHarvest();
@@ -46,12 +49,25 @@ private:
 	UPROPERTY(ReplicatedUsing=OnRep_ResourceState)
 	EResourceState ResourceState = EResourceState::Large;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Effects")
+    UNiagaraSystem* HitParticleSystem;
+    
+    UPROPERTY()
+    UNiagaraComponent* ActiveParticleSystem;
+
+    // 리소스 타입별 파티클 시스템
+    UPROPERTY(EditDefaultsOnly, Category = "Effects")
+    TMap<EResourceType, UNiagaraSystem*> ResourceHitEffects;
+
 public:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* MeshComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_ResourceData)
 	UResourceDataAsset* ResourceData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* HitSound;
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
