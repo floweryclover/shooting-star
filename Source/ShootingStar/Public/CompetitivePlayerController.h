@@ -89,13 +89,18 @@ protected:
 
 	// Move fuction
 	void Move(const FInputActionValue& Value);
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	void MoveWithVector2D(FVector2D MovementVector);
+
 	// Rotation Control
 	void LookMouse();
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	void RotateWithVector2D(FVector2D MovementVector);
 
-	UFUNCTION(Reliable, Server)
+	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void Attack();
 	
-	UFUNCTION(Reliable, Server)
+	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void Dash();
 	
 	UFUNCTION(Reliable, Server)
@@ -107,7 +112,7 @@ protected:
 	UFUNCTION(Reliable, Server)
 	void EquipRocketLauncher();
 
-	UFUNCTION(Reliable, Server)
+	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void InteractResource();
 
 	// HUD
