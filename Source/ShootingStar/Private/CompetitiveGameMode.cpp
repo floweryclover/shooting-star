@@ -15,6 +15,7 @@
 #include "SafeZoneActor.h"
 #include "SupplyActor.h"
 #include "ResourceActor.h"
+#include "Kismet/GameplayStatics.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
 	: NumPlayers{1} // 호스트 항상 포함
@@ -72,6 +73,29 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 	{
 		// 자기장 업데이트
 		SafeZoneActor->SetRadiusByAlpha(CompetitiveSystemComponent->GetSafeZoneAlpha());
+
+		// 자기장 밖 플레이어들 데미지
+		TimeElapsedLastSafeZoneDamaged += DeltaSeconds;
+		if (TimeElapsedLastSafeZoneDamaged >= IntervalSafeZoneDamageApply)
+		{
+			TimeElapsedLastSafeZoneDamaged = 0.0f;
+			const float RadiusSquaredSafeZone = SafeZoneActor->GetRadius() * SafeZoneActor->GetRadius();
+			for (APlayerState* const PlayerState : GameState->PlayerArray)
+			{
+				APlayerController* const PlayerController = PlayerState->GetPlayerController();
+				if (!IsValid(PlayerController) || !IsValid(PlayerController->GetCharacter()))
+				{
+					continue;
+				}
+
+				ACharacter* const Character = PlayerController->GetCharacter();
+				const float DistanceSquaredFromCenter = Character->GetActorLocation().SizeSquared2D();
+				if (DistanceSquaredFromCenter > RadiusSquaredSafeZone)
+				{
+					UGameplayStatics::ApplyDamage(Character, DamageSafeZone, nullptr, SafeZoneActor, nullptr);
+				}
+			}
+		}
 	}
 
 	// 리스폰해야 하는 플레이어 리스폰
@@ -167,7 +191,7 @@ void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 		NewPlayer->UnPossess();
 		OldPawn->Destroy();
 	}
-	
+
 	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(CompetitivePlayerController);
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = Cast<ACompetitivePlayerCharacter>(
 		SpawnDefaultPawnAtTransform(NewPlayer, FTransform{SpawnPoint + FVector{0.0, 0.0, 100.0}}));
@@ -186,7 +210,7 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killee)
 	{
 		return;
 	}
-	
+
 	if (!IsValid(Killee))
 	{
 		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - Killee is invalid."));
@@ -200,8 +224,10 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killee)
 	{
 		return;
 	}
-	
-	CompetitiveSystemComponent->GiveKillScoreForTeam(TeamComponent_Killee->GetTeam() == ETeam::Blue ? ETeam::Red : ETeam::Blue);
+
+	CompetitiveSystemComponent->GiveKillScoreForTeam(TeamComponent_Killee->GetTeam() == ETeam::Blue
+		                                                 ? ETeam::Red
+		                                                 : ETeam::Blue);
 }
 
 FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* const Player) const
@@ -234,15 +260,15 @@ FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* co
 		{
 			DistanceSquaredSum += FVector::DistSquaredXY(SpawnPoint, OtherPlayerPosition);
 		}
-		
-		SpawnPointsDescending.Add({ SpawnPoint.X, SpawnPoint.Y, DistanceSquaredSum });
+
+		SpawnPointsDescending.Add({SpawnPoint.X, SpawnPoint.Y, DistanceSquaredSum});
 	}
-	
+
 	Algo::Sort(SpawnPointsDescending, [](const FVector& Lhs, const FVector& Rhs) { return Lhs.Z > Rhs.Z; });
 
 	FVector ReturnValue;
 	const float SafeZoneRadius = SafeZoneActor->GetRadius();
-	
+
 	for (const FVector& SpawnPoint : SpawnPointsDescending)
 	{
 		ReturnValue = SpawnPoint;
@@ -252,10 +278,10 @@ FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* co
 		{
 			break;
 		}
-		
+
 		UE_LOG(LogShootingStar, Log, TEXT("%f, %f는 자기장 밖에 있습니다."), SpawnPoint.X, SpawnPoint.Y);
 	}
-	
+
 	return ReturnValue;
 }
 
@@ -301,6 +327,8 @@ void ACompetitiveGameMode::OnGameStarted()
 		SupplyActor->Destroy();
 	}
 	SupplyActors.Empty();
+
+	TimeElapsedLastSafeZoneDamaged = 0.0f;
 }
 
 void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
@@ -311,16 +339,17 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
 		return;
 	}
 
-    // SupplyActor 스폰
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    
-    if (ASupplyActor* SupplyActor = GetWorld()->SpawnActor<ASupplyActor>(SupplyActorClass, Location, FRotator::ZeroRotator, SpawnParams))
-    {
-    	SupplyActor->SetReplicates(true);
-    	SupplyActors.Add(SupplyActor);
-        UE_LOG(LogShootingStar, Log, TEXT("Supply %d spawned at %s"), SupplyActors.Num()-1, *Location.ToString());
-    }
-    else
-        UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
+	// SupplyActor 스폰
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (ASupplyActor* SupplyActor = GetWorld()->SpawnActor<ASupplyActor>(
+		SupplyActorClass, Location, FRotator::ZeroRotator, SpawnParams))
+	{
+		SupplyActor->SetReplicates(true);
+		SupplyActors.Add(SupplyActor);
+		UE_LOG(LogShootingStar, Log, TEXT("Supply %d spawned at %s"), SupplyActors.Num()-1, *Location.ToString());
+	}
+	else
+		UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
 }

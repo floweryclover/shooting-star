@@ -22,6 +22,10 @@ class SHOOTINGSTAR_API ACompetitiveGameMode final : public AGameModeBase
 	GENERATED_BODY()
 
 public:
+	static constexpr float IntervalSafeZoneDamageApply = 1.0f;
+
+	static constexpr float DamageSafeZone = 10.0f;
+	
 	ACompetitiveGameMode();
 
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
@@ -125,4 +129,6 @@ private:
 
 	UFUNCTION()
 	void HandleSupplyDrop(FVector Location);
+
+	float TimeElapsedLastSafeZoneDamaged;
 };

@@ -453,9 +453,16 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 	FAIL_IF_NOT_SERVER_V(0.0f);
 
 #pragma region Server
-	ACompetitivePlayerCharacter* InstigatorCharacter = Cast<ACompetitivePlayerCharacter>(EventInstigator->GetPawn());
-	if (IsValid(InstigatorCharacter) && InstigatorCharacter->GetTeamComponent()->GetTeam() == this->GetTeamComponent()->GetTeam())
-		return 0.0f;
+	if (IsValid(EventInstigator)
+		&& IsValid(EventInstigator->GetPawn()))
+	{
+		if (ACompetitivePlayerCharacter* const InstigatorCharacter = Cast<ACompetitivePlayerCharacter>(EventInstigator->GetPawn());
+			IsValid(InstigatorCharacter)
+			&& InstigatorCharacter->GetTeamComponent()->GetTeam() == this->GetTeamComponent()->GetTeam())
+		{
+			return 0.0f;
+		}
+	}
 
 	float DamageToApply{0.0f};
 
