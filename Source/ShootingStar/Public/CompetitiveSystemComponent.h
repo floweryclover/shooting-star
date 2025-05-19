@@ -58,7 +58,7 @@ public:
 	static constexpr int NumSupplies = 3;
 	static constexpr float SupplyDropTimes[] = {30.f, 75.f, 120.f};
 	// Debug
-	//static constexpr float SupplyDropTimes[] = { 5.f, 10.f, 15.f };
+	// static constexpr float SupplyDropTimes[] = { 5.f, 10.f, 15.f };
 	
 	/**
 	 * Game 상태로 처음 전이될 때 발생하는 이벤트.
@@ -193,6 +193,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	ETeam LastRoundWinTeam{};
 
+	// 소유자 GameMode 캐싱
+	UPROPERTY()
+	class ACompetitiveGameMode* Owner;
+
 	// 보급품 트리거 배열
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<bool> SupplyDropsTriggered;
@@ -205,11 +209,10 @@ private:
 	void Update_RoundEnd();
 
 	void Update_GameEnd();
-	
+
 	void Update_GameDestroyed();
 
 	void CheckAndTriggerSupplyDrop();
-
 	void WinTeam(ETeam Team);
 
 	TFunction<float()> GetSafeZoneRadius;

@@ -93,6 +93,7 @@ void ACompetitivePlayerCharacter::BeginPlay()
 #pragma region Server
 	SpawnPickAxe();
 	Health = MaxHealth;
+	OnRep_Health();
 #pragma endregion Server
 }
 
@@ -160,63 +161,8 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 	}
 
 #pragma region Server
-	// 이번이 자원 채집모션이 끝난 후의 첫 틱이라면 자원 채집 실시
-	const float CurrentTime = GetWorld()->GetTimeSeconds();
-	if (LastInteractTime == 0.0f || CurrentTime < LastInteractTime + InteractTimeRequired)
-	{
-		return;
-	}
-	LastInteractTime = 0.0f;
-	ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
-	UCompetitiveSystemComponent* const CompetitiveSystemComponent = GameMode->GetCompetitiveSystemComponent();
-	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
-	{
-		return;
-	}
-	
-	FVector Start = GetActorLocation();
-	Start.Z = 0.f;
-	FRotator Rotation = GetActorRotation();
-
-	FVector End = Start + Rotation.Vector() * 130.f;
-
-	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
-	FHitResult Hit;
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
-	{
-		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
-		UE_LOG(LogTemp, Log, TEXT("Hit Actor: %s"), *Hit.GetActor()->GetName());
-
-		// Supply 태그 확인
-		if (Hit.GetActor()->ActorHasTag("Supply"))
-		{
-			if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()))
-			{
-				// 보급품 상자가 이미 열려있는지 확인
-				if (!SupplyActor->IsOpened())
-				{
-					// 무기 데이터 설정 및 장착
-					SetWeaponData(SupplyActor->GetStoredWeapon());
-					EquipRocketLauncher();
-					SupplyActor->PlayOpeningAnimation();
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("SupplyActor not found"));
-			}
-		}
-		else
-		{
-			// 기존 자원 처리
-			AResourceActor* const Resource = Cast<AResourceActor>(Hit.GetActor());
-			if (Resource)
-			{
-				InventoryComponent->AddResource(Resource->ResourceData);
-				Resource->UpdateMesh_AfterHarvest();
-			}
-		}
-	}
+	Tick_HandleResourceInteraction(DeltaSeconds);
+	Tick_HandleKnifeAttack(DeltaSeconds);
 #pragma endregion Server
 }
 
@@ -393,37 +339,27 @@ void ACompetitivePlayerCharacter::Attack()
 	
 #pragma region Server
 	AnimInstance->IsAttack = true;
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const bool bCanKnifeAttack = CurrentTime > LastKnifeAttackTime + KnifeCoolTime;
 
-	if (EquippedGun == nullptr && EquippedKnife == nullptr)
-	{
-		EquipPickAxe();
-		if (!bCanKnifeAttack)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Knife attack is on cooldown!"));
-			return; // 쿨타임이 끝나지 않으면 공격하지 않음
-		}
-		bCanKnifeAttack = false;
-		GetWorld()->GetTimerManager().SetTimer(KnifeAttackCoolDownTimer, this,
-			&ACompetitivePlayerCharacter::ResetKnifeAttackCooldown,
-			KnifeAttackCooldown, false);
-		OnRep_KnifeAttackCount();
-		KnifeAttackCount += 1;
-	}
-	else if (EquippedGun)
+	if (IsValid(EquippedGun))
 	{
 		PullTrigger();
 	}
-	else if (EquippedKnife)
+	else
 	{
 		if (!bCanKnifeAttack)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Knife attack is on cooldown!"));
 			return; // 쿨타임이 끝나지 않으면 공격하지 않음
 		}
-		bCanKnifeAttack = false;
-		GetWorld()->GetTimerManager().SetTimer(KnifeAttackCoolDownTimer, this,
-		                                       &ACompetitivePlayerCharacter::ResetKnifeAttackCooldown,
-		                                       KnifeAttackCooldown, false);
+		LastKnifeAttackTime = CurrentTime;
+
+		if (!IsValid(EquippedKnife))
+		{
+			EquipPickAxe();
+		}
+		
 		OnRep_KnifeAttackCount();
 		KnifeAttackCount += 1;
 	}
@@ -535,21 +471,20 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 	if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass->IsChildOf(UDoT_DamageType::StaticClass()))
 	{
 		Health -= DamageToApply * 100 / Armor;
+		OnRep_Health();
 		ApplyDoTDamage(EventInstigator, DamageCauser);
 	}
 	else
 	{
 		// 데미지 타입이 명시되지 않았을 경우 기본 처리
 		Health -= DamageToApply * 100 / Armor;
+		OnRep_Health();
 	}
 	HitCount += 1;
 	OnRep_HitCount();
 
 	if (!bWasAlreadyDead && IsDead())
 	{
-		float MontageLength = AnimInstance->DeadMontage->GetPlayLength();
-		UE_LOG(LogTemp, Warning, TEXT("Dead montage length: %f"), MontageLength);
-
 		UCapsuleComponent* Capsule = GetCapsuleComponent();
 		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -563,7 +498,7 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		GetMesh()->bBlendPhysics = true;
 
 		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
-		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, MontageLength, false);
+		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, DeadTime, false);
 	
 		OnKilled.Broadcast(EventInstigator, GetController());
 	}
@@ -662,6 +597,7 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 
 #pragma region Server
 	CurrentWeapon = NewWeaponData;
+	OnRep_CurrentWeapon();
 	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
 	MaxHealth = 100;
 	IncreasedDamage = 1;
@@ -768,56 +704,6 @@ FWeaponData ACompetitivePlayerCharacter::GetWeaponData()
 	return CurrentWeapon;
 }
 
-void ACompetitivePlayerCharacter::KnifeAttackStart()
-{
-	FAIL_IF_NOT_SERVER();
-
-#pragma region Server
-	if (EquippedKnife)
-	{
-		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(true);
-	}
-#pragma endregion Server
-}
-
-void ACompetitivePlayerCharacter::KnifeAttackEnd()
-{
-	FAIL_IF_NOT_SERVER();
-
-#pragma region Server
-	if (EquippedKnife)
-	{
-		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(false);
-	}
-#pragma endregion Server
-}
-void ACompetitivePlayerCharacter::PickAxeAttackStart()
-{
-	FAIL_IF_NOT_SERVER();
-
-#pragma region Server
-	if (SpawnedPickAxe)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PickAxe Onwer: %s"), *SpawnedPickAxe->GetAttachParentActor()->GetName());
-		UE_LOG(LogTemp, Warning, TEXT("PickAxeAttackStart"));
-		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(true);
-	}
-#pragma endregion Server
-}
-
-void ACompetitivePlayerCharacter::PickAxeAttackEnd()
-{
-	FAIL_IF_NOT_SERVER();
-
-#pragma region Server
-	if (SpawnedPickAxe)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PickAxeAttackEnd"));
-		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(false);
-	}
-#pragma endregion Server
-}
-
 void ACompetitivePlayerCharacter::InteractResource()
 {
 	FAIL_IF_NOT_SERVER();
@@ -860,14 +746,6 @@ void ACompetitivePlayerCharacter::SetPlayerName(const FString& Name)
 #pragma endregion Server
 }
 
-void ACompetitivePlayerCharacter::ResetKnifeAttackCooldown()
-{
-#pragma region Server
-	bCanKnifeAttack = true;
-	UE_LOG(LogTemp, Log, TEXT("Knife attack cooldown reset."));
-#pragma endregion Server
-}
-
 void ACompetitivePlayerCharacter::OnRep_Health()
 {
 	if (Health <= 0.0f)
@@ -876,7 +754,7 @@ void ACompetitivePlayerCharacter::OnRep_Health()
 		bUseControllerRotationYaw = false;
 		bUseControllerRotationRoll = false;
 		
-		AnimInstance->PlayDeadMontage();
+		AnimInstance->PlayDeadMontage(DeadTime);
 	}
 }
 
@@ -947,7 +825,7 @@ void ACompetitivePlayerCharacter::OnRep_PlayerName()
 
 void ACompetitivePlayerCharacter::OnRep_MiningCount()
 {
-	AnimInstance->PlayMiningMontage();
+	AnimInstance->PlayMiningMontage(InteractTimeRequired, 4);
 }
 
 void ACompetitivePlayerCharacter::OnTeamChanged(const ETeam Team)
@@ -960,4 +838,90 @@ void ACompetitivePlayerCharacter::RefreshAnimInstance()
 	AnimInstance->IsKnifeEquipped = IsValid(EquippedKnife);
 	AnimInstance->IsGunEquipped = IsValid(EquippedGun);
 	AnimInstance->IsRockLauncherEquipped = IsValid(EquippedGun) && EquippedGun->IsA(RocketLauncherClass);
+}
+
+void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float DeltaSeconds)
+{
+	if (IsDead())
+	{
+		LastInteractTime = 0.0f;
+		return;
+	}
+	
+	// 이번이 자원 채집모션이 끝난 후의 첫 틱이라면 자원 채집 실시
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (LastInteractTime == 0.0f || CurrentTime < LastInteractTime + InteractTimeRequired)
+	{
+		return;
+	}
+	LastInteractTime = 0.0f;
+	ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+	UCompetitiveSystemComponent* const CompetitiveSystemComponent = GameMode->GetCompetitiveSystemComponent();
+	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
+	{
+		return;
+	}
+	
+	FVector Start = GetActorLocation();
+	Start.Z = 0.f;
+	FRotator Rotation = GetActorRotation();
+
+	FVector End = Start + Rotation.Vector() * 130.f;
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
+	FHitResult Hit;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
+	{
+		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
+		UE_LOG(LogTemp, Log, TEXT("Hit Actor: %s"), *Hit.GetActor()->GetName());
+
+		// Supply 태그 확인
+		if (Hit.GetActor()->ActorHasTag("Supply"))
+		{
+			if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()))
+			{
+				// 보급품 상자가 이미 열려있는지 확인
+				if (!SupplyActor->IsOpened())
+				{
+					// 무기 데이터 설정 및 장착
+					SetWeaponData(SupplyActor->GetStoredWeapon());
+					EquipRocketLauncher();
+					SupplyActor->PlayOpeningAnimation();
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("SupplyActor not found"));
+			}
+		}
+		else
+		{
+			// 기존 자원 처리
+			AResourceActor* const Resource = Cast<AResourceActor>(Hit.GetActor());
+			if (Resource)
+			{
+				InventoryComponent->AddResource(Resource->ResourceData);
+				Resource->UpdateMesh_AfterHarvest();
+			}
+		}
+	}
+}
+
+void ACompetitivePlayerCharacter::Tick_HandleKnifeAttack(const float DeltaSeconds)
+{
+	if (IsDead())
+	{
+		LastKnifeAttackTime = 0.0f;
+		return;
+	}
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const bool bIsKnifeAttacking = CurrentTime < LastKnifeAttackTime + KnifeCoolTime;
+	if (IsValid(EquippedKnife))
+	{
+		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(bIsKnifeAttacking);
+	}
+	if (IsValid(SpawnedPickAxe))
+	{
+		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(bIsKnifeAttacking);
+	}
 }

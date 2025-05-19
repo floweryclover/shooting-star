@@ -14,16 +14,17 @@ class SHOOTINGSTAR_API UFenceGenerator : public UObject, public IObjectGenerator
     GENERATED_BODY()
 
 public:
-    UFenceGenerator();
-
-    virtual void GenerateObjects() override;
     virtual void Initialize(class UMapGeneratorComponent* InOwner) override;
+    virtual void GenerateObjects() override;
     
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numFences;
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     float fenceMinDistance;
+
+    UPROPERTY(EditAnywhere, Category = "Generation Settings")
+    float fenceGenerationProbability;
 
     UPROPERTY(EditAnywhere, Category = "Meshes")
     UStaticMesh* fenceMesh;

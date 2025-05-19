@@ -25,10 +25,12 @@ class SHOOTINGSTAR_API UResourceGenerator : public UObject, public IObjectGenera
     GENERATED_BODY()
 
 public:
-    UResourceGenerator();
-
-    virtual void GenerateObjects() override;
     virtual void Initialize(class UMapGeneratorComponent* InOwner) override;
+    virtual void GenerateObjects() override;
+    void ClearSpawnedResources();
+    
+    UResourceDataAsset* SelectResourceDataAsset();
+    bool SpawnResourceActor(const FVector& Location, UResourceDataAsset* ResourceData);
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numResources = 30;
@@ -43,6 +45,7 @@ private:
     UPROPERTY()
     UMapGeneratorComponent* Owner;
 
-    UResourceDataAsset* SelectResourceDataAsset();
-    bool SpawnResourceActor(const FVector& Location, UResourceDataAsset* ResourceData);
+    // 현재 생성된 자원 액터들을 추적하기 위한 배열
+    UPROPERTY()
+    TArray<AResourceActor*> SpawnedResources;
 };

@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerState.h"
 #include "CompetitiveGameMode.h"
 #include "SafeZoneActor.h"
+#include "MapGeneratorComponent.h"
 
 UCompetitiveSystemComponent::UCompetitiveSystemComponent()
 	: BlueTeamKillScore{0},
@@ -24,6 +25,7 @@ void UCompetitiveSystemComponent::Init(TFunction<float()> InGetSafeZoneRadius)
 void UCompetitiveSystemComponent::BeginPlay()
 {
     Super::BeginPlay();
+    Owner = Cast<ACompetitiveGameMode>(GetOwner());
 }
 
 void UCompetitiveSystemComponent::Update(const float DeltaTime)
@@ -161,18 +163,12 @@ void UCompetitiveSystemComponent::CheckAndTriggerSupplyDrop()
         {
             SupplyDropsTriggered[i] = true;
             
-            // 맵 중앙 기준으로 현재 자기장 반경 내 랜덤 위치 선정
-            const float RandomAngle = FMath::RandRange(0.f, 360.f);
-            const float CurrentRadius = GetSafeZoneRadius();
-            const float RandomRadius = FMath::RandRange(0.f, FMath::Min(CurrentRadius * 0.8f, 3000.0f));  // 자기장 80% 이내 위치에 생성하되, 이동 가능한 맵을 벗어나지 않게
-            const FVector DropLocation(
-                RandomRadius * FMath::Cos(RandomAngle),
-                RandomRadius * FMath::Sin(RandomAngle),
-                0.f
-            );
-            
-			UE_LOG(LogTemp, Log, TEXT("Supply drop triggered at %s"), *DropLocation.ToString());
-            OnSupplyDropped.Broadcast(DropLocation);
+            if (Owner)
+            {
+                FVector DropLocation = Owner->GetMapGeneratorComponent()->GetSupplySpawnLocation();
+                UE_LOG(LogTemp, Log, TEXT("Supply drop triggered at %s"), *DropLocation.ToString());
+                OnSupplyDropped.Broadcast(DropLocation);
+            }
         }
     }
 }
@@ -185,7 +181,12 @@ void UCompetitiveSystemComponent::Update_RoundEnd()
 		BlueTeamKillScore = 0;
 		RedTeamKillScore = 0;
 		CurrentPhaseTime = 0.0f;
-		SupplyDropsTriggered.Init(false, 3);
+
+		// 자원 재생성
+		UMapGeneratorComponent* MapGeneratorComponent = Owner->GetMapGeneratorComponent();
+		if (IsValid(MapGeneratorComponent))
+        	MapGeneratorComponent->RegenerateResources();
+
 		OnGameStarted.Broadcast();
 	}
 }

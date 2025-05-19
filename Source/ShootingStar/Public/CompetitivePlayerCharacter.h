@@ -28,6 +28,19 @@ class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
+	//
+	// 캐릭터 상수들
+	//
+
+	// 자원 캐는 시간.
+	constexpr static float InteractTimeRequired = 3.0f;
+
+	// 리스폰 시간.
+	constexpr static float DeadTime = 3.0f;
+
+	// 근접 무기 공격 쿨타임.
+	constexpr static float KnifeCoolTime = 1.0f;
+	
 	ACompetitivePlayerCharacter();
 
 	// Called every frame.
@@ -69,28 +82,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Reliable, Server)
 	void CraftWeapon(const FWeaponData& SelectWeapon, const TArray<int32>& ClickedResources);
-	
-	//
-	// 자원 관련
-	//
-
-	// 자원 하나를 캐는 동안 걸리는 시간입니다.
-	constexpr static float InteractTimeRequired = 3.0f;
 
 	void InteractResource();
-
-	//
-	// 전투 관련
-	//
-
-	UFUNCTION()
-	void KnifeAttackStart();
-	UFUNCTION()
-	void KnifeAttackEnd();
-	UFUNCTION()
-	void PickAxeAttackStart();
-	UFUNCTION()
-	void PickAxeAttackEnd();
 
 	//
 	// Getter, Setter
@@ -225,7 +218,7 @@ protected:
 	void DashEnd();
 
 	//
-	//무기 관련
+	// 무기 관련
 	//
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_CurrentWeapon, Category = "Weapon")
@@ -236,10 +229,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	float IncreasedDamage = 1;
-
-	FTimerHandle KnifeAttackCoolDownTimer;
-	float KnifeAttackCooldown = 1.0f;
-	bool bCanKnifeAttack = true;
 
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void SetWeaponData(const FWeaponData& NewWeaponData);
@@ -260,6 +249,8 @@ protected:
 	TObjectPtr<AActor> DoTCauser = nullptr;
 
 	float CurrentDoTTime = 0.0f;
+
+	float LastKnifeAttackTime = 0.0f;
 	
 private:
 	
@@ -282,7 +273,6 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "Bush")
 	void SetInBush(bool bIsInBush);
 	bool bInBush;
-	bool bIsKnifeAttacking;
 
 	//
 	// Replication Notifies
@@ -333,7 +323,9 @@ private:
 
 	void RefreshAnimInstance();
 
-	void ResetKnifeAttackCooldown();
-
 	void SetTeamMaterial(ETeam Team);
+
+	void Tick_HandleResourceInteraction(float DeltaSeconds);
+
+	void Tick_HandleKnifeAttack(float DeltaSeconds);
 };

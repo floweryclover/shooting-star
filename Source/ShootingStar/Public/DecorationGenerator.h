@@ -12,10 +12,8 @@ class SHOOTINGSTAR_API UDecorationGenerator : public UObject, public IObjectGene
     GENERATED_BODY()
 
 public:
-    UDecorationGenerator();
-
-    virtual void GenerateObjects() override;
     virtual void Initialize(class UMapGeneratorComponent* InOwner) override;
+    virtual void GenerateObjects() override;
 
     UPROPERTY(EditAnywhere, Category = "Generation Settings")
     int32 numDecos = 30;
