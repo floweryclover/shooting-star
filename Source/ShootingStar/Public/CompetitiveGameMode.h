@@ -131,4 +131,10 @@ private:
 	void HandleSupplyDrop(FVector Location);
 
 	float TimeElapsedLastSafeZoneDamaged;
+
+	UFUNCTION()
+	void OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
+	
+	UFUNCTION()
+	void OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
 };

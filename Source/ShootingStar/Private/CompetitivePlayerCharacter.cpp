@@ -32,6 +32,15 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
+	NameTagActorComponent = CreateDefaultSubobject<UChildActorComponent>(TEXT("NameTagActorComponent"));
+	NameTagActorComponent->SetupAttachment(GetCapsuleComponent());
+	static ConstructorHelpers::FClassFinder<AActor> BpFinderPlayerNameTagActor(
+		TEXT("/Game/Blueprints/Character/BP_PlayerNameTagActor"));
+	if (BpFinderPlayerNameTagActor.Succeeded())
+	{
+		NameTagActorComponent->SetChildActorClass(*BpFinderPlayerNameTagActor.Class);
+	}
+	
 	// Set size for player capsule
 	GetCapsuleComponent()->InitCapsuleSize(70.f, 96.0f);
 	GetCapsuleComponent()->SetCollisionProfileName("Pawn");
@@ -166,18 +175,7 @@ float ACompetitivePlayerCharacter::GetHealth() const
 void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	const float CurrentTime = GetWorld()->GetTimeSeconds();
-	const bool bIsInteracting = LastInteractTime != 0.0f && CurrentTime < LastInteractTime + InteractTimeRequired;
-	if (IsValid(EquippedGun))
-	{
-		EquippedGun->SetActorHiddenInGame(bIsInteracting);
-	}
-	if (IsValid(EquippedKnife))
-	{
-		EquippedKnife->SetActorHiddenInGame(bIsInteracting);
-	}
-
+	NameTagActorComponent->GetChildActor()->SetActorHiddenInGame(IsHidden());
 	if (!HasAuthority())
 	{
 		return;
@@ -185,6 +183,7 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 #pragma region Server
 	Tick_HandleResourceInteraction(DeltaSeconds);
 	Tick_HandleKnifeAttack(DeltaSeconds);
+	Tick_HandleHidden(DeltaSeconds);
 #pragma endregion Server
 }
 
@@ -715,11 +714,6 @@ void ACompetitivePlayerCharacter::CraftWeapon_Implementation(const FWeaponData& 
 #pragma endregion Server
 }
 
-void ACompetitivePlayerCharacter::SetInBush(bool bIsInBush)
-{
-	FAIL_IF_NOT_SERVER();
-}
-
 FWeaponData ACompetitivePlayerCharacter::GetWeaponData()
 {
 	return CurrentWeapon;
@@ -987,5 +981,25 @@ void ACompetitivePlayerCharacter::Tick_HandleKnifeAttack(const float DeltaSecond
 			SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(false);
 			SpawnedPickAxe->ResetDamageableFlag();
 		}
+	}
+}
+
+void ACompetitivePlayerCharacter::Tick_HandleHidden(const float DeltaSeconds)
+{
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const bool bIsInteracting = LastInteractTime != 0.0f && CurrentTime < LastInteractTime + InteractTimeRequired;
+	const bool bIsCharacterHidden = IsHidden();
+	const bool bShouldHideWeapons = bIsInteracting || bIsCharacterHidden;
+	if (IsValid(EquippedGun))
+	{
+		EquippedGun->SetActorHiddenInGame(bShouldHideWeapons);
+	}
+	if (IsValid(EquippedKnife))
+	{
+		EquippedKnife->SetActorHiddenInGame(bShouldHideWeapons);
+	}
+	if (IsValid(SpawnedPickAxe))
+	{
+		SpawnedPickAxe->SetActorHiddenInGame(bIsCharacterHidden);
 	}
 }

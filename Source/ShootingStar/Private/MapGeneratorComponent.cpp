@@ -9,6 +9,7 @@
 #include "MapObjectActor.h"
 #include "CompetitiveGameMode.h"
 #include "SafeZoneActor.h"
+#include "TumbleWeed.h"
 
 DEFINE_LOG_CATEGORY(MapGenerator);
 
@@ -278,9 +279,14 @@ bool UMapGeneratorComponent::PlaceObject(const FVector& Location, const UStaticM
     // StaticMeshActor 생성
     FActorSpawnParameters SpawnParams;
     SpawnParams.Owner = GetOwner();
-    AMapObjectActor* NewActor = GetWorld()->SpawnActor<AMapObjectActor>(AMapObjectActor::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams);
+    FString MeshName = ObjectMesh->GetName();
+    AMapObjectActor* NewActor = GetWorld()->SpawnActor<AMapObjectActor>(
+        MeshName.Equals(TEXT("SM_tumbleweed_001")) ? ATumbleWeed::StaticClass() : AMapObjectActor::StaticClass(),
+        Location,
+        FRotator::ZeroRotator,
+        SpawnParams);
     
-    if (NewActor)
+    if (IsValid(NewActor))
     {
         NewActor->SetReplicates(true);
         UStaticMeshComponent* MeshComp = NewActor->GetStaticMeshComponent();
@@ -290,10 +296,10 @@ bool UMapGeneratorComponent::PlaceObject(const FVector& Location, const UStaticM
 
         MeshComp->SetCanEverAffectNavigation(false);
         // 메쉬 이름이 "SM_tumbleweed_001"인 경우 Player와 Overlap되도록 설정
-        FString MeshName = ObjectMesh->GetName();
         if (MeshName.Equals(TEXT("SM_tumbleweed_001")))
         {
-            NewActor->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
+            NewActor->OnActorBeginOverlap.AddDynamic(this, &UMapGeneratorComponent::OnActorBeginOverlapOnTumbleWeedHandler);
+            NewActor->OnActorEndOverlap.AddDynamic(this, &UMapGeneratorComponent::OnActorEndOverlapOnTumbleWeedHandler);
         }
 
         NewActor->SetActorLocation(Location);
@@ -411,6 +417,16 @@ FVector UMapGeneratorComponent::GetRandomSupplySpawnLocation()
     );
 
     return DropLocation;
+}
+
+void UMapGeneratorComponent::OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor)
+{
+    OnActorBeginOverlapOnTumbleWeed.Broadcast(OverlappedActor, OtherActor);
+}
+
+void UMapGeneratorComponent::OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor)
+{
+    OnActorEndOverlapOnTumbleWeed.Broadcast(OverlappedActor, OtherActor);
 }
 
 void UMapGeneratorComponent::RegenerateResources()

@@ -19,6 +19,9 @@ class SHOOTINGSTAR_API UDecorationGenerator;
 
 DECLARE_LOG_CATEGORY_EXTERN(MapGenerator, Log, All);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FActorBeginOverlapOnTumbleWeed, AActor*, OverlappedActor, AActor*, OtherActor);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FActorEndOverlapOnTumbleWeed, AActor*, OverlappedActor, AActor*, OtherActor);
+
 /**
  * @brief 맵을 생성하는 컴포넌트입니다.
  * @details 맵의 크기, 장애물, 자원, 장식물 등을 설정하고 생성합니다.
@@ -38,6 +41,12 @@ class UMapGeneratorComponent : public UActorComponent
 public:	
 	UMapGeneratorComponent();
 
+	UPROPERTY(BlueprintAssignable)
+	FActorBeginOverlapOnTumbleWeed OnActorBeginOverlapOnTumbleWeed;
+	
+	UPROPERTY(BlueprintAssignable)
+	FActorEndOverlapOnTumbleWeed OnActorEndOverlapOnTumbleWeed;
+	
 	// Getter functions for Generators
 	FORCEINLINE int32 GetNumObstacles() const { return numObstacles; }
 	FORCEINLINE float GetObstacleMinDistance() const { return obstacleMinDistance; }
@@ -202,4 +211,11 @@ public:
         return Location.X >= -mapHalfSize && Location.X < mapHalfSize && 
                Location.Y >= -mapHalfSize && Location.Y < mapHalfSize;
     }
+
+private:
+	UFUNCTION()
+	void OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
+	
+	UFUNCTION()
+	void OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
 };

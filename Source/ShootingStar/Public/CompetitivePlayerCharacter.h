@@ -182,6 +182,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UTeamComponent> TeamComponent;
 
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UChildActorComponent> NameTagActorComponent;
+
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_PlayerName)
 	FString PlayerName;
 
@@ -265,9 +268,6 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetHealth() const;
 	void DestroyCharacter();
-	UFUNCTION(BlueprintCallable, Category = "Bush")
-	void SetInBush(bool bIsInBush);
-	bool bInBush;
 
 	//
 	// Replication Notifies
@@ -329,4 +329,6 @@ private:
 	void Tick_HandleResourceInteraction(float DeltaSeconds);
 
 	void Tick_HandleKnifeAttack(float DeltaSeconds);
+
+	void Tick_HandleHidden(float DeltaSeconds);
 };

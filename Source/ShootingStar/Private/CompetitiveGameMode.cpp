@@ -37,6 +37,8 @@ void ACompetitiveGameMode::InitGame(const FString& MapName, const FString& Optio
 
 	// MapGeneratorComponent 초기화
 	MapGeneratorComponent->Initialize();
+	MapGeneratorComponent->OnActorBeginOverlapOnTumbleWeed.AddDynamic(this, &ACompetitiveGameMode::OnActorBeginOverlapOnTumbleWeedHandler);
+	MapGeneratorComponent->OnActorEndOverlapOnTumbleWeed.AddDynamic(this, &ACompetitiveGameMode::OnActorEndOverlapOnTumbleWeedHandler);
 
 	// SafeZone 액터 생성
 	SafeZoneActor = GetWorld()->SpawnActor<ASafeZoneActor>(SafeZoneActorClass);
@@ -92,6 +94,7 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 				const float DistanceSquaredFromCenter = Character->GetActorLocation().SizeSquared2D();
 				if (DistanceSquaredFromCenter > RadiusSquaredSafeZone)
 				{
+					Character->SetActorHiddenInGame(true);
 					UGameplayStatics::ApplyDamage(Character, DamageSafeZone, nullptr, SafeZoneActor, nullptr);
 				}
 			}
@@ -352,4 +355,22 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
 	}
 	else
 		UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
+}
+
+void ACompetitiveGameMode::OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor)
+{
+	if (ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(OtherActor);
+		IsValid(Character))
+	{
+		Character->SetActorHiddenInGame(true);
+	}
+}
+
+void ACompetitiveGameMode::OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor)
+{
+	if (ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(OtherActor);
+	IsValid(Character))
+	{
+		Character->SetActorHiddenInGame(false);
+	}
 }
