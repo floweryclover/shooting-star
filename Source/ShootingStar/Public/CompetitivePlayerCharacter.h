@@ -39,6 +39,11 @@ public:
 
 	// 근접 무기 공격 쿨타임.
 	constexpr static float KnifeCoolTime = 1.0f;
+
+	// 자원 캡슐 트레이스 상수들.
+	constexpr static float RadiusCapsule = 60.0f;
+	constexpr static float HalfHeightCapsule = 20.0f;
+	const ETraceTypeQuery TraceTypeResource = UEngineTypes::ConvertToTraceType(CollisionChannels::ResourceActor);
 	
 	ACompetitivePlayerCharacter();
 
@@ -283,7 +288,6 @@ protected:
 	float LastKnifeAttackTime = 0.0f;
 	
 private:
-	
 	//
 	// 전투 관련
 	//
@@ -363,4 +367,6 @@ private:
 	void Tick_HandleKnifeAttack(float DeltaSeconds);
 
 	void Tick_HandleHidden(float DeltaSeconds);
+
+	bool CapsuleTraceResource(FHitResult& OutHitResult);
 };
