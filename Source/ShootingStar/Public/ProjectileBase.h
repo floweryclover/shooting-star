@@ -26,7 +26,10 @@ public:
 
 	UPROPERTY()
 	ETeam ShooterTeam;
-
+	
+	UPROPERTY()
+	TObjectPtr<AActor> WeaponFired;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -53,6 +56,13 @@ public:
 
 	UFUNCTION()
 	virtual void OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor, UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex, bool bFromSweep,
+		const FHitResult& SweepResult);
+
+private:
+	UFUNCTION()
+	void OnOverlapBegin_Body_Nonvirtual(UPrimitiveComponent* OverlappedComp,
 		AActor* OtherActor, UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex, bool bFromSweep,
 		const FHitResult& SweepResult);

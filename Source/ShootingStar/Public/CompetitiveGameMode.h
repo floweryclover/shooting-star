@@ -22,6 +22,10 @@ class SHOOTINGSTAR_API ACompetitiveGameMode final : public AGameModeBase
 	GENERATED_BODY()
 
 public:
+	static constexpr float IntervalSafeZoneDamageApply = 1.0f;
+
+	static constexpr float DamageSafeZone = 10.0f;
+	
 	ACompetitiveGameMode();
 
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
@@ -41,12 +45,11 @@ public:
 	virtual void RestartPlayer(AController* NewPlayer) override;
 
 	/**
-	 * Killer에게 점수를 줍니다. 실제로 액터를 죽이거나 하지 않습니다.
-	 * @param Killer 
+	 * Killee의 반대편 팀에 점수를 줍니다. 실제로 액터를 죽이거나 하지 않습니다.
 	 * @param Killee 
 	 */
 	UFUNCTION(BlueprintCallable)
-	void HandleKill(AActor* Killer, AActor* Killee);
+	void HandleKill(AActor* Killee);
 	
 	virtual int32 GetNumPlayers() override
 	{
@@ -126,4 +129,12 @@ private:
 
 	UFUNCTION()
 	void HandleSupplyDrop(FVector Location);
+
+	float TimeElapsedLastSafeZoneDamaged;
+
+	UFUNCTION()
+	void OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
+	
+	UFUNCTION()
+	void OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
 };

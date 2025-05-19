@@ -15,6 +15,7 @@
 #include "SafeZoneActor.h"
 #include "SupplyActor.h"
 #include "ResourceActor.h"
+#include "Kismet/GameplayStatics.h"
 
 ACompetitiveGameMode::ACompetitiveGameMode()
 	: NumPlayers{1} // 호스트 항상 포함
@@ -36,6 +37,8 @@ void ACompetitiveGameMode::InitGame(const FString& MapName, const FString& Optio
 
 	// MapGeneratorComponent 초기화
 	MapGeneratorComponent->Initialize();
+	MapGeneratorComponent->OnActorBeginOverlapOnTumbleWeed.AddDynamic(this, &ACompetitiveGameMode::OnActorBeginOverlapOnTumbleWeedHandler);
+	MapGeneratorComponent->OnActorEndOverlapOnTumbleWeed.AddDynamic(this, &ACompetitiveGameMode::OnActorEndOverlapOnTumbleWeedHandler);
 
 	// SafeZone 액터 생성
 	SafeZoneActor = GetWorld()->SpawnActor<ASafeZoneActor>(SafeZoneActorClass);
@@ -72,6 +75,29 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 	{
 		// 자기장 업데이트
 		SafeZoneActor->SetRadiusByAlpha(CompetitiveSystemComponent->GetSafeZoneAlpha());
+
+		// 자기장 밖 플레이어들 데미지
+		TimeElapsedLastSafeZoneDamaged += DeltaSeconds;
+		if (TimeElapsedLastSafeZoneDamaged >= IntervalSafeZoneDamageApply)
+		{
+			TimeElapsedLastSafeZoneDamaged = 0.0f;
+			const float RadiusSquaredSafeZone = SafeZoneActor->GetRadius() * SafeZoneActor->GetRadius();
+			for (APlayerState* const PlayerState : GameState->PlayerArray)
+			{
+				APlayerController* const PlayerController = PlayerState->GetPlayerController();
+				if (!IsValid(PlayerController) || !IsValid(PlayerController->GetCharacter()))
+				{
+					continue;
+				}
+
+				ACharacter* const Character = PlayerController->GetCharacter();
+				const float DistanceSquaredFromCenter = Character->GetActorLocation().SizeSquared2D();
+				if (DistanceSquaredFromCenter > RadiusSquaredSafeZone)
+				{
+					UGameplayStatics::ApplyDamage(Character, DamageSafeZone, nullptr, SafeZoneActor, nullptr);
+				}
+			}
+		}
 	}
 
 	// 리스폰해야 하는 플레이어 리스폰
@@ -167,7 +193,7 @@ void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 		NewPlayer->UnPossess();
 		OldPawn->Destroy();
 	}
-	
+
 	const FVector SpawnPoint = GetMostIsolatedSpawnPointFor(CompetitivePlayerController);
 	ACompetitivePlayerCharacter* const CompetitivePlayerCharacter = Cast<ACompetitivePlayerCharacter>(
 		SpawnDefaultPawnAtTransform(NewPlayer, FTransform{SpawnPoint + FVector{0.0, 0.0, 100.0}}));
@@ -175,12 +201,11 @@ void ACompetitiveGameMode::RestartPlayer(AController* const NewPlayer)
 	UTeamComponent* const TeamComponent = CompetitivePlayerController->GetTeamComponent();
 	CompetitivePlayerCharacter->GetTeamComponent()->SetTeam(TeamComponent->GetTeam());
 	CompetitivePlayerCharacter->SetPlayerName(NewPlayer->GetPlayerState<APlayerState>()->GetPlayerName());
-	CompetitivePlayerCharacter->OnKilled.AddDynamic(this, &ACompetitiveGameMode::HandleKill);
 
 	NewPlayer->Possess(CompetitivePlayerCharacter);
 }
 
-void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee)
+void ACompetitiveGameMode::HandleKill(AActor* const Killee)
 {
 	// 지금 게임 중인지 검증
 	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
@@ -188,11 +213,6 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee
 		return;
 	}
 
-	if (!IsValid(Killer))
-	{
-		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - Killer is invalid."));
-		return;
-	}
 	if (!IsValid(Killee))
 	{
 		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - Killee is invalid."));
@@ -200,20 +220,16 @@ void ACompetitiveGameMode::HandleKill(AActor* const Killer, AActor* const Killee
 	}
 
 	// 팀이 유효한지 검증
-	UTeamComponent* const TeamComponent_Killer = Cast<UTeamComponent>(
-		Killer->GetComponentByClass(UTeamComponent::StaticClass()));
 	UTeamComponent* const TeamComponent_Killee = Cast<UTeamComponent>(
 		Killee->GetComponentByClass(UTeamComponent::StaticClass()));
-	if (!IsValid(TeamComponent_Killer) || !IsValid(TeamComponent_Killee)
-		|| TeamComponent_Killer->GetTeam() == ETeam::None || TeamComponent_Killee->GetTeam() == ETeam::None
-		|| TeamComponent_Killer->GetTeam() == TeamComponent_Killee->GetTeam())
+	if (!IsValid(TeamComponent_Killee) || TeamComponent_Killee->GetTeam() == ETeam::None)
 	{
-		UE_LOG(LogShootingStar, Error, TEXT("HandleKill() failed - One or more TeamComponent is invalid or None."));
 		return;
 	}
 
-	const ETeam Team_Attacker = TeamComponent_Killer->GetTeam();
-	CompetitiveSystemComponent->GiveKillScoreForTeam(Team_Attacker);
+	CompetitiveSystemComponent->GiveKillScoreForTeam(TeamComponent_Killee->GetTeam() == ETeam::Blue
+		                                                 ? ETeam::Red
+		                                                 : ETeam::Blue);
 }
 
 FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* const Player) const
@@ -246,15 +262,15 @@ FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* co
 		{
 			DistanceSquaredSum += FVector::DistSquaredXY(SpawnPoint, OtherPlayerPosition);
 		}
-		
-		SpawnPointsDescending.Add({ SpawnPoint.X, SpawnPoint.Y, DistanceSquaredSum });
+
+		SpawnPointsDescending.Add({SpawnPoint.X, SpawnPoint.Y, DistanceSquaredSum});
 	}
-	
+
 	Algo::Sort(SpawnPointsDescending, [](const FVector& Lhs, const FVector& Rhs) { return Lhs.Z > Rhs.Z; });
 
 	FVector ReturnValue;
 	const float SafeZoneRadius = SafeZoneActor->GetRadius();
-	
+
 	for (const FVector& SpawnPoint : SpawnPointsDescending)
 	{
 		ReturnValue = SpawnPoint;
@@ -264,10 +280,10 @@ FVector ACompetitiveGameMode::GetMostIsolatedSpawnPointFor(APlayerController* co
 		{
 			break;
 		}
-		
+
 		UE_LOG(LogShootingStar, Log, TEXT("%f, %f는 자기장 밖에 있습니다."), SpawnPoint.X, SpawnPoint.Y);
 	}
-	
+
 	return ReturnValue;
 }
 
@@ -313,6 +329,8 @@ void ACompetitiveGameMode::OnGameStarted()
 		SupplyActor->Destroy();
 	}
 	SupplyActors.Empty();
+
+	TimeElapsedLastSafeZoneDamaged = 0.0f;
 }
 
 void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
@@ -323,16 +341,35 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
 		return;
 	}
 
-    // SupplyActor 스폰
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    
-    if (ASupplyActor* SupplyActor = GetWorld()->SpawnActor<ASupplyActor>(SupplyActorClass, Location, FRotator::ZeroRotator, SpawnParams))
-    {
-    	SupplyActor->SetReplicates(true);
-    	SupplyActors.Add(SupplyActor);
-        UE_LOG(LogShootingStar, Log, TEXT("Supply %d spawned at %s"), SupplyActors.Num()-1, *Location.ToString());
-    }
-    else
-        UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
+	// SupplyActor 스폰
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (ASupplyActor* SupplyActor = GetWorld()->SpawnActor<ASupplyActor>(
+		SupplyActorClass, Location, FRotator::ZeroRotator, SpawnParams))
+	{
+		SupplyActor->SetReplicates(true);
+		SupplyActors.Add(SupplyActor);
+		UE_LOG(LogShootingStar, Log, TEXT("Supply %d spawned at %s"), SupplyActors.Num()-1, *Location.ToString());
+	}
+	else
+		UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
+}
+
+void ACompetitiveGameMode::OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor)
+{
+	if (ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(OtherActor);
+		IsValid(Character))
+	{
+		Character->IncreaseBushCount();
+	}
+}
+
+void ACompetitiveGameMode::OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor)
+{
+	if (ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(OtherActor);
+	IsValid(Character))
+	{
+		Character->DecreaseBushCount();
+	}
 }

@@ -81,6 +81,7 @@ void AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 			AActor* Shooter = GetAttachParentActor();
 			if (UTeamComponent* TeamComp = Shooter->FindComponentByClass<UTeamComponent>()) {
 				projectile->ShooterTeam = TeamComp->GetTeam();
+				projectile->WeaponFired = this;
 			}
 
 			FVector FireDirection = SpreadRot.Vector();

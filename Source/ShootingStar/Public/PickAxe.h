@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Knife.h"
-#include "Components/AudioComponent.h"
 #include "PickAxe.generated.h"
 
 /**
@@ -23,15 +22,10 @@ public:
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex, bool bFromSweep,
-		const FHitResult& SweepResult);
-
-	float knifeDamage = 20.0f;
-
-protected:
-	// Called when the game starts or when spawned
+		const FHitResult& SweepResult) override;
+	
 	virtual void BeginPlay() override;
-
-public:
+	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 };

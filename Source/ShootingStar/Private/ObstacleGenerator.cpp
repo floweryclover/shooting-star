@@ -36,28 +36,26 @@ void UObstacleGenerator::GenerateObjects()
     int32 SpawnAttempts = 0;
     int32 PlacedObjects = 0;
 
-    while (PlacedObjects < numObstacles && SpawnAttempts < numObstacles * 5)
+    while (PlacedObjects < numObstacles && SpawnAttempts < numObstacles * 3)
     {
         FVector RandomLocation = Owner->GetRandomPosition();
-        if (!Owner->CheckLocation(RandomLocation))
-        {
-            RandomLocation = Owner->FindNearestValidLocation(RandomLocation, obstacleMinDistance, EObjectMask::ObstacleMask);
+        int32 RandomIndex = FMath::RandRange(0, obstacleMeshes.Num() - 1);
+        UStaticMesh* RandomMesh = obstacleMeshes[RandomIndex];
 
+        if (!Owner->CheckLocation(RandomLocation, RandomMesh, EObjectMask::ObstacleMask))
+        {
+            RandomLocation = Owner->FindNearestValidLocation(RandomLocation, obstacleMinDistance, RandomMesh, EObjectMask::ObstacleMask);
             if (RandomLocation == FVector::ZeroVector)
                 continue;
         }
 
-        int32 RandomIndex = FMath::RandRange(0, obstacleMeshes.Num() - 1);
-        if (obstacleMeshes.IsValidIndex(RandomIndex))
+        if (Owner->PlaceObject(RandomLocation, RandomMesh))
         {
-            UStaticMesh* RandomMesh = obstacleMeshes[RandomIndex];
-            if (Owner && Owner->PlaceObject(RandomLocation, RandomMesh))
-            {
-                PlacedObjects++;
-                Owner->SetObjectRegion(RandomLocation, RandomMesh, EObjectMask::ObstacleMask);
-                UE_LOG(MapGenerator, Log, TEXT("Generated Obstacle: %s at %s"), *RandomMesh->GetName(), *RandomLocation.ToString());
-            }
+            PlacedObjects++;
+            Owner->SetObjectRegion(RandomLocation, RandomMesh, EObjectMask::ObstacleMask);
+            UE_LOG(MapGenerator, Log, TEXT("Generated Obstacle: %s at %s"), *RandomMesh->GetName(), *RandomLocation.ToString());
         }
+
         SpawnAttempts++;
     }
 }

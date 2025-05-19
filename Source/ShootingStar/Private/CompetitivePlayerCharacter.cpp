@@ -20,9 +20,11 @@
 #include "ResourceActor.h"
 #include "Character_AnimInstance.h"
 #include "CompetitiveGameMode.h"
+#include "CompetitiveGameState.h"
 #include "CompetitiveSystemComponent.h"
 #include "InventoryComponent.h"
 #include "SupplyActor.h"
+#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
 
@@ -30,6 +32,15 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 	TeamComponent = CreateDefaultSubobject<UTeamComponent>(TEXT("TeamComponent"));
+	NameTagActorComponent = CreateDefaultSubobject<UChildActorComponent>(TEXT("NameTagActorComponent"));
+	NameTagActorComponent->SetupAttachment(GetCapsuleComponent());
+	static ConstructorHelpers::FClassFinder<AActor> BpFinderPlayerNameTagActor(
+		TEXT("/Game/Blueprints/Character/BP_PlayerNameTagActor"));
+	if (BpFinderPlayerNameTagActor.Succeeded())
+	{
+		NameTagActorComponent->SetChildActorClass(*BpFinderPlayerNameTagActor.Class);
+	}
+
 	// Set size for player capsule
 	GetCapsuleComponent()->InitCapsuleSize(70.f, 96.0f);
 	GetCapsuleComponent()->SetCollisionProfileName("Pawn");
@@ -48,7 +59,7 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 
 	GetMesh()->SetCollisionProfileName(TEXT("BodyMesh"));
 	GetMesh()->SetGenerateOverlapEvents(true);
-	
+
 	bUseControllerRotationPitch = true;
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = true;
@@ -91,9 +102,18 @@ void ACompetitivePlayerCharacter::BeginPlay()
 		return;
 	}
 #pragma region Server
-	SpawnPickAxe();
+	FActorSpawnParameters Params;
+	Params.Owner = GetController();
+	Params.Instigator = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass, Params);
+	SpawnedPickAxe->SetReplicates(true);
+	SpawnedPickAxe->SetActorEnableCollision(true);
 	Health = MaxHealth;
 	OnRep_Health();
+
+	AnimInstance->OnMiningAnimationHit.AddDynamic(this, &ACompetitivePlayerCharacter::OnMiningAnimationHit);
 #pragma endregion Server
 }
 
@@ -107,6 +127,7 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ACompetitivePlayerCharacter, SpawnedPickAxe);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, EquippedGun);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, EquippedKnife);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, KnifeAttackCount);
@@ -154,15 +175,19 @@ float ACompetitivePlayerCharacter::GetHealth() const
 void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
+	NameTagActorComponent->GetChildActor()->SetActorHiddenInGame(IsHidden());
 	if (!HasAuthority())
 	{
 		return;
 	}
-
 #pragma region Server
+	if (IsDead())
+	{
+		SetActorHiddenInGame(true);
+	}
 	Tick_HandleResourceInteraction(DeltaSeconds);
 	Tick_HandleKnifeAttack(DeltaSeconds);
+	Tick_HandleHidden(DeltaSeconds);
 #pragma endregion Server
 }
 
@@ -183,7 +208,7 @@ void ACompetitivePlayerCharacter::Destroyed()
 			EquippedKnife->Destroy();
 		}
 	}
-	
+
 	Super::Destroyed();
 }
 
@@ -208,6 +233,7 @@ void ACompetitivePlayerCharacter::WeaponChange()
 	EquipGun(SpawnedRifle);
 #pragma endregion Server
 }
+
 void ACompetitivePlayerCharacter::WeaponShotgunChange()
 {
 	FAIL_IF_NOT_SERVER();
@@ -265,7 +291,7 @@ void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 		EquippedKnife->Destroy();
 		EquippedKnife = nullptr;
 	}
-	
+
 	if (IsValid(EquippedGun))
 	{
 		EquippedGun->Destroy();
@@ -276,6 +302,7 @@ void ACompetitivePlayerCharacter::EquipGun(AGun* GunToEquip)
 	OnRep_EquippedKnife();
 #pragma endregion Server
 }
+
 void ACompetitivePlayerCharacter::EquipRocketLauncher()
 {
 	FAIL_IF_NOT_SERVER();
@@ -316,7 +343,7 @@ void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 		EquippedGun->Destroy();
 		EquippedGun = nullptr;
 	}
-	
+
 	if (IsValid(EquippedKnife))
 	{
 		EquippedKnife->Destroy();
@@ -324,7 +351,7 @@ void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 
 	if (IsValid(KnifeToEquip))
 	{
-		KnifeToEquip->SetknifeDamage(KnifeToEquip->GetknifeDamage() * IncreasedDamage);
+		KnifeToEquip->SetKnifeDamage(KnifeToEquip->GetKnifeDamage() * IncreasedDamage);
 	}
 
 	EquippedKnife = KnifeToEquip;
@@ -336,7 +363,7 @@ void ACompetitivePlayerCharacter::EquipKnife(AKnife* KnifeToEquip)
 void ACompetitivePlayerCharacter::Attack()
 {
 	FAIL_IF_NOT_SERVER();
-	
+
 #pragma region Server
 	AnimInstance->IsAttack = true;
 	const float CurrentTime = GetWorld()->GetTimeSeconds();
@@ -359,37 +386,23 @@ void ACompetitivePlayerCharacter::Attack()
 		{
 			EquipPickAxe();
 		}
-		
+
 		OnRep_KnifeAttackCount();
 		KnifeAttackCount += 1;
 	}
 #pragma endregion Server
 }
 
-void ACompetitivePlayerCharacter::SpawnPickAxe()
+void ACompetitivePlayerCharacter::EquipPickAxe_Implementation()
 {
-	FAIL_IF_NOT_SERVER();
-	
-#pragma region Server
-	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass);
-	SpawnedPickAxe->SetReplicates(true);
-
-	FTransform RelativeTransform;
-	RelativeTransform.SetRotation(FQuat(FVector(-1, 0, 0), FMath::DegreesToRadians(90.f)));
-
-	SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		TEXT("Weapon_R_Socket"));
-	SpawnedPickAxe->SetActorRelativeTransform(RelativeTransform);
-#pragma endregion Server
-}
-
-void ACompetitivePlayerCharacter::EquipPickAxe()
-{
-	FAIL_IF_NOT_SERVER();
-
-#pragma region Server
 	if (SpawnedPickAxe)
 	{
+		if (!HasAuthority())
+		{
+			SpawnedPickAxe->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+			SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+			                                  TEXT("Weapon_R_Socket"));
+		}
 		FTransform RelativeTransform;
 		RelativeTransform.SetRotation(FQuat(FVector(-1, 0, 0), FMath::DegreesToRadians(90.f)));
 
@@ -397,7 +410,6 @@ void ACompetitivePlayerCharacter::EquipPickAxe()
 		                                  TEXT("Weapon_R_Socket"));
 		SpawnedPickAxe->SetActorRelativeTransform(RelativeTransform);
 	}
-#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::UnEquipPickAxe()
@@ -408,10 +420,11 @@ void ACompetitivePlayerCharacter::UnEquipPickAxe()
 		                                  TEXT("Backpack_Socket"));
 	}
 }
+
 void ACompetitivePlayerCharacter::PlayMiningAnim()
 {
 	FAIL_IF_NOT_SERVER();
-	
+
 #pragma region Server
 	EquipPickAxe();
 
@@ -429,8 +442,8 @@ void ACompetitivePlayerCharacter::PullTrigger()
 	{
 		// 총에서 소켓 위치와 회전 가져오기
 		FVector FireLoc = EquippedGun->BodyMesh->GetSocketLocation("Muzzle");
-		FRotator FireRot = Owner->GetActorRotation();
-		FRotator BulletFireRot = FireRot; // 총구 방향 그대로 발사
+		FRotator FireRot = GetActorRotation();
+		FRotator BulletFireRot = GetActorRotation();
 
 		EquippedGun->ProjectileFire(FireLoc, FireRot, BulletFireRot);
 
@@ -446,20 +459,17 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 	FAIL_IF_NOT_SERVER_V(0.0f);
 
 #pragma region Server
-	if (!IsValid(EventInstigator))
+	if (IsValid(EventInstigator)
+		&& IsValid(EventInstigator->GetPawn()))
 	{
-		UE_LOG(LogShootingStar, Error, TEXT("EventInstigator is invalid!"));
-		return 0.0f;
+		if (ACompetitivePlayerCharacter* const InstigatorCharacter = Cast<ACompetitivePlayerCharacter>(
+				EventInstigator->GetPawn());
+			IsValid(InstigatorCharacter)
+			&& InstigatorCharacter->GetTeamComponent()->GetTeam() == this->GetTeamComponent()->GetTeam())
+		{
+			return 0.0f;
+		}
 	}
-	if (!IsValid(DamageCauser))
-	{
-		UE_LOG(LogShootingStar, Error, TEXT("DamageCauser is invalid!"));
-		return 0.0f;
-	}
-
-	ACompetitivePlayerCharacter* InstigatorCharacter = Cast<ACompetitivePlayerCharacter>(EventInstigator->GetPawn());
-	if (IsValid(InstigatorCharacter) && InstigatorCharacter->GetTeamComponent()->GetTeam() == this->GetTeamComponent()->GetTeam())
-		return 0.0f;
 
 	float DamageToApply{0.0f};
 
@@ -497,10 +507,31 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		GetMesh()->WakeAllRigidBodies();
 		GetMesh()->bBlendPhysics = true;
 
+		ACompetitiveGameState* const GameState = Cast<ACompetitiveGameState>(GetWorld()->GetGameState());
+		FString KilleeName;
+		FString KillerName;
+		if (APlayerController* const KilleeController = Cast<APlayerController>(GetController());
+			IsValid(KilleeController) && IsValid(KilleeController->PlayerState))
+		{
+			KilleeName = KilleeController->PlayerState->GetPlayerName();
+		}
+		if (APlayerController* const KillerController = Cast<APlayerController>(EventInstigator);
+			IsValid(KillerController) && IsValid(KillerController->PlayerState))
+		{
+			KillerName = KillerController->PlayerState->GetPlayerName();
+		}
+		GameState->MulticastPlayerDead(KilleeName, KillerName,
+		                               IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr);
+
 		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
 		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, DeadTime, false);
-	
-		OnKilled.Broadcast(EventInstigator, GetController());
+
+		ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
+		UE_LOG(LogShootingStar, Log, TEXT("Dead: %s, Killer: %s, Reason: %s"),
+		       *KilleeName,
+		       *KillerName,
+		       (IsValid(DamageCauser) ? *DamageCauser->GetClass()->GetName() : TEXT("Unknown")));
+		GameMode->HandleKill(GetController());
 	}
 
 	return DamageToApply;
@@ -524,7 +555,7 @@ void ACompetitivePlayerCharacter::ApplyDoTDamage(AController* InInstigator, AAct
 void ACompetitivePlayerCharacter::ApplyDoTTick()
 {
 	FAIL_IF_NOT_SERVER();
-	
+
 #pragma region Server
 	const float TickDamage = 5.0f;
 	const float TotalDuration = 5.0f;
@@ -584,7 +615,7 @@ void ACompetitivePlayerCharacter::DashStart()
 void ACompetitivePlayerCharacter::DashEnd()
 {
 	FAIL_IF_NOT_SERVER();
-	
+
 #pragma region Server
 	GetCharacterMovement()->StopMovementImmediately();
 	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
@@ -594,12 +625,12 @@ void ACompetitivePlayerCharacter::DashEnd()
 void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData)
 {
 	FAIL_IF_NOT_SERVER();
-
 #pragma region Server
 	CurrentWeapon = NewWeaponData;
 	OnRep_CurrentWeapon();
 	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
 	MaxHealth = 100;
+	Health = FMath::Min(Health, MaxHealth);
 	IncreasedDamage = 1;
 	DamageTypeClass = UBullet_DamageType::StaticClass();
 	OnRep_CurrentWeapon();
@@ -666,7 +697,7 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 }
 
 void ACompetitivePlayerCharacter::CraftWeapon_Implementation(const FWeaponData& SelectWeapon,
-	const TArray<int32>& ClickedResources)
+                                                             const TArray<int32>& ClickedResources)
 {
 #pragma region Server
 	// 실제로 자원을 가졌는지 검증
@@ -694,11 +725,6 @@ void ACompetitivePlayerCharacter::CraftWeapon_Implementation(const FWeaponData& 
 #pragma endregion Server
 }
 
-void ACompetitivePlayerCharacter::SetInBush(bool bIsInBush)
-{
-	FAIL_IF_NOT_SERVER();
-}
-
 FWeaponData ACompetitivePlayerCharacter::GetWeaponData()
 {
 	return CurrentWeapon;
@@ -707,7 +733,7 @@ FWeaponData ACompetitivePlayerCharacter::GetWeaponData()
 void ACompetitivePlayerCharacter::InteractResource()
 {
 	FAIL_IF_NOT_SERVER();
-	
+
 #pragma region Server
 	ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
 	UCompetitiveSystemComponent* const CompetitiveSystemComponent = GameMode->GetCompetitiveSystemComponent();
@@ -716,16 +742,27 @@ void ACompetitivePlayerCharacter::InteractResource()
 		return;
 	}
 	
-	FVector Start = GetActorLocation();
-	Start.Z = 0.f;
-	FRotator Rotation = GetActorRotation();
-	FVector End = Start + Rotation.Vector() * 130.f;
 	FHitResult Hit;
-	if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
+	if (!CapsuleTraceResource(Hit))
 	{
 		return;
 	}
-	
+
+	// Supply 태그 확인
+	if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()); Hit.GetActor()->ActorHasTag("Supply") &&
+		IsValid(SupplyActor))
+	{
+		// 보급품 상자가 이미 열려있는지 확인
+		if (!SupplyActor->IsOpened())
+		{
+			// 무기 데이터 설정 및 장착
+			SetWeaponData(SupplyActor->GetStoredWeapon());
+			EquipRocketLauncher();
+			SupplyActor->PlayOpeningAnimation();
+		}
+		return;
+	}
+
 	const float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime < LastInteractTime + InteractTimeRequired)
 	{
@@ -753,7 +790,7 @@ void ACompetitivePlayerCharacter::OnRep_Health()
 		bUseControllerRotationPitch = false;
 		bUseControllerRotationYaw = false;
 		bUseControllerRotationRoll = false;
-		
+
 		AnimInstance->PlayDeadMontage(DeadTime);
 	}
 }
@@ -767,7 +804,7 @@ void ACompetitivePlayerCharacter::OnRep_EquippedGun()
 			EquippedGun->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		}
 		EquippedGun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-							TEXT("Weapon_R_Socket"));
+		                               TEXT("Weapon_R_Socket"));
 		EquippedGun->SetDamageType(DamageTypeClass);
 	}
 	RefreshAnimInstance();
@@ -779,13 +816,10 @@ void ACompetitivePlayerCharacter::OnRep_EquippedKnife()
 	{
 		if (!HasAuthority())
 		{
-			if (!HasAuthority())
-			{
-				EquippedKnife->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-			}
+			EquippedKnife->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		}
 		EquippedKnife->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-					TEXT("Weapon_R_Socket"));
+		                                 TEXT("Weapon_R_Socket"));
 	}
 
 	RefreshAnimInstance();
@@ -793,11 +827,16 @@ void ACompetitivePlayerCharacter::OnRep_EquippedKnife()
 
 void ACompetitivePlayerCharacter::OnRep_FireCount()
 {
+	if (!IsValid(EquippedGun))
+	{
+		return;
+	}
+
 	if (EquippedGun->IsA(RocketLauncherClass))
 	{
 		AnimInstance->PlayRocketFireMontage();
 	}
-	else 
+	else
 	{
 		AnimInstance->PlayFireMontage();
 	}
@@ -828,9 +867,33 @@ void ACompetitivePlayerCharacter::OnRep_MiningCount()
 	AnimInstance->PlayMiningMontage(InteractTimeRequired, 4);
 }
 
+void ACompetitivePlayerCharacter::OnRep_LastInteractTime()
+{
+	if (LastInteractTime == 0.0f)
+	{
+		AnimInstance->StopMiningMontage();
+	}
+}
+
 void ACompetitivePlayerCharacter::OnTeamChanged(const ETeam Team)
 {
 	SetTeamMaterial(Team);
+}
+
+void ACompetitivePlayerCharacter::OnMiningAnimationHit()
+{
+#pragma region Server
+	FHitResult Hit;
+	if (!CapsuleTraceResource(Hit) || Hit.GetActor()->ActorHasTag("Supply"))
+	{
+		return;
+	}
+
+	if (AResourceActor* const Resource = Cast<AResourceActor>(Hit.GetActor()))
+	{
+		Resource->Hit(GetActorLocation());
+	}
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::RefreshAnimInstance()
@@ -842,19 +905,12 @@ void ACompetitivePlayerCharacter::RefreshAnimInstance()
 
 void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float DeltaSeconds)
 {
-	if (IsDead())
+	if (IsDead() || LastInteractTime == 0.0f)
 	{
 		LastInteractTime = 0.0f;
 		return;
 	}
-	
-	// 이번이 자원 채집모션이 끝난 후의 첫 틱이라면 자원 채집 실시
-	const float CurrentTime = GetWorld()->GetTimeSeconds();
-	if (LastInteractTime == 0.0f || CurrentTime < LastInteractTime + InteractTimeRequired)
-	{
-		return;
-	}
-	LastInteractTime = 0.0f;
+
 	ACompetitiveGameMode* const GameMode = Cast<ACompetitiveGameMode>(GetWorld()->GetAuthGameMode());
 	UCompetitiveSystemComponent* const CompetitiveSystemComponent = GameMode->GetCompetitiveSystemComponent();
 	if (CompetitiveSystemComponent->GetCurrentPhase() != ECompetitiveGamePhase::Game)
@@ -862,48 +918,27 @@ void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float Del
 		return;
 	}
 	
-	FVector Start = GetActorLocation();
-	Start.Z = 0.f;
-	FRotator Rotation = GetActorRotation();
-
-	FVector End = Start + Rotation.Vector() * 130.f;
-
-	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1.0f, 0, 1.0f);
 	FHitResult Hit;
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, CollisionChannels::ResourceActor))
+	if (!CapsuleTraceResource(Hit))
 	{
-		DrawDebugPoint(GetWorld(), Hit.Location, 10, FColor::Red, false, 2.0f);
-		UE_LOG(LogTemp, Log, TEXT("Hit Actor: %s"), *Hit.GetActor()->GetName());
+		// 캐고 있는데 자원 사라짐
+		LastInteractTime = 0.0f;
+		OnRep_LastInteractTime();
+		return;
+	}
 
-		// Supply 태그 확인
-		if (Hit.GetActor()->ActorHasTag("Supply"))
-		{
-			if (ASupplyActor* SupplyActor = Cast<ASupplyActor>(Hit.GetActor()))
-			{
-				// 보급품 상자가 이미 열려있는지 확인
-				if (!SupplyActor->IsOpened())
-				{
-					// 무기 데이터 설정 및 장착
-					SetWeaponData(SupplyActor->GetStoredWeapon());
-					EquipRocketLauncher();
-					SupplyActor->PlayOpeningAnimation();
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("SupplyActor not found"));
-			}
-		}
-		else
-		{
-			// 기존 자원 처리
-			AResourceActor* const Resource = Cast<AResourceActor>(Hit.GetActor());
-			if (Resource)
-			{
-				InventoryComponent->AddResource(Resource->ResourceData);
-				Resource->UpdateMesh_AfterHarvest();
-			}
-		}
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime < LastInteractTime + InteractTimeRequired) // 아직 자원 채집 완료되지 않음
+	{
+		return;
+	}
+	LastInteractTime = 0.0f;
+
+	AResourceActor* const Resource = Cast<AResourceActor>(Hit.GetActor());
+	if (Resource)
+	{
+		InventoryComponent->AddResource(Resource->ResourceData);
+		Resource->UpdateMesh_AfterHarvest();
 	}
 }
 
@@ -916,12 +951,71 @@ void ACompetitivePlayerCharacter::Tick_HandleKnifeAttack(const float DeltaSecond
 	}
 	const float CurrentTime = GetWorld()->GetTimeSeconds();
 	const bool bIsKnifeAttacking = CurrentTime < LastKnifeAttackTime + KnifeCoolTime;
+
+	if (bIsKnifeAttacking)
+	{
+		if (IsValid(EquippedKnife))
+		{
+			EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(true);
+		}
+		if (IsValid(SpawnedPickAxe))
+		{
+			SpawnedPickAxe->SetOwner(GetController());
+			SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(true);
+		}
+	}
+	else
+	{
+		if (IsValid(EquippedKnife))
+		{
+			EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(false);
+			EquippedKnife->ResetDamageableFlag();
+		}
+		if (IsValid(SpawnedPickAxe))
+		{
+			SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(false);
+			SpawnedPickAxe->ResetDamageableFlag();
+		}
+	}
+}
+
+void ACompetitivePlayerCharacter::Tick_HandleHidden(const float DeltaSeconds)
+{
+	const float CurrentTime = GetWorld()->GetTimeSeconds();
+	const bool bIsInteracting = LastInteractTime != 0.0f && CurrentTime < LastInteractTime + InteractTimeRequired;
+	const bool bIsCharacterHidden = IsHidden();
+	const bool bShouldHideWeapons = bIsInteracting || bIsCharacterHidden;
+	if (IsValid(EquippedGun))
+	{
+		EquippedGun->SetActorHiddenInGame(bShouldHideWeapons);
+	}
 	if (IsValid(EquippedKnife))
 	{
-		EquippedKnife->AttackHitBox->SetGenerateOverlapEvents(bIsKnifeAttacking);
+		EquippedKnife->SetActorHiddenInGame(bShouldHideWeapons);
 	}
 	if (IsValid(SpawnedPickAxe))
 	{
-		SpawnedPickAxe->AttackHitBox->SetGenerateOverlapEvents(bIsKnifeAttacking);
+		SpawnedPickAxe->SetActorHiddenInGame(bIsCharacterHidden);
 	}
+}
+
+bool ACompetitivePlayerCharacter::CapsuleTraceResource(FHitResult& OutHitResult)
+{
+	FVector Start = GetActorLocation();
+	Start.Z = 0.f;
+	FRotator Rotation = GetActorRotation();
+	FVector End = Start + Rotation.Vector() * 130.f;
+	TArray<AActor*> ActorsToIgnore;
+	return UKismetSystemLibrary::CapsuleTraceSingle(
+		GetWorld(),
+		Start,
+		End,
+		RadiusCapsule,
+		HalfHeightCapsule,
+		TraceTypeResource,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::None,
+		OutHitResult,
+		true);
 }

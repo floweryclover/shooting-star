@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "WeaponData.h"
+#include "ShootingStar/ShootingStar.h"
 #include "CompetitivePlayerCharacter.generated.h"
 
 class UInventoryComponent;
@@ -19,8 +20,6 @@ class UTeamComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponData);
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FPlayerNameChanged, const FString&, PlayerName);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FKilled, AActor*, Killer, AActor*, Killee);
 
 UCLASS(Blueprintable)
 class SHOOTINGSTAR_API ACompetitivePlayerCharacter : public ACharacter
@@ -40,6 +39,11 @@ public:
 
 	// 근접 무기 공격 쿨타임.
 	constexpr static float KnifeCoolTime = 1.0f;
+
+	// 자원 캡슐 트레이스 상수들.
+	constexpr static float RadiusCapsule = 60.0f;
+	constexpr static float HalfHeightCapsule = 20.0f;
+	const ETraceTypeQuery TraceTypeResource = UEngineTypes::ConvertToTraceType(CollisionChannels::ResourceActor);
 	
 	ACompetitivePlayerCharacter();
 
@@ -59,9 +63,6 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FPlayerNameChanged OnPlayerNameChanged;
-
-	UPROPERTY(BlueprintAssignable)
-	FKilled OnKilled;
 
 	UPROPERTY(BlueprintAssignable)
 	FWeaponChanged OnWeaponChanged;
@@ -84,6 +85,34 @@ public:
 	void CraftWeapon(const FWeaponData& SelectWeapon, const TArray<int32>& ClickedResources);
 
 	void InteractResource();
+
+	void IncreaseBushCount()
+	{
+		FAIL_IF_NOT_SERVER();
+
+#pragma region Server
+		BushCount += 1;
+		SetActorHiddenInGame(true);
+#pragma endregion Server
+	}
+
+	void DecreaseBushCount()
+	{
+		FAIL_IF_NOT_SERVER();
+
+#pragma region Server
+		BushCount -= 1;
+		if (BushCount < 0)
+		{
+			BushCount = 0;
+		}
+
+		if (BushCount == 0)
+		{
+			SetActorHiddenInGame(false);
+		}
+#pragma endregion Server
+	}
 
 	//
 	// Getter, Setter
@@ -143,6 +172,9 @@ protected:
 
 	FTimerHandle Timer;
 
+	UPROPERTY(BlueprintReadOnly)
+	int32 BushCount; // 들어가있는 부쉬의 개수. 겹쳐있는 경우가 있어서 bool 대신 int 사용.
+	
 	UPROPERTY(Replicated)
 	float MaxHealth = 100;
 
@@ -163,7 +195,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<APickAxe> PickAxeClass;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Replicated)
 	TObjectPtr<APickAxe> SpawnedPickAxe;
 	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedGun)
 	TObjectPtr<AGun> EquippedGun;
@@ -187,6 +219,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UTeamComponent> TeamComponent;
 
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UChildActorComponent> NameTagActorComponent;
+
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing=OnRep_PlayerName)
 	FString PlayerName;
 
@@ -207,7 +242,7 @@ protected:
 	// 자원 관련
 	//
 
-	UPROPERTY(Replicated, BlueprintReadOnly)
+	UPROPERTY(ReplicatedUsing=OnRep_LastInteractTime, BlueprintReadOnly)
 	float LastInteractTime = 0.0f;
 
 	//
@@ -253,14 +288,13 @@ protected:
 	float LastKnifeAttackTime = 0.0f;
 	
 private:
-	
 	//
 	// 전투 관련
 	//
 	
 	void ApplyDoTDamage(AController* InInstigator, AActor* InCauser);
 	void ApplyDoTTick();
-	void SpawnPickAxe();
+	UFUNCTION(Reliable, NetMulticast)
 	void EquipPickAxe();
 	void UnEquipPickAxe();
 	void PlayMiningAnim();
@@ -270,9 +304,6 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetHealth() const;
 	void DestroyCharacter();
-	UFUNCTION(BlueprintCallable, Category = "Bush")
-	void SetInBush(bool bIsInBush);
-	bool bInBush;
 
 	//
 	// Replication Notifies
@@ -299,7 +330,7 @@ private:
 
 	UFUNCTION()
 	void OnRep_EquippedKnife();
-
+	
 	UFUNCTION()
 	void OnRep_FireCount();
 
@@ -319,8 +350,14 @@ private:
 	void OnRep_MiningCount();
 
 	UFUNCTION()
+	void OnRep_LastInteractTime();
+	
+	UFUNCTION()
 	void OnTeamChanged(ETeam Team);
 
+	UFUNCTION()
+	void OnMiningAnimationHit();
+	
 	void RefreshAnimInstance();
 
 	void SetTeamMaterial(ETeam Team);
@@ -328,4 +365,8 @@ private:
 	void Tick_HandleResourceInteraction(float DeltaSeconds);
 
 	void Tick_HandleKnifeAttack(float DeltaSeconds);
+
+	void Tick_HandleHidden(float DeltaSeconds);
+
+	bool CapsuleTraceResource(FHitResult& OutHitResult);
 };

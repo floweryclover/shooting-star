@@ -68,6 +68,7 @@ void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 	FActorSpawnParameters spawnParameter;
 	spawnParameter.Owner = GetOwner();
 	spawnParameter.Instigator = GetInstigator();
+	spawnParameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	auto projectile = GetWorld()->SpawnActor<ARifle_Projectile>(ARifle_Projectile::StaticClass(), loc, rot,
 	                                                            spawnParameter);
@@ -77,7 +78,7 @@ void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 		projectile->SetActorEnableCollision(true);
 		projectile->SetProjectileVelocity(3000.0f);
 		projectile->ShooterTeam = TeamComp->GetTeam(); // 발사자의 팀 정보를 저장
-
+		projectile->WeaponFired = this;
 		FVector FireDirection = bulletRot.Vector();
 		FireDirection.Z = 0; // Z 방향 제거
 		FireDirection.Normalize();

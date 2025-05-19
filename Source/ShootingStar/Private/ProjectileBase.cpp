@@ -10,6 +10,8 @@
 #include "TeamComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Bullet_DamageType.h"
+#include "GameFramework/Character.h"
+#include "ShootingStar/ShootingStar.h"
 
 // Sets default values
 AProjectileBase::AProjectileBase()
@@ -27,11 +29,12 @@ AProjectileBase::AProjectileBase()
 	}
 
 	SetActorEnableCollision(false); // 기본적으로 끄고 서버에서만 키도록
-	
+
+	BodyMesh->SetIsReplicated(true);
 	BodyMesh->SetRelativeScale3D(FVector(2.0f, 0.025f, 0.025f));
 	BodyMesh->SetCollisionProfileName("Projectile");
 	BodyMesh->SetGenerateOverlapEvents(true);
-	BodyMesh->OnComponentBeginOverlap.AddDynamic(this, &AProjectileBase::OnOverlapBegin_Body);
+	BodyMesh->OnComponentBeginOverlap.AddDynamic(this, &AProjectileBase::OnOverlapBegin_Body_Nonvirtual);
 
 	Sphere = CreateDefaultSubobject<USphereComponent>(TEXT("SPHERECOLLISION"));
 	Sphere->SetupAttachment(RootComponent);
@@ -98,20 +101,35 @@ void AProjectileBase::SetProjectileVelocity(float Velocity)
 }
 void AProjectileBase::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!HasAuthority()
-		|| !IsValid(GetOwner())
-		|| !IsValid(OtherActor)
-		|| !IsValid(OtherActor->FindComponentByClass<UTeamComponent>()))
+	if (!HasAuthority() || !IsValid(OtherActor) || !IsValid(GetOwner())
+		||OtherActor->IsA(StaticClass())) // 투사체끼리 충돌
 	{
 		return;
 	}
-	UTeamComponent* const OtherTeamComponent = OtherActor->FindComponentByClass<UTeamComponent>();
-	
-	if (ShooterTeam != OtherTeamComponent->GetTeam())
-	{
-		DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
 
-		UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, Cast<APlayerController>(GetOwner()), GetOwner(), DamageTypeClass);
+	APlayerController* const PlayerController = Cast<APlayerController>(GetOwner());
+	if (ACharacter* const Character = IsValid(PlayerController) ? PlayerController->GetCharacter() : nullptr;
+		IsValid(Character) && OtherActor == Character)
+	{
+		return;
 	}
+
+	UTeamComponent* const OtherTeamComponent = OtherActor->FindComponentByClass<UTeamComponent>();
+
+	if (IsValid(OtherTeamComponent))
+	{
+		if (ShooterTeam != OtherTeamComponent->GetTeam())
+		{
+			DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
+			UGameplayStatics::ApplyDamage(OtherActor, projectileDamage, Cast<APlayerController>(GetOwner()), WeaponFired, DamageTypeClass);
+		}
+	}
+
 	this->Destroy();
+}
+
+void AProjectileBase::OnOverlapBegin_Body_Nonvirtual(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	OnOverlapBegin_Body(OverlappedComp, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 }

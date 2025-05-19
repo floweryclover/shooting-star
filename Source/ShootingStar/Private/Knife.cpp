@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
 #include "EngineUtils.h"
+#include "ShootingStar/ShootingStar.h"
 
 // Sets default values
 AKnife::AKnife()
@@ -22,34 +23,59 @@ AKnife::AKnife()
         BodyMesh->SetSkeletalMesh(SKELETALKNIFE.Object);
     }
     BodyMesh->SetIsReplicated(true);
+    BodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     
     SetActorEnableCollision(false); // 기본적으로 끄고 서버에서만 별도로 킴
-    BodyMesh->SetCollisionProfileName("Knife");
     BodyMesh->SetGenerateOverlapEvents(false);
 
     StaticBodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticBodyMesh")); // 곡괭이용 StaticMesh
     StaticBodyMesh->SetupAttachment(BodyMesh);
+    StaticBodyMesh->SetIsReplicated(true);
+    StaticBodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
     AttackHitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
     AttackHitBox->SetupAttachment(BodyMesh);
+    AttackHitBox->SetCollisionProfileName("Knife");
     AttackHitBox->SetGenerateOverlapEvents(false);
 
     Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("AUDIO"));
     Sound->SetupAttachment(RootComponent);
-
 }
 
 // Called when the game starts or when spawned
 void AKnife::BeginPlay()
 {
 	Super::BeginPlay();
-    SetupOverlapEvent();
+    if (!HasAuthority())
+    {
+        return;
+    }
+    
+    if (AttackHitBox)
+    {
+        AttackHitBox->SetCollisionProfileName("OverlapAllDynamic");
+        AttackHitBox->SetGenerateOverlapEvents(false);
+        AttackHitBox->OnComponentBeginOverlap.AddDynamic(this, &AKnife::OnOverlapped_Nonvirtual);
+    }
 }
 
 // Called every frame
 void AKnife::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AKnife::OnOverlapped_Nonvirtual(UPrimitiveComponent* OverlappedComp, 
+        AActor* OtherActor, 
+        UPrimitiveComponent* OtherComp, 
+        int32 OtherBodyIndex, bool bFromSweep, 
+        const FHitResult& SweepResult)
+{
+    this->OnOverlapBegin_Body(OverlappedComp, 
+        OtherActor, 
+        OtherComp, 
+        OtherBodyIndex, bFromSweep, 
+        SweepResult);
 }
 
 void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -62,9 +88,10 @@ void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* Ot
     {
         return;
     }
+    
     UTeamComponent* const OtherTeamComponent = OtherActor->FindComponentByClass<UTeamComponent>();
     
-    if (OtherActor == GetAttachParentActor() || bHasDamaged)
+    if (OtherActor == GetAttachParentActor() || !bDamageableFlag)
         return;
     
     if (OtherTeamComponent->GetTeam() != GetAttachParentActor()->FindComponentByClass<UTeamComponent>()->GetTeam())
@@ -73,26 +100,9 @@ void AKnife::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp, AActor* Ot
         DrawDebugSphere(GetWorld(), GetActorLocation(), 20.0f, 12, FColor::Red, false, 2.0f);
 
         // 데미지 적용
-        UGameplayStatics::ApplyDamage(OtherActor, knifeDamage, Cast<APlayerController>(GetOwner()), GetOwner(), nullptr);
+        UGameplayStatics::ApplyDamage(OtherActor, KnifeDamage, Cast<APlayerController>(GetOwner()), this, nullptr);
         UE_LOG(LogTemp, Warning, TEXT("Knife Hit: Player Hit"));
-
-        // 데미지 플래그를 초기화하는 타이머 설정
-        GetWorld()->GetTimerManager().SetTimer(ResetDamageFlagHandle, this, &AKnife::ResetDamageFlag, 1.f, false);
-        bHasDamaged = true;
+        
+        bDamageableFlag = false;
     }
-}
-
-void AKnife::SetupOverlapEvent()
-{
-    if (AttackHitBox)
-    {
-        AttackHitBox->SetCollisionProfileName("OverlapAllDynamic");
-        AttackHitBox->SetGenerateOverlapEvents(false);
-        AttackHitBox->OnComponentBeginOverlap.AddDynamic(this, &AKnife::OnOverlapBegin_Body);
-    }
-}
-
-void AKnife::ResetDamageFlag()
-{
-    bHasDamaged = false;
 }

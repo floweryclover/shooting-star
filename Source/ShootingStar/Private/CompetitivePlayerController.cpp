@@ -97,7 +97,6 @@ void ACompetitivePlayerController::Tick(float DeltaTime)
 		return;
 	}
 	
-	LookMouse();
 
 	ACompetitiveGameState* const GameState = Cast<ACompetitiveGameState>(GetWorld()->GetGameState());
 	if (!IsValid(GameState))
@@ -218,6 +217,21 @@ void ACompetitivePlayerController::Move(const FInputActionValue& Value)
 	ControllingCharacter->AddMovementInput(ForwardDirection, MovementVector.Y);
 	ControllingCharacter->AddMovementInput(RightDirection, MovementVector.X);
 }
+void ACompetitivePlayerController::MoveWithVector2D(FVector2D MovementVector)
+{
+	ACompetitivePlayerCharacter* const ControllingCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
+	if (!IsValid(ControllingCharacter) || !ControllingCharacter->IsMovable())
+	{
+		return;
+	}
+
+	// 월드 축 기준 방향 벡터 사용
+	const FVector ForwardDirection = FVector::ForwardVector; // (1, 0, 0)
+	const FVector RightDirection = FVector::RightVector;     // (0, 1, 0)
+
+	ControllingCharacter->AddMovementInput(ForwardDirection, MovementVector.Y);
+	ControllingCharacter->AddMovementInput(RightDirection, MovementVector.X);
+}
 
 void ACompetitivePlayerController::LookMouse()
 {
@@ -241,6 +255,31 @@ void ACompetitivePlayerController::LookMouse()
 			SetControlRotation(LookRotation);
 		}
 	}
+}
+void ACompetitivePlayerController::RotateWithVector2D(FVector2D MovementVector)
+{
+	ACompetitivePlayerCharacter* const ControllingCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
+	if (!IsValid(ControllingCharacter) || !ControllingCharacter->IsMovable())
+	{
+		return;
+	}
+	if (IsLocalController())
+	{
+		APawn* const MyPawn = GetPawn();
+		if (MyPawn)
+		{
+			FVector LookDirection = FVector(MovementVector.Y, MovementVector.X, 0.f);
+			if (!LookDirection.IsNearlyZero())
+			{
+				LookDirection = LookDirection.GetSafeNormal();
+				FVector LookTarget = MyPawn->GetActorLocation() + LookDirection * 100.f;
+
+				FRotator LookRotation = UKismetMathLibrary::FindLookAtRotation(MyPawn->GetActorLocation(), LookTarget);
+				SetControlRotation(LookRotation);
+			}
+		}
+	}
+
 }
 
 void ACompetitivePlayerController::EquipRocketLauncher_Implementation()

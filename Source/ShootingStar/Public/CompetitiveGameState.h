@@ -9,6 +9,15 @@
 
 class ASupplyActor;
 
+UENUM(BlueprintType)
+enum class EPlayerDeadReason : uint8
+{
+	Unknown,
+	
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FPlayerDead, const FString&, Killee, const FString&, Killer, UClass*, Cause);
+
 UCLASS()
 class SHOOTINGSTAR_API ACompetitiveGameState final : public AGameStateBase
 {
@@ -16,6 +25,13 @@ class SHOOTINGSTAR_API ACompetitiveGameState final : public AGameStateBase
 
 public:
 	ACompetitiveGameState();
+
+	/**
+	 * 마지막 인자는 ARockerLauncher, ASafeZoneActor의 StaticClass를 전달합니다.
+	 * nullptr일 수 있습니다.
+	 */
+	UPROPERTY(BlueprintAssignable)
+	FPlayerDead OnPlayerDead;
 	
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -63,6 +79,9 @@ public:
 	{
 		return SupplyActors;
 	}
+	
+	UFUNCTION(Reliable, NetMulticast)
+	void MulticastPlayerDead(const FString& Killee, const FString& Killer, UClass* Cause);
 
 protected:
 	virtual void BeginPlay() override;

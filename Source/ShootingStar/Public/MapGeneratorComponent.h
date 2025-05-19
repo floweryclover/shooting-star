@@ -19,6 +19,9 @@ class SHOOTINGSTAR_API UDecorationGenerator;
 
 DECLARE_LOG_CATEGORY_EXTERN(MapGenerator, Log, All);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FActorBeginOverlapOnTumbleWeed, AActor*, OverlappedActor, AActor*, OtherActor);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FActorEndOverlapOnTumbleWeed, AActor*, OverlappedActor, AActor*, OtherActor);
+
 /**
  * @brief 맵을 생성하는 컴포넌트입니다.
  * @details 맵의 크기, 장애물, 자원, 장식물 등을 설정하고 생성합니다.
@@ -38,6 +41,12 @@ class UMapGeneratorComponent : public UActorComponent
 public:	
 	UMapGeneratorComponent();
 
+	UPROPERTY(BlueprintAssignable)
+	FActorBeginOverlapOnTumbleWeed OnActorBeginOverlapOnTumbleWeed;
+	
+	UPROPERTY(BlueprintAssignable)
+	FActorEndOverlapOnTumbleWeed OnActorEndOverlapOnTumbleWeed;
+	
 	// Getter functions for Generators
 	FORCEINLINE int32 GetNumObstacles() const { return numObstacles; }
 	FORCEINLINE float GetObstacleMinDistance() const { return obstacleMinDistance; }
@@ -61,6 +70,8 @@ public:
 	FORCEINLINE int32 GetMaxClusterNum() const { return maxClusterNum; }
 	FORCEINLINE TArray<UStaticMesh*> GetDecoMeshes() const { return decoMeshes; }
 
+	FORCEINLINE UStaticMesh* GetSupplyMesh() const { return supplyMesh; }
+
 	FORCEINLINE float GetFenceGenerationProbability() const { return fenceGenerationProbability; }
 
 	FORCEINLINE int32 GetMapHalfSize() const { return mapHalfSize; }
@@ -74,28 +85,28 @@ public:
 	void InitializeMapCoordinate(int32 GridSize);
 	void GenerateMap();
 	void SetObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType);
-	void SetObjectRegion(FVector Location, UStaticMesh* ObjectMesh, EObjectMask ObjectType);
+	void SetObjectRegion(const FVector& Location, const UStaticMesh* ObjectMesh, EObjectMask ObjectType);
 	void ClearObjectTypeFromMap(EObjectMask ObjectType);
-	bool HasObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType);
-	bool CheckLocation(FVector Location);
-	bool PlaceObject(FVector Location, UStaticMesh* ObjectMesh);
-
-	// 자원을 재생성하는 함수
+	bool HasObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType) const;
+	bool CheckLocation(const FVector& Location) const;
+	// CheckLocation 오버로딩, 기존 함수는 fenceGenerator에서 사용
+	bool CheckLocation(const FVector& Location, const UStaticMesh* ObjectMesh, EObjectMask ObjectType) const;
+	bool PlaceObject(const FVector& Location, const UStaticMesh* ObjectMesh);
     void RegenerateResources();
 
 	FVector GetRandomPosition();
-	FVector GetRandomOffsetPosition(FVector origin, float offset);
-	FVector FindNearestValidLocation(FVector Origin, float SearchRadius, EObjectMask ObjectType);
+	FVector GetRandomOffsetPosition(const FVector& Origin, float Offset) const;
+	FVector FindNearestValidLocation(const FVector& Origin, float SearchRadius, const UStaticMesh* ObjectMesh, EObjectMask ObjectType) const;
 	
 	
-	FORCEINLINE int32 GetIndex(int32 X, int32 Y)
+	FORCEINLINE int32 GetIndex(int32 X, int32 Y) const
 	{
 		return (X + mapHalfSize) + ((Y + mapHalfSize) * mapHalfSize * 2);
 	}
 
 	// 스폰 포인트 관련 함수
 	void InitializeSpawnPoints();
-	bool IsValidSpawnLocation(const FVector& Location);
+	bool IsValidSpawnLocation(const FVector& Location) const;
 	UFUNCTION(BlueprintCallable, Category = "Spawn System")
 	FVector GetRandomSpawnLocation();
 
@@ -115,7 +126,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "20"))
 	int32 numFences = 5;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
-	int32 numResources = 25;
+	int32 numResources = 20;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
 	int32 numDecos = 20;
 
@@ -129,9 +140,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Distance Settings", meta = (ClampMin = "10.0", ClampMax = "200.0"))
 	float decoMinDistance = 50.f;
 	
-	// 펜스 생성 확률
+	// Fence generation settings
 	UPROPERTY(EditAnywhere, Category = "Fence Settings", meta = (ClampMin = "1", ClampMax = "100"))
-	float fenceGenerationProbability = 80.f;
+	float fenceGenerationProbability = 90.f;
 
 	// Pattern Settings
 	UPROPERTY(EditAnywhere, Category = "Pattern Settings", meta = (ClampMin = "50.0", ClampMax = "500.0"))
@@ -164,6 +175,8 @@ protected:
 	UStaticMesh* fenceMesh;
 	UPROPERTY(EditAnywhere, Category = "Meshes")
 	TArray<UStaticMesh*> decoMeshes;
+	UPROPERTY(EditAnywhere, Category = "Meshes")
+	UStaticMesh* supplyMesh;
 
 	// Generators
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Generators")
@@ -191,4 +204,18 @@ protected:
 	// 맵 경계로부터의 최소 거리
 	UPROPERTY(EditAnywhere, Category = "Spawn Settings")
 	float BorderMargin = 1000.f;
+
+public:
+    FORCEINLINE bool IsInMap(const FVector& Location) const
+    {
+        return Location.X >= -mapHalfSize && Location.X < mapHalfSize && 
+               Location.Y >= -mapHalfSize && Location.Y < mapHalfSize;
+    }
+
+private:
+	UFUNCTION()
+	void OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
+	
+	UFUNCTION()
+	void OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
 };

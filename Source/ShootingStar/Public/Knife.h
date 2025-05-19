@@ -26,8 +26,6 @@ public:
 		int32 OtherBodyIndex, bool bFromSweep, 
 		const FHitResult& SweepResult);
 
-	virtual void SetupOverlapEvent();
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Base)
 	class USkeletalMeshComponent* BodyMesh;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = StaticMesh)
@@ -35,17 +33,17 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	class UAudioComponent* Sound;
-	float knifeDamage = 30.0f;
-	float GetknifeDamage() { return knifeDamage; };
-	void SetknifeDamage(float Damage) { knifeDamage = Damage; };
-	bool bIsAttacking;
-	UPROPERTY(VisibleAnywhere)
-	bool bHitBoxActive;
+
+	float GetKnifeDamage() const { return KnifeDamage; }
+	
+	void SetKnifeDamage(float Damage) { KnifeDamage = Damage; };
+	
 	UPROPERTY(VisibleAnywhere)
 	UBoxComponent* AttackHitBox;
-	bool bHasDamaged = false;
-	void ResetDamageFlag();
-	FTimerHandle ResetDamageFlagHandle;
+
+	void ResetDamageableFlag() { bDamageableFlag = true; }
+	
+	bool bDamageableFlag;
 	
 protected:
 	// Called when the game starts or when spawned
@@ -55,4 +53,13 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+private:
+	UFUNCTION()
+	void OnOverlapped_Nonvirtual(UPrimitiveComponent* OverlappedComp, 
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, 
+		int32 OtherBodyIndex, bool bFromSweep, 
+		const FHitResult& SweepResult);
+
+	float KnifeDamage = 30.0f;
 };
