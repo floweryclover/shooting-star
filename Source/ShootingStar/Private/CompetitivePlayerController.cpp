@@ -114,14 +114,15 @@ void ACompetitivePlayerController::Tick(float DeltaTime)
 			USupplyIndicatorUI* const UI = SupplyIndicatorUIArray[i];
 			
 			// 확인하는 겸 삭제해야 한다면 삭제하기
-			if (!IsValid(UI->GetTargetSupplyActor()))
+			ASupplyActor* TargetSupplyActor = UI->GetTargetSupplyActor();
+			if (!IsValid(TargetSupplyActor) || TargetSupplyActor->IsOpened())
 			{
 				UI->RemoveFromParent();
 				SupplyIndicatorUIArray.RemoveAt(i);
 				continue;
 			}
 			
-			if (UI->GetTargetSupplyActor() == GameStateSupplyActor)
+			if (TargetSupplyActor == GameStateSupplyActor)
 			{
 				bIsDrawing = true;
 				break;
