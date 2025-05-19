@@ -79,6 +79,9 @@ private:
 	UFUNCTION()
 	void OnRep_ResourceState();
 
+	UFUNCTION()
+	void OnRep_HitNotify();
+
 	UPROPERTY(Replicated)
 	float RemainingHitShakeTime = 0.0f;
 
@@ -87,4 +90,7 @@ private:
 
 	UPROPERTY(Replicated)
 	FVector HitLocation;
+
+	UPROPERTY(ReplicatedUsing=OnRep_HitNotify);
+	int32 HitNotify;
 };

@@ -61,8 +61,6 @@ void AResourceActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChang
 
 void AResourceActor::PlayHitParticle()
 {
-    if (!HasAuthority()) return;  // 서버에서만 실행
-
     // 리소스 타입에 맞는 파티클 시스템 선택
     UNiagaraSystem* ParticleToPlay = ResourceHitEffects.Contains(ResourceData->ResourceType) 
         ? ResourceHitEffects[ResourceData->ResourceType]
@@ -86,15 +84,12 @@ void AResourceActor::PlayHitParticle()
 
 void AResourceActor::Hit(const FVector& InHitLocation)
 {
+    FAIL_IF_NOT_SERVER();
+    
     RemainingHitShakeTime = HitShakeTime;
     HitLocation = InHitLocation;
-
-    PlayHitParticle();
-    UGameplayStatics::PlaySoundAtLocation(
-        GetWorld(),
-        HitSound,
-        OriginLocation
-    );
+    HitNotify += 1;
+    OnRep_HitNotify();
 }
 
 void AResourceActor::UpdateMesh_AfterHarvest()
@@ -170,6 +165,7 @@ void AResourceActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
     DOREPLIFETIME(AResourceActor, RemainingHitShakeTime);
     DOREPLIFETIME(AResourceActor, OriginLocation);
     DOREPLIFETIME(AResourceActor, HitLocation);
+    DOREPLIFETIME(AResourceActor, HitNotify);
 }
 
 void AResourceActor::OnRep_ResourceData()
@@ -180,4 +176,14 @@ void AResourceActor::OnRep_ResourceData()
 void AResourceActor::OnRep_ResourceState()
 {
     UpdateVisual();
+}
+
+void AResourceActor::OnRep_HitNotify()
+{
+    PlayHitParticle();
+    UGameplayStatics::PlaySoundAtLocation(
+        GetWorld(),
+        HitSound,
+        OriginLocation
+    );
 }
