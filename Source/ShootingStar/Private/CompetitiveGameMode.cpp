@@ -94,7 +94,6 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 				const float DistanceSquaredFromCenter = Character->GetActorLocation().SizeSquared2D();
 				if (DistanceSquaredFromCenter > RadiusSquaredSafeZone)
 				{
-					Character->SetActorHiddenInGame(true);
 					UGameplayStatics::ApplyDamage(Character, DamageSafeZone, nullptr, SafeZoneActor, nullptr);
 				}
 			}
@@ -362,7 +361,7 @@ void ACompetitiveGameMode::OnActorBeginOverlapOnTumbleWeedHandler(AActor* Overla
 	if (ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(OtherActor);
 		IsValid(Character))
 	{
-		Character->SetActorHiddenInGame(true);
+		Character->IncreaseBushCount();
 	}
 }
 
@@ -371,6 +370,6 @@ void ACompetitiveGameMode::OnActorEndOverlapOnTumbleWeedHandler(AActor* Overlapp
 	if (ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(OtherActor);
 	IsValid(Character))
 	{
-		Character->SetActorHiddenInGame(false);
+		Character->DecreaseBushCount();
 	}
 }

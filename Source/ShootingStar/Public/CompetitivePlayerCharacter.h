@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "WeaponData.h"
+#include "ShootingStar/ShootingStar.h"
 #include "CompetitivePlayerCharacter.generated.h"
 
 class UInventoryComponent;
@@ -80,6 +81,34 @@ public:
 
 	void InteractResource();
 
+	void IncreaseBushCount()
+	{
+		FAIL_IF_NOT_SERVER();
+
+#pragma region Server
+		BushCount += 1;
+		SetActorHiddenInGame(true);
+#pragma endregion Server
+	}
+
+	void DecreaseBushCount()
+	{
+		FAIL_IF_NOT_SERVER();
+
+#pragma region Server
+		BushCount -= 1;
+		if (BushCount < 0)
+		{
+			BushCount = 0;
+		}
+
+		if (BushCount == 0)
+		{
+			SetActorHiddenInGame(false);
+		}
+#pragma endregion Server
+	}
+
 	//
 	// Getter, Setter
 	//
@@ -138,6 +167,9 @@ protected:
 
 	FTimerHandle Timer;
 
+	UPROPERTY(BlueprintReadOnly)
+	int32 BushCount; // 들어가있는 부쉬의 개수. 겹쳐있는 경우가 있어서 bool 대신 int 사용.
+	
 	UPROPERTY(Replicated)
 	float MaxHealth = 100;
 

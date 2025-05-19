@@ -181,6 +181,10 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 		return;
 	}
 #pragma region Server
+	if (IsDead())
+	{
+		SetActorHiddenInGame(true);
+	}
 	Tick_HandleResourceInteraction(DeltaSeconds);
 	Tick_HandleKnifeAttack(DeltaSeconds);
 	Tick_HandleHidden(DeltaSeconds);

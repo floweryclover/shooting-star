@@ -11,5 +11,6 @@ ATumbleWeed::ATumbleWeed()
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
 	SphereComponent->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
+	SphereComponent->SetSphereRadius(80.0f);
 	SphereComponent->SetupAttachment(RootComponent);
 }
