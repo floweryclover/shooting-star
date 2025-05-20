@@ -27,6 +27,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
+#include "CompetitivePlayerController.h"
 
 ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
@@ -510,10 +511,12 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		ACompetitiveGameState* const GameState = Cast<ACompetitiveGameState>(GetWorld()->GetGameState());
 		FString KilleeName;
 		FString KillerName;
+		ETeam KilleTeam{};
 		if (APlayerController* const KilleeController = Cast<APlayerController>(GetController());
 			IsValid(KilleeController) && IsValid(KilleeController->PlayerState))
 		{
 			KilleeName = KilleeController->PlayerState->GetPlayerName();
+			KilleTeam = TeamComponent->GetTeam();
 		}
 		if (APlayerController* const KillerController = Cast<APlayerController>(EventInstigator);
 			IsValid(KillerController) && IsValid(KillerController->PlayerState))
@@ -521,7 +524,7 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 			KillerName = KillerController->PlayerState->GetPlayerName();
 		}
 		GameState->MulticastPlayerDead(KilleeName, KillerName,
-		                               IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr);
+		                               IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr, KilleTeam);
 
 		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
 		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, DeadTime, false);

@@ -16,7 +16,7 @@ enum class EPlayerDeadReason : uint8
 	
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FPlayerDead, const FString&, Killee, const FString&, Killer, UClass*, Cause);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FPlayerDead, const FString&, Killee, const FString&, Killer, UClass*, Cause, ETeam, KilleeTeam);
 
 UCLASS()
 class SHOOTINGSTAR_API ACompetitiveGameState final : public AGameStateBase
@@ -81,7 +81,7 @@ public:
 	}
 	
 	UFUNCTION(Reliable, NetMulticast)
-	void MulticastPlayerDead(const FString& Killee, const FString& Killer, UClass* Cause);
+	void MulticastPlayerDead(const FString& Killee, const FString& Killer, UClass* Cause, ETeam KilleeTeam);
 
 protected:
 	virtual void BeginPlay() override;

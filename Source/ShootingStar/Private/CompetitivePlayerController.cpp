@@ -54,6 +54,14 @@ ACompetitivePlayerController::ACompetitivePlayerController()
 	{
 		GameStateUIClass = GameStateUIBPFinder.Class;
 	}
+
+	//* KillLogUI
+	static ConstructorHelpers::FClassFinder<UUserWidget> KillLogUIBPFinder{ TEXT("/Game/Blueprints/UI/BP_KillLogUI") };
+	ensure(KillLogUIBPFinder.Succeeded());
+	if (KillLogUIBPFinder.Succeeded())
+	{
+		KillLogUIClass = KillLogUIBPFinder.Class;
+	}
 }
 
 void ACompetitivePlayerController::BeginPlay()
@@ -83,6 +91,17 @@ void ACompetitivePlayerController::BeginPlay()
 			if (GameStateUI)
 			{
 				GameStateUI->AddToViewport();
+			}
+		}
+
+		ensure(KillLogUIClass);
+		if (KillLogUIClass)
+		{
+			KillLogUI = CreateWidget<UUserWidget>(GetWorld(), KillLogUIClass);
+			ensure(KillLogUI);
+			if (KillLogUI)
+			{
+				KillLogUI->AddToViewport();
 			}
 		}
 	}
