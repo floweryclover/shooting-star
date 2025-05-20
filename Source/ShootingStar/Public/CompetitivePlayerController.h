@@ -134,5 +134,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	TObjectPtr<UUserWidget> GameStateUI;
 
+	UPROPERTY(BlueprintReadOnly)
+	TSubclassOf<UUserWidget> KillLogUIClass;
+
+	UPROPERTY(BlueprintReadOnly)
+	TObjectPtr<UUserWidget> KillLogUI;
+
 	bool IsMovable();
 };

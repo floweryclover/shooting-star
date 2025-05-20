@@ -35,9 +35,9 @@ void ACompetitiveGameState::Tick(float DeltaSeconds)
 	LastRoundWinTeam = CompetitiveSystem->GetLastRoundWinTeam();
 }
 
-void ACompetitiveGameState::MulticastPlayerDead_Implementation(const FString& Killee, const FString& Killer, UClass* Cause)
+void ACompetitiveGameState::MulticastPlayerDead_Implementation(const FString& Killee, const FString& Killer, UClass* Cause, ETeam KilleeTeam)
 {
-	OnPlayerDead.Broadcast(Killee, Killer, Cause);
+	OnPlayerDead.Broadcast(Killee, Killer, Cause, KilleeTeam);
 }
 
 void ACompetitiveGameState::BeginPlay()
