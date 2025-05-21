@@ -195,7 +195,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Weapon)
 	TSubclassOf<APickAxe> PickAxeClass;
 
-	UPROPERTY(VisibleAnywhere, Replicated)
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing=OnRep_SpawnedPickAxe)
 	TObjectPtr<APickAxe> SpawnedPickAxe;
 	UPROPERTY(EditDefaultsOnly, ReplicatedUsing=OnRep_EquippedGun)
 	TObjectPtr<AGun> EquippedGun;
@@ -296,6 +296,7 @@ private:
 	void ApplyDoTTick();
 	UFUNCTION(Reliable, NetMulticast)
 	void EquipPickAxe();
+	UFUNCTION(Reliable, NetMulticast)
 	void UnEquipPickAxe();
 	void PlayMiningAnim();
 	void PullTrigger();
@@ -351,6 +352,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_LastInteractTime();
+
+	UFUNCTION()
+	void OnRep_SpawnedPickAxe();
 	
 	UFUNCTION()
 	void OnTeamChanged(ETeam Team);
