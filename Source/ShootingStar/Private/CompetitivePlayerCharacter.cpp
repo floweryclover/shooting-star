@@ -471,10 +471,11 @@ void ACompetitivePlayerCharacter::PullTrigger()
 		FRotator FireRot = GetActorRotation();
 		FRotator BulletFireRot = GetActorRotation();
 
-		EquippedGun->ProjectileFire(FireLoc, FireRot, BulletFireRot);
-
-		FireCount += 1;
-		OnRep_FireCount();
+		if (EquippedGun->ProjectileFire(FireLoc, FireRot, BulletFireRot))
+		{
+			FireCount += 1;
+			OnRep_FireCount();
+		}
 	}
 #pragma endregion Server
 }

@@ -47,13 +47,16 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	float LastFireTime = 0.0f;
+	
 	WEAPONLEVER WeaponeLever;
 	WEAPONTYPE WeaponType;
 
 	bool IsEmpty = false;
-	bool IsReload = false;
 
+	UPROPERTY()
 	UAnimMontage* fireMontage;
+	UPROPERTY()
 	UAnimMontage* reloadMontage;
 
 	int baseKeepAmmo = 0;
@@ -65,7 +68,7 @@ protected:
 
 	class USoundBase* EmptySound;
 
-
+	virtual float GetFireCooldown() { return 0.1f; }
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -82,11 +85,17 @@ public:
 	UPROPERTY(EditAnywhere)
 	float Damage = 10;
 
+
 	WEAPONLEVER GetWeaponeLever() { return WeaponeLever; }; void SetWeaponeLever(WEAPONLEVER set) { WeaponeLever = set; };
 	WEAPONTYPE GetWeaponType() { return WeaponType; }; void SetWeaponType(WEAPONTYPE set) { WeaponType = set; };
 
-	bool GetIsEmpty() { return IsEmpty; }; void SetIsEmpty(bool set) { IsEmpty = set; };
-	bool GetIsReload() { return IsReload; }; void SetIsReload(bool set) { IsReload = set; };
+	bool GetIsEmpty() { return IsEmpty; };
+	void SetIsEmpty(bool set) { IsEmpty = set; };
+	bool GetIsReload()
+	{
+		const float CurrentTime = GetWorld()->GetTimeSeconds();
+		return CurrentTime < LastFireTime + GetFireCooldown();
+	};
 
 	virtual UClass* GetStaticClass();
 	int GetBaseKeepAmmo() { return baseKeepAmmo; }
@@ -96,7 +105,7 @@ public:
 
 	virtual AGun* SpawnToHand(APawn* owner, FVector loc, FRotator rot);
 
-	virtual void ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot);
+	virtual bool ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot);
 	virtual void PlayFireMontage();
 	virtual void StopFireMontage();
 	virtual void PlayReloadMontage();

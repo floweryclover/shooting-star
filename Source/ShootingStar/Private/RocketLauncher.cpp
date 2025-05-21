@@ -50,8 +50,14 @@ AGun* ARocketLauncher::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 	return weapon;
 }
 
-void ARocketLauncher::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
+bool ARocketLauncher::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
+	if (GetIsReload())
+	{
+		return false;
+	}
+	LastFireTime = GetWorld()->GetTimeSeconds();
+	
 	FActorSpawnParameters spawnParameter;
 	spawnParameter.Owner = GetOwner();
 	spawnParameter.Instigator = GetInstigator();
@@ -84,4 +90,6 @@ void ARocketLauncher::ProjectileFire(FVector loc, FRotator rot, FRotator bulletR
 
 		projectile->ProjectileFire(FireDirection, GetOwner());
 	}
+
+	return true;
 }

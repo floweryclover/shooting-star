@@ -49,8 +49,9 @@ AGun* AGun::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
     return nullptr;
 }
 
-void AGun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
+bool AGun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
+	return false;
 }
 void AGun::PlayFireMontage()
 {
