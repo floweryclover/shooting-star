@@ -176,7 +176,24 @@ float ACompetitivePlayerCharacter::GetHealth() const
 void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	NameTagActorComponent->GetChildActor()->SetActorHiddenInGame(IsHidden());
+	
+	const bool bHideNameTag = [this]
+	{
+		if (IsLocallyControlled())
+		{
+			return false;
+		}
+
+		ACompetitivePlayerController* const LocalPlayerController = Cast<ACompetitivePlayerController>(GEngine->GetFirstLocalPlayerController(GetWorld()));
+		if (IsValid(LocalPlayerController) && LocalPlayerController->GetTeamComponent()->GetTeam() == TeamComponent->GetTeam())
+		{
+			return false;
+		}
+
+		return IsHidden();
+	}();
+	
+	NameTagActorComponent->GetChildActor()->SetActorHiddenInGame(bHideNameTag);
 	if (!HasAuthority())
 	{
 		return;
