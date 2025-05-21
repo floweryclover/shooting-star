@@ -53,13 +53,19 @@ AGun* ARifle::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 	return weapon;
 }
 
-void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
+bool ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
+	if (GetIsReload())
+	{
+		return false;
+	}
+	LastFireTime = GetWorld()->GetTimeSeconds();
+	
 	if (!IsValid(GetAttachParentActor())
 		|| !IsValid(GetOwner())
 		|| !IsValid(GetOwner()->FindComponentByClass<UTeamComponent>()))
 	{
-		return;
+		return false;
 	}
 
 	AActor* const Shooter = GetAttachParentActor();
@@ -96,4 +102,6 @@ void ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 		}
 		projectile->ProjectileFire(FireDirection, GetOwner());
 	}
+
+	return true;
 }
