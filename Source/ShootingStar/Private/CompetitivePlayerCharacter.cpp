@@ -91,7 +91,6 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 void ACompetitivePlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 	if (TeamComponent)
 	{
 		SetTeamMaterial(TeamComponent->GetTeam());
@@ -111,6 +110,8 @@ void ACompetitivePlayerCharacter::BeginPlay()
 	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass, Params);
 	SpawnedPickAxe->SetReplicates(true);
 	SpawnedPickAxe->SetActorEnableCollision(true);
+	EquipPickAxe();
+	
 	Health = MaxHealth;
 	OnRep_Health();
 
@@ -430,14 +431,21 @@ void ACompetitivePlayerCharacter::EquipPickAxe_Implementation()
 	}
 }
 
-void ACompetitivePlayerCharacter::UnEquipPickAxe()
+void ACompetitivePlayerCharacter::UnEquipPickAxe_Implementation()
 {
 	if (SpawnedPickAxe)
 	{
+		if (!HasAuthority())
+		{
+			SpawnedPickAxe->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+			SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+			                                  TEXT("Backpack_Socket"));
+		}
 		SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		                                  TEXT("Backpack_Socket"));
 	}
 }
+
 
 void ACompetitivePlayerCharacter::PlayMiningAnim()
 {
@@ -895,6 +903,11 @@ void ACompetitivePlayerCharacter::OnRep_LastInteractTime()
 	}
 }
 
+void ACompetitivePlayerCharacter::OnRep_SpawnedPickAxe()
+{
+	EquipPickAxe();
+}
+
 void ACompetitivePlayerCharacter::OnTeamChanged(const ETeam Team)
 {
 	SetTeamMaterial(Team);
@@ -959,6 +972,12 @@ void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float Del
 	{
 		InventoryComponent->AddResource(Resource->ResourceData);
 		Resource->UpdateMesh_AfterHarvest();
+	}
+
+	// 착용중인 무기가 있으면 곡괭이 해제
+	if (IsValid(EquippedGun) || IsValid(EquippedKnife))
+	{
+		UnEquipPickAxe();
 	}
 }
 
