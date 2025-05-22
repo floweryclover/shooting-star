@@ -28,6 +28,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
+#include "CompetitivePlayerController.h"
 
 ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
@@ -91,7 +92,6 @@ ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 void ACompetitivePlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 	if (TeamComponent)
 	{
 		SetTeamMaterial(TeamComponent->GetTeam());
@@ -111,6 +111,8 @@ void ACompetitivePlayerCharacter::BeginPlay()
 	SpawnedPickAxe = GetWorld()->SpawnActor<APickAxe>(PickAxeClass, Params);
 	SpawnedPickAxe->SetReplicates(true);
 	SpawnedPickAxe->SetActorEnableCollision(true);
+	EquipPickAxe();
+	
 	Health = MaxHealth;
 	OnRep_Health();
 
@@ -176,7 +178,24 @@ float ACompetitivePlayerCharacter::GetHealth() const
 void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	NameTagActorComponent->GetChildActor()->SetActorHiddenInGame(IsHidden());
+	
+	const bool bHideNameTag = [this]
+	{
+		if (IsLocallyControlled())
+		{
+			return false;
+		}
+
+		ACompetitivePlayerController* const LocalPlayerController = Cast<ACompetitivePlayerController>(GEngine->GetFirstLocalPlayerController(GetWorld()));
+		if (IsValid(LocalPlayerController) && LocalPlayerController->GetTeamComponent()->GetTeam() == TeamComponent->GetTeam())
+		{
+			return false;
+		}
+
+		return IsHidden();
+	}();
+	
+	NameTagActorComponent->GetChildActor()->SetActorHiddenInGame(bHideNameTag);
 	if (!HasAuthority())
 	{
 		return;
@@ -184,7 +203,7 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 #pragma region Server
 	if (IsDead())
 	{
-		SetActorHiddenInGame(true);
+		SetActorHiddenInGame(false);
 	}
 	Tick_HandleResourceInteraction(DeltaSeconds);
 	Tick_HandleKnifeAttack(DeltaSeconds);
@@ -415,14 +434,21 @@ void ACompetitivePlayerCharacter::EquipPickAxe_Implementation()
 	}
 }
 
-void ACompetitivePlayerCharacter::UnEquipPickAxe()
+void ACompetitivePlayerCharacter::UnEquipPickAxe_Implementation()
 {
 	if (SpawnedPickAxe)
 	{
+		if (!HasAuthority())
+		{
+			SpawnedPickAxe->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+			SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+			                                  TEXT("Backpack_Socket"));
+		}
 		SpawnedPickAxe->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		                                  TEXT("Backpack_Socket"));
 	}
 }
+
 
 void ACompetitivePlayerCharacter::PlayMiningAnim()
 {
@@ -448,10 +474,11 @@ void ACompetitivePlayerCharacter::PullTrigger()
 		FRotator FireRot = GetActorRotation();
 		FRotator BulletFireRot = GetActorRotation();
 
-		EquippedGun->ProjectileFire(FireLoc, FireRot, BulletFireRot);
-
-		FireCount += 1;
-		OnRep_FireCount();
+		if (EquippedGun->ProjectileFire(FireLoc, FireRot, BulletFireRot))
+		{
+			FireCount += 1;
+			OnRep_FireCount();
+		}
 	}
 #pragma endregion Server
 }
@@ -513,10 +540,12 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 		ACompetitiveGameState* const GameState = Cast<ACompetitiveGameState>(GetWorld()->GetGameState());
 		FString KilleeName;
 		FString KillerName;
+		ETeam KilleTeam{};
 		if (APlayerController* const KilleeController = Cast<APlayerController>(GetController());
 			IsValid(KilleeController) && IsValid(KilleeController->PlayerState))
 		{
 			KilleeName = KilleeController->PlayerState->GetPlayerName();
+			KilleTeam = TeamComponent->GetTeam();
 		}
 		if (APlayerController* const KillerController = Cast<APlayerController>(EventInstigator);
 			IsValid(KillerController) && IsValid(KillerController->PlayerState))
@@ -524,7 +553,7 @@ float ACompetitivePlayerCharacter::TakeDamage(float DamageAmount, struct FDamage
 			KillerName = KillerController->PlayerState->GetPlayerName();
 		}
 		GameState->MulticastPlayerDead(KilleeName, KillerName,
-		                               IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr);
+		                               IsValid(DamageCauser) ? DamageCauser->GetClass() : nullptr, KilleTeam);
 
 		UE_LOG(LogTemp, Warning, TEXT("Character is dead!"));
 		GetWorldTimerManager().SetTimer(Timer, this, &ACompetitivePlayerCharacter::DestroyCharacter, DeadTime, false);
@@ -878,6 +907,11 @@ void ACompetitivePlayerCharacter::OnRep_LastInteractTime()
 	}
 }
 
+void ACompetitivePlayerCharacter::OnRep_SpawnedPickAxe()
+{
+	EquipPickAxe();
+}
+
 void ACompetitivePlayerCharacter::OnTeamChanged(const ETeam Team)
 {
 	SetTeamMaterial(Team);
@@ -942,6 +976,12 @@ void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float Del
 	{
 		InventoryComponent->AddResource(Resource->ResourceData);
 		Resource->UpdateMesh_AfterHarvest();
+	}
+
+	// 착용중인 무기가 있으면 곡괭이 해제
+	if (IsValid(EquippedGun) || IsValid(EquippedKnife))
+	{
+		UnEquipPickAxe();
 	}
 }
 

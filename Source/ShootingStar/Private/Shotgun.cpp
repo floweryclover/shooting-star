@@ -5,6 +5,7 @@
 #include "CompetitivePlayerCharacter.h"
 #include "TeamComponent.h"
 #include "Rifle_Projectile.h"
+#include "Shotgun_Projectile.h"
 
 AShotgun::AShotgun()
 {
@@ -50,8 +51,14 @@ AGun* AShotgun::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 	return weapon;
 }
 
-void AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
+bool AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
+	if (GetIsReload())
+	{
+		return false;
+	}
+	LastFireTime = GetWorld()->GetTimeSeconds();
+	
 	const int32 PelletCount = 8;
 	const float AngleStep = 6.0f; // 각 총알 사이 각도 차이
 	const int32 HalfPellets = PelletCount / 2;
@@ -70,7 +77,7 @@ void AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 		float YawOffset = IndexOffset * AngleStep;
 		FRotator SpreadRot = bulletRot + FRotator(0.0f, YawOffset, 0.0f); // Pitch는 고정, Yaw만 조정
 
-		auto projectile = GetWorld()->SpawnActor<ARifle_Projectile>(ARifle_Projectile::StaticClass(), loc, rot, spawnParameter);
+		auto projectile = GetWorld()->SpawnActor<AShotgun_Projectile>(AShotgun_Projectile::StaticClass(), loc, rot, spawnParameter);
 		if (projectile)
 		{
 			projectile->SetReplicates(true);
@@ -100,4 +107,6 @@ void AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 			projectile->ProjectileFire(FireDirection, GetOwner());
 		}
 	}
+
+	return true;
 }
