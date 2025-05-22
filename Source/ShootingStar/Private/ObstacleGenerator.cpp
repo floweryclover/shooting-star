@@ -44,7 +44,7 @@ void UObstacleGenerator::GenerateObjects()
 
         if (!Owner->CheckLocation(RandomLocation, RandomMesh, EObjectMask::ObstacleMask))
         {
-            RandomLocation = Owner->FindNearestValidLocation(RandomLocation, obstacleMinDistance, RandomMesh, EObjectMask::ObstacleMask);
+            RandomLocation = Owner->FindNearestValidLocation(RandomLocation, obstacleMinDistance * 2, RandomMesh, EObjectMask::ObstacleMask);
             if (RandomLocation == FVector::ZeroVector)
                 continue;
         }

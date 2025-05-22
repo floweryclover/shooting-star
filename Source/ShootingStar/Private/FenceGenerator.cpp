@@ -212,6 +212,9 @@ void UFenceGenerator::GenerateFencePattern(const FVector& Center, EPatternType P
 
 void UFenceGenerator::PlaceFence(const TArray<FFenceData>& Positions)
 {
+    // 펜스 위치 정보를 MapGeneratorComponent에 전달
+    Owner->SetCurrentFencePositions(Positions);
+
     TArray<FTransform> FenceTransforms;
     for (const FFenceData& FenceData : Positions)
     {
@@ -221,6 +224,8 @@ void UFenceGenerator::PlaceFence(const TArray<FFenceData>& Positions)
             Owner->SetObjectRegion(FenceData.Location, fenceMesh, EObjectMask::FenceMask);
         }
     }
+    // 위치 정보 초기화
+    Owner->SetCurrentFencePositions(TArray<FFenceData>());
     Owner->GetMapInstancedMeshActor()->SetFenceInstances(FenceTransforms);
 }
 
