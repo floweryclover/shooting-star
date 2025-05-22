@@ -43,7 +43,7 @@ void UDecorationGenerator::GenerateObjects()
 
         if (!Owner->CheckLocation(RandomLocation, RandomMesh, EObjectMask::DecoMask))
         {
-            RandomLocation = Owner->FindNearestValidLocation(RandomLocation, decoMinDistance, RandomMesh, EObjectMask::DecoMask);
+            RandomLocation = Owner->FindNearestValidLocation(RandomLocation, decoMinDistance * 2, RandomMesh, EObjectMask::DecoMask);
             if (RandomLocation == FVector::ZeroVector)
                 continue;
         }

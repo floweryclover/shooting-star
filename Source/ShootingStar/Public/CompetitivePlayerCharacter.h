@@ -16,6 +16,7 @@ class AKnife;
 class APickAxe;
 class UWidgetComponent;
 class UTeamComponent;
+class AMapObjectActor;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponData);
 
@@ -306,6 +307,9 @@ private:
 	float GetHealth() const;
 	void DestroyCharacter();
 
+	UPROPERTY()
+	TSet<AMapObjectActor*> PreviousTranslucentObstacles;
+
 	//
 	// Replication Notifies
 	// 애니메이션 동기화용 카운트. 값에 의미 없음 - 변화를 감지해서 클라이언트에서 애니메이션 출력 등을 위함임
@@ -373,4 +377,6 @@ private:
 	void Tick_HandleHidden(float DeltaSeconds);
 
 	bool CapsuleTraceResource(FHitResult& OutHitResult);
+
+	void CheckObstaclesBetweenCamera();
 };

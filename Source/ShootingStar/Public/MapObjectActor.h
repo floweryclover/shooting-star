@@ -13,6 +13,23 @@ UCLASS()
 class AMapObjectActor : public AStaticMeshActor
 {
 	GENERATED_BODY()
+
+public:
+    void SetTranslucentMaterial(UMaterialInterface* InMaterial);
+	void SetTranslucent(bool bShouldBeTranslucent);
+
+protected:
+    virtual void BeginPlay() override;
+
+private:
+    UPROPERTY()
+    UMaterialInterface* DefaultMaterial;
+
+    UPROPERTY()
+    UMaterialInterface* TranslucentMaterial;
+
+    bool bIsTranslucent = false;
+
 //
 // public:
 // 	void SetCollisionType(ECollisionEnabled::Type InCollisionType);

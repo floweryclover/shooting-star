@@ -7,6 +7,7 @@
 #include "MapEnum.h"
 #include "ResourceGenerator.h"
 #include "ResourceActor.h"
+#include "FenceData.h"
 #include "MapInstancedMeshActor.h"
 #include "MapGeneratorComponent.generated.h"
 
@@ -94,6 +95,9 @@ public:
 	bool PlaceObject(const FVector& Location, const UStaticMesh* ObjectMesh);
     void RegenerateResources();
 
+	// 펜스 위치 정보 설정을 위한 함수
+    void SetCurrentFencePositions(const TArray<FFenceData>& Positions) { CurrentFencePositions = Positions; }
+
 	FVector GetRandomPosition();
 	FVector GetRandomOffsetPosition(const FVector& Origin, float Offset) const;
 	FVector FindNearestValidLocation(const FVector& Origin, float SearchRadius, const UStaticMesh* ObjectMesh, EObjectMask ObjectType) const;
@@ -120,15 +124,15 @@ protected:
 	int32 mapHalfSize = 2500;
 
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "20"))
-	int32 numObstacles = 5;
+	int32 numObstacles = 3;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "50"))
-	int32 numSubObstacles = 15;
+	int32 numSubObstacles = 10;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "20"))
-	int32 numFences = 5;
+	int32 numFences = 6;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
 	int32 numResources = 20;
 	UPROPERTY(EditAnywhere, Category = "Map Settings", meta = (ClampMin = "1", ClampMax = "100"))
-	int32 numDecos = 20;
+	int32 numDecos = 15;
 
 	// Distance Settings
 	UPROPERTY(EditAnywhere, Category = "Distance Settings", meta = (ClampMin = "100.0", ClampMax = "5000.0"))
@@ -139,10 +143,13 @@ protected:
 	float fenceMinDistance = 300.f;
 	UPROPERTY(EditAnywhere, Category = "Distance Settings", meta = (ClampMin = "10.0", ClampMax = "200.0"))
 	float decoMinDistance = 50.f;
-	
+
 	// Fence generation settings
 	UPROPERTY(EditAnywhere, Category = "Fence Settings", meta = (ClampMin = "1", ClampMax = "100"))
-	float fenceGenerationProbability = 90.f;
+	float fenceGenerationProbability = 80.f;
+	// 현재 처리 중인 펜스 위치들 저장
+	UPROPERTY(VisibleAnywhere, Category = "Fence Settings")
+    mutable TArray<FFenceData> CurrentFencePositions;
 
 	// Pattern Settings
 	UPROPERTY(EditAnywhere, Category = "Pattern Settings", meta = (ClampMin = "50.0", ClampMax = "500.0"))
@@ -159,6 +166,10 @@ protected:
 	// Map Coordinate
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map Data")
 	TArray<uint8> mapCoordinate;
+
+	// Translucent Material
+	UPROPERTY(EditAnywhere, Category = "Translucent Material")
+	UMaterialInterface* TranslucentMaterial;
 
 	// Resource Settings
 	UPROPERTY(EditAnywhere, Category = "Resource Settings")
@@ -218,4 +229,6 @@ private:
 	
 	UFUNCTION()
 	void OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
+
+	FVector CalculateExtent(const FVector& Location, const UStaticMesh* ObjectMesh, EObjectMask ObjectType) const;
 };

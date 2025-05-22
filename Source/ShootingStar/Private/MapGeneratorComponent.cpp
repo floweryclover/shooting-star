@@ -10,6 +10,8 @@
 #include "CompetitiveGameMode.h"
 #include "SafeZoneActor.h"
 #include "TumbleWeed.h"
+#include "PhysicsEngine/BodySetup.h"
+#include "PhysicsEngine/BoxElem.h"
 
 DEFINE_LOG_CATEGORY(MapGenerator);
 
@@ -52,8 +54,12 @@ void UMapGeneratorComponent::Initialize()
     if (IsValid(resourceGenerator)) resourceGenerator->Initialize(this);
     if (IsValid(decorationGenerator)) decorationGenerator->Initialize(this);
 
-    // // 4. Static Actors 등록
-    // RegisterMapActors();
+    // 4. 맵에 미리 배치된 오브젝트 좌표 등록
+    for (int32 x = -190; x <= 190; x++) // Windmill
+    {
+        for (int32 y = -190; y <= 190; y++)
+            SetObjectAtArray(x, y, EObjectMask::ObstacleMask);
+    }
 
     // 5. 절차적 생성 시작
     GenerateMap();
@@ -87,6 +93,80 @@ void UMapGeneratorComponent::GenerateMap()
     UE_LOG(MapGenerator, Log, TEXT("Generate Map Completed"));
 }
 
+FVector UMapGeneratorComponent::CalculateExtent(const FVector& Location, const UStaticMesh* ObjectMesh, EObjectMask ObjectType) const
+{
+    if (!ObjectMesh) return FVector::ZeroVector;
+    
+    FVector Extent;
+    UBodySetup* BodySetup = ObjectMesh->GetBodySetup();
+
+    // 실제 충돌 박스 크기 가져오기
+    const FKAggregateGeom& AggGeom = ObjectMesh->GetBodySetup()->AggGeom;
+    if (BodySetup && BodySetup->AggGeom.BoxElems.Num() > 0)
+    {
+        // 콜리전 박스가 있는 경우
+        const FKBoxElem& BoxElem = AggGeom.BoxElems[0];
+        Extent = FVector(BoxElem.X * 0.5f, BoxElem.Y * 0.5f, BoxElem.Z * 0.5f);
+
+        UE_LOG(MapGenerator, Log, TEXT("충돌 박스 로드 성공"));
+    }
+    else
+    {
+        UE_LOG(MapGenerator, Log, TEXT("충돌 박스 로드 실패"));
+        const FBoxSphereBounds& Bounds = ObjectMesh->GetBounds();
+        Extent = Bounds.BoxExtent;
+    }
+
+    int32 i;
+    uint8 mask = static_cast<uint8>(ObjectType);
+        // 최하위 1비트의 위치를 찾아 반환
+    for(i = 0; i < 5; ++i)
+    {
+        if(mask & (1 << i))
+            break;
+    }
+
+    static const float SafetyMargins[] = {
+        200.f,        // ObstacleMask
+        100.f,        // SubObstacleMask
+        -5.f,         // FenceMask
+        50.f,         // ResourceMask
+        10.f          // Default/DecoMask
+    };
+    const float SafetyMargin = SafetyMargins[i];
+    Extent += FVector(SafetyMargin, SafetyMargin, 0.f);
+
+    // 펜스인 경우 회전에 따른 Extent 조정
+    if (ObjectType == EObjectMask::FenceMask)
+    {
+        UE_LOG(MapGenerator, Log, TEXT("Fence Margin: %f"), SafetyMargin);
+        UE_LOG(MapGenerator, Log, TEXT("Fence Extent: %s"), *Extent.ToString());
+        bool bIsHorizontal = false;
+        
+        // PlaceFence에서 전달된 위치 정보로 회전 상태 판단
+        for (const auto& Position : CurrentFencePositions)
+        {
+            if (Position.Location.Equals(Location))
+            {
+                bIsHorizontal = FMath::IsNearlyEqual(Position.Rotation.Yaw, 90.0f);
+                break;
+            }
+        }
+
+        if (bIsHorizontal)
+        {
+            // 가로 방향일 경우 X, Y 값을 교체
+            const float TempX = Extent.X;
+            Extent.X = Extent.Y;
+            Extent.Y = TempX;
+
+            UE_LOG(MapGenerator, Log, TEXT("Switched Fence Extent: %s"), *Extent.ToString());
+        }
+    }
+
+    return Extent;
+}
+
 // 좌표 배열에 오브젝트를 설정하는 함수
 void UMapGeneratorComponent::SetObjectAtArray(int32 X, int32 Y, EObjectMask ObjectType)
 {
@@ -98,33 +178,18 @@ void UMapGeneratorComponent::SetObjectRegion(const FVector& Location, const USta
 {
     if (!ObjectMesh) return;
 
-    const FBoxSphereBounds& Bounds = ObjectMesh->GetBounds();
-
-    // 오브젝트 타입별로 다른 여유 공간을 static 배열로 캐싱
-    static const float SafetyMargins[] = {
-        300.f,              // ObstacleMask
-        200.f,              // SubObstacleMask
-        100.f,              // FenceMask
-        100.f,              // ResourceMask
-        50.f               // Default/DecoMask
-    };
-
-    const float SafetyMargin = SafetyMargins[static_cast<int>(ObjectType) - 1];
-    const FVector Extent = Bounds.BoxExtent + FVector(SafetyMargin, SafetyMargin, 0.f);
+    FVector Extent = CalculateExtent(Location, ObjectMesh, ObjectType);
     
-    // 범위 계산을 한 번만 수행
+    // 범위 계산
     const int32 MinX = FMath::Max(FMath::FloorToInt(Location.X - Extent.X), -mapHalfSize);
     const int32 MinY = FMath::Max(FMath::FloorToInt(Location.Y - Extent.Y), -mapHalfSize);
     const int32 MaxX = FMath::Min(FMath::CeilToInt(Location.X + Extent.X), mapHalfSize - 1);
     const int32 MaxY = FMath::Min(FMath::CeilToInt(Location.Y + Extent.Y), mapHalfSize - 1);
 
-    // 엄격한 검사를 위해 10으로 설정
-    const int32 GridStep = 10;
-
     const uint8 ObjectMask = static_cast<uint8>(ObjectType);
-    for (int32 X = MinX; X <= MaxX; X += GridStep)
+    for (int32 X = MinX; X <= MaxX; X++)
     {
-        for (int32 Y = MinY; Y <= MaxY; Y += GridStep)
+        for (int32 Y = MinY; Y <= MaxY; Y++)
             mapCoordinate[GetIndex(X, Y)] |= ObjectMask;
     }
 }
@@ -167,7 +232,7 @@ bool UMapGeneratorComponent::CheckLocation(const FVector& Location) const
     const int32 X = FMath::RoundToInt(Location.X);
     const int32 Y = FMath::RoundToInt(Location.Y);
 
-    // 1. 맵 범위를 벗어나는지 확인
+    // 맵 범위를 벗어나는지 확인
     if (!IsInMap(Location))
         return false;
 
@@ -186,18 +251,15 @@ bool UMapGeneratorComponent::CheckLocation(const FVector& Location, const UStati
 {
     if (!ObjectMesh || !IsInMap(Location)) return false;
 
-    float checkMargin;
-    switch (ObjectType)
+    FVector Extent = CalculateExtent(Location, ObjectMesh, ObjectType);
+    if (ObjectType == EObjectMask::FenceMask)
     {
-    case EObjectMask::ObstacleMask: checkMargin = 300.f; break;
-    case EObjectMask::SubObstacleMask: checkMargin = 200.f; break;
-    case EObjectMask::FenceMask: checkMargin = fenceMinDistance * 0.33f; break;
-    case EObjectMask::ResourceMask: checkMargin = 100.f; break;
-    default: checkMargin = 50.f; break;
+        // 플레이어 끼임 방지 오프셋 조정
+        if (Extent.X > Extent.Y)
+            Extent.Y += 100.f;
+        else
+            Extent.X += 100.f;
     }
-
-    const FBoxSphereBounds Bounds = ObjectMesh->GetBounds();
-    const FVector Extent = Bounds.BoxExtent + FVector(checkMargin, checkMargin, 0.f);
 
     // 검사 범위 계산
     int32 MinX = FMath::Max(FMath::FloorToInt(Location.X - Extent.X), -mapHalfSize);
@@ -205,19 +267,15 @@ bool UMapGeneratorComponent::CheckLocation(const FVector& Location, const UStati
     int32 MaxX = FMath::Min(FMath::CeilToInt(Location.X + Extent.X), mapHalfSize - 1);
     int32 MaxY = FMath::Min(FMath::CeilToInt(Location.Y + Extent.Y), mapHalfSize - 1);
 
-    // 최적화된 그리드 간격 (더 큰 간격으로 조정 가능)
-    const int32 GridStep = FMath::Max(20, FMath::FloorToInt(checkMargin * 0.1f));
-
     // 모든 오브젝트 타입을 한 번에 검사하는 마스크
     const uint8 CheckMask = static_cast<uint8>(EObjectMask::ObstacleMask) |
                            static_cast<uint8>(EObjectMask::SubObstacleMask) |
                            static_cast<uint8>(EObjectMask::FenceMask) |
-                           static_cast<uint8>(EObjectMask::ResourceMask) |
-                           static_cast<uint8>(EObjectMask::DecoMask);
+                           static_cast<uint8>(EObjectMask::ResourceMask);
 
-    for (int32 X = MinX; X <= MaxX; X += GridStep)
+    for (int32 X = MinX; X <= MaxX; X++)
     {
-        for (int32 Y = MinY; Y <= MaxY; Y += GridStep)
+        for (int32 Y = MinY; Y <= MaxY; Y++)
         {
             const int32 Index = GetIndex(X, Y);
             if (mapCoordinate[Index] & CheckMask)
@@ -230,9 +288,9 @@ bool UMapGeneratorComponent::CheckLocation(const FVector& Location, const UStati
 
 FVector UMapGeneratorComponent::FindNearestValidLocation(const FVector& Origin, float SearchRadius, const UStaticMesh* ObjectMesh, EObjectMask ObjectType) const
 {
-    static const int32 NumDirections = 8;
-    static const float AnglePerStep = 360.0f / NumDirections;
-    static const float RadiusPerStep = 100.f;
+    static const int32 NumDirections = 16;
+    static const float AnglePerStep = 360.0f / (float)NumDirections;
+    static const float RadiusPerStep = 50.f;
     
     // 방향 벡터를 미리 계산
     static TArray<FVector2D> DirectionVectors;
@@ -300,6 +358,10 @@ bool UMapGeneratorComponent::PlaceObject(const FVector& Location, const UStaticM
         {
             NewActor->OnActorBeginOverlap.AddDynamic(this, &UMapGeneratorComponent::OnActorBeginOverlapOnTumbleWeedHandler);
             NewActor->OnActorEndOverlap.AddDynamic(this, &UMapGeneratorComponent::OnActorEndOverlapOnTumbleWeedHandler);
+        }
+        else
+        {
+            NewActor->SetTranslucentMaterial(TranslucentMaterial);
         }
 
         NewActor->SetActorLocation(Location);

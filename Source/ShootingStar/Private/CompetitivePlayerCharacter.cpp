@@ -23,6 +23,7 @@
 #include "CompetitiveGameState.h"
 #include "CompetitiveSystemComponent.h"
 #include "InventoryComponent.h"
+#include "MapObjectActor.h"
 #include "SupplyActor.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
@@ -208,6 +209,8 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 	Tick_HandleKnifeAttack(DeltaSeconds);
 	Tick_HandleHidden(DeltaSeconds);
 #pragma endregion Server
+
+	CheckObstaclesBetweenCamera();
 }
 
 void ACompetitivePlayerCharacter::Destroyed()
@@ -1058,4 +1061,48 @@ bool ACompetitivePlayerCharacter::CapsuleTraceResource(FHitResult& OutHitResult)
 		EDrawDebugTrace::None,
 		OutHitResult,
 		true);
+}
+
+void ACompetitivePlayerCharacter::CheckObstaclesBetweenCamera()
+{
+    if (!IsValid(TopDownCameraComponent) || !IsValid(CameraBoom)) return;
+    
+    TSet<AMapObjectActor*> CurrentTranslucentObstacles;
+    
+    // 카메라와 플레이어 사이의 라인 트레이스
+    FVector CameraLocation = TopDownCameraComponent->GetComponentLocation();
+    FVector PlayerLocation = GetActorLocation() + FVector(0, 0, 50.f); // 캐릭터 중심점
+    
+    FCollisionQueryParams QueryParams;
+    QueryParams.AddIgnoredActor(this);
+    
+    TArray<FHitResult> HitResults;
+    GetWorld()->LineTraceMultiByChannel(
+        HitResults,
+        PlayerLocation,
+        CameraLocation,
+        ECC_Visibility,
+        QueryParams
+    );
+    
+	// 이전에 반투명했지만 이제 아닌 장애물들 복구
+    for (AMapObjectActor* PrevObstacle : PreviousTranslucentObstacles)
+    {
+        if (PrevObstacle && !CurrentTranslucentObstacles.Contains(PrevObstacle))
+            PrevObstacle->SetTranslucent(false);
+    }
+	PreviousTranslucentObstacles.Empty();
+
+    // 현재 카메라 시야를 가리는 장애물들 처리
+    for (const FHitResult& Hit : HitResults)
+    {
+        if (AMapObjectActor* Obstacle = Cast<AMapObjectActor>(Hit.GetActor()))
+        {
+            Obstacle->SetTranslucent(true);
+            CurrentTranslucentObstacles.Emplace(Obstacle);
+			PreviousTranslucentObstacles.Emplace(Obstacle);
+		}
+    }
+    
+    PreviousTranslucentObstacles = CurrentTranslucentObstacles;
 }

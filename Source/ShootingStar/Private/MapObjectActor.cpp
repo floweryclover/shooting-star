@@ -6,6 +6,42 @@
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
 
+void AMapObjectActor::BeginPlay()
+{
+    Super::BeginPlay();
+    
+    // 초기 메터리얼 저장
+    if (UStaticMeshComponent* MeshComp = GetStaticMeshComponent())
+    {
+        DefaultMaterial = MeshComp->GetMaterial(0);
+    }
+}
+
+void AMapObjectActor::SetTranslucentMaterial(UMaterialInterface* InMaterial)
+{
+    if (!TranslucentMaterial)
+    {
+        TranslucentMaterial = InMaterial;
+        UE_LOG(LogTemp, Log, TEXT("성공적으로 반투명 머티리얼을 로드했습니다."));
+    }
+}
+
+void AMapObjectActor::SetTranslucent(bool bShouldBeTranslucent)
+{
+    if (bIsTranslucent == bShouldBeTranslucent) return;
+    
+    if (UStaticMeshComponent* MeshComp = GetStaticMeshComponent())
+    {
+        if (!TranslucentMaterial)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Translucent material is not loaded."));
+        }
+        
+        MeshComp->SetMaterial(0, bShouldBeTranslucent ? TranslucentMaterial : DefaultMaterial);
+        bIsTranslucent = bShouldBeTranslucent;
+    }
+}
+
 // void AMapObjectActor::BeginPlay()
 // {
 // 	Super::BeginPlay();
