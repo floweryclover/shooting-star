@@ -122,9 +122,9 @@ void UMapGeneratorComponent::SetObjectRegion(const FVector& Location, const USta
     const int32 GridStep = 10;
 
     const uint8 ObjectMask = static_cast<uint8>(ObjectType);
-    for (int32 X = MinX; X <= MaxX; X += GridStep)
+    for (int32 X = MinX; X <= MaxX; X++)
     {
-        for (int32 Y = MinY; Y <= MaxY; Y += GridStep)
+        for (int32 Y = MinY; Y <= MaxY; Y++)
             mapCoordinate[GetIndex(X, Y)] |= ObjectMask;
     }
 }
@@ -215,9 +215,9 @@ bool UMapGeneratorComponent::CheckLocation(const FVector& Location, const UStati
                            static_cast<uint8>(EObjectMask::ResourceMask) |
                            static_cast<uint8>(EObjectMask::DecoMask);
 
-    for (int32 X = MinX; X <= MaxX; X += GridStep)
+    for (int32 X = MinX; X <= MaxX; X++)
     {
-        for (int32 Y = MinY; Y <= MaxY; Y += GridStep)
+        for (int32 Y = MinY; Y <= MaxY; Y++)
         {
             const int32 Index = GetIndex(X, Y);
             if (mapCoordinate[Index] & CheckMask)

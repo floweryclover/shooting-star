@@ -1025,9 +1025,8 @@ bool ACompetitivePlayerCharacter::CapsuleTraceResource(FHitResult& OutHitResult)
 
 void ACompetitivePlayerCharacter::CheckObstaclesBetweenCamera()
 {
-    if (!TopDownCameraComponent || !CameraBoom) return;
+    if (!IsValid(TopDownCameraComponent) || !IsValid(CameraBoom)) return;
     
-    static TSet<AMapObjectActor*> PreviousTranslucentObstacles;
     TSet<AMapObjectActor*> CurrentTranslucentObstacles;
     
     // 카메라와 플레이어 사이의 라인 트레이스
@@ -1046,23 +1045,23 @@ void ACompetitivePlayerCharacter::CheckObstaclesBetweenCamera()
         QueryParams
     );
     
+	// 이전에 반투명했지만 이제 아닌 장애물들 복구
+    for (AMapObjectActor* PrevObstacle : PreviousTranslucentObstacles)
+    {
+        if (PrevObstacle && !CurrentTranslucentObstacles.Contains(PrevObstacle))
+            PrevObstacle->SetTranslucent(false);
+    }
+	PreviousTranslucentObstacles.Empty();
+
     // 현재 카메라 시야를 가리는 장애물들 처리
     for (const FHitResult& Hit : HitResults)
     {
         if (AMapObjectActor* Obstacle = Cast<AMapObjectActor>(Hit.GetActor()))
         {
             Obstacle->SetTranslucent(true);
-            CurrentTranslucentObstacles.Add(Obstacle);
-        }
-    }
-    
-    // 이전에 반투명했지만 이제 아닌 장애물들 복구
-    for (AMapObjectActor* PrevObstacle : PreviousTranslucentObstacles)
-    {
-        if (PrevObstacle && !CurrentTranslucentObstacles.Contains(PrevObstacle))
-        {
-            PrevObstacle->SetTranslucent(false);
-        }
+            CurrentTranslucentObstacles.Emplace(Obstacle);
+			PreviousTranslucentObstacles.Emplace(Obstacle);
+		}
     }
     
     PreviousTranslucentObstacles = CurrentTranslucentObstacles;

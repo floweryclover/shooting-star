@@ -16,6 +16,7 @@ class AKnife;
 class APickAxe;
 class UWidgetComponent;
 class UTeamComponent;
+class AMapObjectActor;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponChanged, FWeaponData, WeaponData);
 
@@ -304,6 +305,9 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetHealth() const;
 	void DestroyCharacter();
+
+	UPROPERTY()
+	TSet<AMapObjectActor*> PreviousTranslucentObstacles;
 
 	//
 	// Replication Notifies
