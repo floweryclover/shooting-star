@@ -106,7 +106,7 @@ void UMapGeneratorComponent::SetObjectRegion(const FVector& Location, const USta
         200.f,              // SubObstacleMask
         100.f,              // FenceMask
         100.f,              // ResourceMask
-        50.f               // Default/DecoMask
+        50.f                // Default/DecoMask
     };
 
     const float SafetyMargin = SafetyMargins[static_cast<int>(ObjectType) - 1];
@@ -167,7 +167,7 @@ bool UMapGeneratorComponent::CheckLocation(const FVector& Location) const
     const int32 X = FMath::RoundToInt(Location.X);
     const int32 Y = FMath::RoundToInt(Location.Y);
 
-    // 1. 맵 범위를 벗어나는지 확인
+    // 맵 범위를 벗어나는지 확인
     if (!IsInMap(Location))
         return false;
 
@@ -206,7 +206,7 @@ bool UMapGeneratorComponent::CheckLocation(const FVector& Location, const UStati
     int32 MaxY = FMath::Min(FMath::CeilToInt(Location.Y + Extent.Y), mapHalfSize - 1);
 
     // 최적화된 그리드 간격 (더 큰 간격으로 조정 가능)
-    const int32 GridStep = FMath::Max(20, FMath::FloorToInt(checkMargin * 0.1f));
+    const int32 GridStep = 10;
 
     // 모든 오브젝트 타입을 한 번에 검사하는 마스크
     const uint8 CheckMask = static_cast<uint8>(EObjectMask::ObstacleMask) |
@@ -300,6 +300,10 @@ bool UMapGeneratorComponent::PlaceObject(const FVector& Location, const UStaticM
         {
             NewActor->OnActorBeginOverlap.AddDynamic(this, &UMapGeneratorComponent::OnActorBeginOverlapOnTumbleWeedHandler);
             NewActor->OnActorEndOverlap.AddDynamic(this, &UMapGeneratorComponent::OnActorEndOverlapOnTumbleWeedHandler);
+        }
+        else
+        {
+            NewActor->SetTranslucentMaterial(TranslucentMaterial);
         }
 
         NewActor->SetActorLocation(Location);

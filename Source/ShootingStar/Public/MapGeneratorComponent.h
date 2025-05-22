@@ -160,6 +160,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map Data")
 	TArray<uint8> mapCoordinate;
 
+	// Translucent Material
+	UPROPERTY(EditAnywhere, Category = "Translucent Material")
+	UMaterialInterface* TranslucentMaterial;
+
 	// Resource Settings
 	UPROPERTY(EditAnywhere, Category = "Resource Settings")
 	TSubclassOf<class AResourceActor> ResourceActorClass;

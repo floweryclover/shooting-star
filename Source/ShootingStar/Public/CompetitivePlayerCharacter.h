@@ -369,4 +369,6 @@ private:
 	void Tick_HandleHidden(float DeltaSeconds);
 
 	bool CapsuleTraceResource(FHitResult& OutHitResult);
+
+	void CheckObstaclesBetweenCamera();
 };
