@@ -20,6 +20,8 @@ UCharacter_AnimInstance::UCharacter_AnimInstance()
 	if (GetMiningLoop.Succeeded()) MiningLoopMontage = GetMiningLoop.Object;
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> GetRocketShoot(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/RocketLauncher/rocketlauncher_shoot.rocketlauncher_shoot'"));
 	if (GetRocketShoot.Succeeded()) RocketLauncher_Shoot_Montage = GetRocketShoot.Object;
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> GetDashMontage(TEXT("AnimMontage'/Game/Toon_Soldiers_UE5/Animations/PickAxe/DashMontage.DashMontage'"));
+	if (GetDashMontage.Succeeded()) DashMontage = GetDashMontage.Object;
 }
 
 void UCharacter_AnimInstance::NativeUpdateAnimation(const float DeltaSeconds)
@@ -97,6 +99,11 @@ void UCharacter_AnimInstance::StopMiningMontage()
 		CurrentMontage = nullptr;
 	}
 	Montage_Stop(0.2f, MiningLoopMontage);
+}
+
+void UCharacter_AnimInstance::PlayDashMontage(float DesiredPlayTime, const int32 LoopCount)
+{
+	PlayMontage(DashMontage, DesiredPlayTime, LoopCount, true);
 }
 
 void UCharacter_AnimInstance::AnimNotify_MiningHit(UAnimNotify* Notify)

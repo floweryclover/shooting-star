@@ -637,7 +637,7 @@ void ACompetitivePlayerCharacter::DashStart()
 		// 움직이고 있지 않다면, 캐릭터 앞 방향으로 대쉬
 		DashDirection = GetActorForwardVector();
 	}
-
+	// AnimInstance->PlayDashMontage();
 	GetCharacterMovement()->BrakingFrictionFactor = 0.f;
 	LaunchCharacter(DashDirection * 5000.f, true, true);
 	GetWorldTimerManager().SetTimer(DashTimer, this, &ACompetitivePlayerCharacter::DashEnd, 0.1f, false);
@@ -852,6 +852,7 @@ void ACompetitivePlayerCharacter::OnRep_EquippedKnife()
 		}
 		EquippedKnife->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		                                 TEXT("Weapon_R_Socket"));
+		EquippedKnife->SetDamageType(DamageTypeClass);
 	}
 
 	RefreshAnimInstance();
