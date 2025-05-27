@@ -34,6 +34,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	class UAudioComponent* Sound;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage")
+	TSubclassOf<UDamageType> DamageTypeClass;
+
+	void SetDamageType(TSubclassOf<UDamageType> InDamageType)
+	{
+		DamageTypeClass = InDamageType;
+	}
+
 	float GetKnifeDamage() const { return KnifeDamage; }
 	
 	void SetKnifeDamage(float Damage) { KnifeDamage = Damage; };

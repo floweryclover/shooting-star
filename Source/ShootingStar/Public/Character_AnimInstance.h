@@ -39,6 +39,7 @@ public:
 	UFUNCTION()
 	void AnimNotify_AttackEnd();
 
+	void PlayDashMontage(float DesiredPlayTime = 0.0f, int32 LoopCount = 1);
 	void PlayMiningMontage(float DesiredPlayTime = 0.0f, int32 LoopCount = 1);
 	void PlayHitMontage(float DesiredPlayTime = 0.0f, int32 LoopCount = 1);
 	void PlayDeadMontage(float DesiredPlayTime = 0.0f, int32 LoopCount = 1);
@@ -69,6 +70,8 @@ private:
 	TObjectPtr<UAnimMontage> HitMontage;
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> DeadMontage;
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> DashMontage;
 
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> CurrentMontage;
