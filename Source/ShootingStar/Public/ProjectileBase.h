@@ -3,10 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "TeamComponent.h"
 #include "GameFramework/Actor.h"
 #include "ProjectileBase.generated.h"
-
-enum class ETeam :uint8;
 
 UCLASS()
 class SHOOTINGSTAR_API AProjectileBase : public AActor
