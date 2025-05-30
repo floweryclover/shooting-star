@@ -25,6 +25,7 @@ extern "C"
 {
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnErrorFunction(JNIEnv * Env, jclass Clazz, jstring JavaError);
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionFailedFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
+	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionSucceededFunction(JNIEnv * Env, jclass Clazz);
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnRefreshGroupFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsGroupFormed, jboolean JavaIsGroupOwner, jstring JavaGroupOwnerIpAddress);
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnServiceFoundFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
 	void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnP2pStateChangedFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsP2pAvailable);
@@ -143,7 +144,7 @@ protected:
 	float ConnectingElapsed;
 
 	UPROPERTY(BlueprintReadOnly)
-	float ConnectTimeout = 5.0f;
+	float ConnectTimeout = 20.0f;
 
 	UPROPERTY(BlueprintReadOnly)
 	float DiscoveryElapsed;
@@ -163,6 +164,7 @@ private:
 #if PLATFORM_ANDROID && USE_ANDROID_JNI
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnErrorFunction(JNIEnv * Env, jclass Clazz, jstring JavaError);
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionFailedFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
+	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionSucceededFunction(JNIEnv * Env, jclass Clazz);
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnRefreshGroupFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsGroupFormed, jboolean JavaIsGroupOwner, jstring JavaGroupOwnerIpAddress);
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnServiceFoundFunction(JNIEnv * Env, jclass Clazz, jstring JavaDeviceName, jstring JavaDeviceMacAddress);
 	friend void Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnP2pStateChangedFunction(JNIEnv * Env, jclass Clazz, jboolean JavaIsP2pAvailable);
