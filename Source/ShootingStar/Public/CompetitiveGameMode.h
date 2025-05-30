@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "CompetitiveGameMode.generated.h"
 
+class ATumbleWeed;
 class ACompetitivePlayerController;
 class ACompetitivePlayerCharacter;
 class UCompetitiveSystemComponent;
@@ -122,6 +123,8 @@ protected:
 	TObjectPtr<ASafeZoneActor> SafeZoneActor;
 
 private:
+	float TimeElapsedLastSafeZoneDamaged;
+	
 	void AssignTeamIfNone(APlayerController* Player);
 
 	UFUNCTION()
@@ -130,11 +133,6 @@ private:
 	UFUNCTION()
 	void HandleSupplyDrop(FVector Location);
 
-	float TimeElapsedLastSafeZoneDamaged;
-
 	UFUNCTION()
-	void OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
-	
-	UFUNCTION()
-	void OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
+	void OnTumbleWeedOverlapChanged(ATumbleWeed* TumbleWeed, const TArray<ACompetitivePlayerCharacter*>& OverlappingCharacters);
 };

@@ -5,8 +5,6 @@
 #include "CompetitiveGameState.h"
 #include "CompetitiveSystemComponent.h"
 #include "CompetitivePlayerCharacter.h"
-#include "InventoryComponent.h"
-#include "WeaponData.h"
 #include "Engine/World.h"
 #include "MapGeneratorComponent.h"
 #include "GameFramework/PlayerState.h"
@@ -14,8 +12,29 @@
 #include "Components/StaticMeshComponent.h"
 #include "SafeZoneActor.h"
 #include "SupplyActor.h"
-#include "ResourceActor.h"
+#include "Algo/ForEach.h"
+#include "Algo/RemoveIf.h"
 #include "Kismet/GameplayStatics.h"
+
+void ForEachCompetitiveCharacter(ACompetitiveGameMode* Context, auto&& F)
+{
+	for (APlayerState* const PlayerState : Context->GameState->PlayerArray)
+	{
+		APlayerController* const PlayerController = PlayerState->GetPlayerController();
+		if (!IsValid(PlayerController) || !IsValid(PlayerController->GetCharacter()))
+		{
+			continue;
+		}
+
+		ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(PlayerController->GetCharacter());
+		if (!IsValid(Character))
+		{
+			continue;
+		}
+
+		F(Character);
+	}
+}
 
 ACompetitiveGameMode::ACompetitiveGameMode()
 	: NumPlayers{1} // 호스트 항상 포함
@@ -37,9 +56,8 @@ void ACompetitiveGameMode::InitGame(const FString& MapName, const FString& Optio
 
 	// MapGeneratorComponent 초기화
 	MapGeneratorComponent->Initialize();
-	MapGeneratorComponent->OnActorBeginOverlapOnTumbleWeed.AddDynamic(this, &ACompetitiveGameMode::OnActorBeginOverlapOnTumbleWeedHandler);
-	MapGeneratorComponent->OnActorEndOverlapOnTumbleWeed.AddDynamic(this, &ACompetitiveGameMode::OnActorEndOverlapOnTumbleWeedHandler);
-
+	MapGeneratorComponent->OnTumbleWeedOverlapChanged.AddDynamic(this, &ACompetitiveGameMode::OnTumbleWeedOverlapChanged);
+	
 	// SafeZone 액터 생성
 	SafeZoneActor = GetWorld()->SpawnActor<ASafeZoneActor>(SafeZoneActorClass);
 	if (!IsValid(SafeZoneActor))
@@ -82,21 +100,15 @@ void ACompetitiveGameMode::Tick(const float DeltaSeconds)
 		{
 			TimeElapsedLastSafeZoneDamaged = 0.0f;
 			const float RadiusSquaredSafeZone = SafeZoneActor->GetRadius() * SafeZoneActor->GetRadius();
-			for (APlayerState* const PlayerState : GameState->PlayerArray)
-			{
-				APlayerController* const PlayerController = PlayerState->GetPlayerController();
-				if (!IsValid(PlayerController) || !IsValid(PlayerController->GetCharacter()))
+			ForEachCompetitiveCharacter(this,
+				[&](ACompetitivePlayerCharacter* const Character)
 				{
-					continue;
-				}
-
-				ACharacter* const Character = PlayerController->GetCharacter();
-				const float DistanceSquaredFromCenter = Character->GetActorLocation().SizeSquared2D();
-				if (DistanceSquaredFromCenter > RadiusSquaredSafeZone)
-				{
-					UGameplayStatics::ApplyDamage(Character, DamageSafeZone, nullptr, SafeZoneActor, nullptr);
-				}
-			}
+					const float DistanceSquaredFromCenter = Character->GetActorLocation().SizeSquared2D();
+					if (DistanceSquaredFromCenter > RadiusSquaredSafeZone)
+					{
+						UGameplayStatics::ApplyDamage(Character, DamageSafeZone, nullptr, SafeZoneActor, nullptr);
+					}
+				});
 		}
 	}
 
@@ -356,20 +368,46 @@ void ACompetitiveGameMode::HandleSupplyDrop(FVector Location)
 		UE_LOG(LogShootingStar, Error, TEXT("Failed to spawn SupplyActor"));
 }
 
-void ACompetitiveGameMode::OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor)
+void ACompetitiveGameMode::OnTumbleWeedOverlapChanged(ATumbleWeed* const TumbleWeed,
+	const TArray<ACompetitivePlayerCharacter*>& OverlappingCharacters)
 {
-	if (ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(OtherActor);
-		IsValid(Character))
-	{
-		Character->IncreaseBushCount();
-	}
-}
+	using namespace Algo;
+	
+	// 우선 모든 캐릭터들에게서 해당 부시를 지우고 초기화
+	ForEachCompetitiveCharacter(this,
+		[TumbleWeed](ACompetitivePlayerCharacter* const Character)
+		{
+			Character->RemoveOverlappingTumbleWeed(TumbleWeed);
+			Character->SetExposedInTumbleWeed(false);
+		});
 
-void ACompetitiveGameMode::OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor)
-{
-	if (ACompetitivePlayerCharacter* const Character = Cast<ACompetitivePlayerCharacter>(OtherActor);
-	IsValid(Character))
-	{
-		Character->DecreaseBushCount();
-	}
+
+	// 해당 부시에 지금 있는 캐릭터들 대상으로 다시 등록
+	ForEach(OverlappingCharacters, [&](const auto Character){Character->AddOverlappingTumbleWeed(TumbleWeed);});
+
+	// 이제 두 팀간에 서로 공유하는 부시가 있는지 확인.
+	// 만약 존재한다면 해당 플레이어는 모두에게 보이도록 함.
+	ForEachCompetitiveCharacter(this,
+		[&](ACompetitivePlayerCharacter* const BlueTeamCharacter)
+		{
+			if (BlueTeamCharacter->GetTeamComponent()->GetTeam() != ETeam::Blue)
+			{
+				return;
+			}
+			
+			ForEachCompetitiveCharacter(	this,
+				[&](ACompetitivePlayerCharacter* const RedTeamCharacter)
+				{
+					if (RedTeamCharacter->GetTeamComponent()->GetTeam() != ETeam::Red)
+					{
+						return;
+					}
+
+					if (BlueTeamCharacter->IsSharesTumbleWeedWith(RedTeamCharacter))
+					{
+						BlueTeamCharacter->SetExposedInTumbleWeed(true);
+						RedTeamCharacter->SetExposedInTumbleWeed(true);
+					}
+				});
+		});
 }

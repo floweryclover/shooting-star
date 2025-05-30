@@ -29,6 +29,7 @@
 #include "Net/UnrealNetwork.h"
 #include "ShootingStar/ShootingStar.h"
 #include "CompetitivePlayerController.h"
+#include "Algo/AnyOf.h"
 
 ACompetitivePlayerCharacter::ACompetitivePlayerCharacter()
 {
@@ -142,6 +143,8 @@ void ACompetitivePlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(ACompetitivePlayerCharacter, MaxHealth);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, MiningCount);
 	DOREPLIFETIME(ACompetitivePlayerCharacter, LastInteractTime);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, OverlappingTumbleWeeds);
+	DOREPLIFETIME(ACompetitivePlayerCharacter, bExposedInBush);
 }
 
 void ACompetitivePlayerCharacter::SetTeamMaterial(const ETeam Team)
@@ -178,39 +181,74 @@ float ACompetitivePlayerCharacter::GetHealth() const
 void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	
-	const bool bHideNameTag = [this]
+
+	if (IsLocallyControlled())
 	{
-		if (IsLocallyControlled())
-		{
-			return false;
-		}
-
-		ACompetitivePlayerController* const LocalPlayerController = Cast<ACompetitivePlayerController>(GEngine->GetFirstLocalPlayerController(GetWorld()));
-		if (IsValid(LocalPlayerController) && LocalPlayerController->GetTeamComponent()->GetTeam() == TeamComponent->GetTeam())
-		{
-			return false;
-		}
-
-		return IsHidden();
-	}();
+		CheckObstaclesBetweenCamera();
+	}
 	
-	NameTagActorComponent->GetChildActor()->SetActorHiddenInGame(bHideNameTag);
+	Tick_HandleInBush();
+	
+	// NameTagActorComponent는 리플리케이트되지 않으므로, 자체적으로 숨김
+	NameTagActorComponent->GetChildActor()->SetActorHiddenInGame(!IsSameTeamWithLocalPlayer() && IsHidden());
 	if (!HasAuthority())
 	{
 		return;
 	}
+	
 #pragma region Server
 	if (IsDead())
 	{
 		SetActorHiddenInGame(false);
 	}
-	Tick_HandleResourceInteraction(DeltaSeconds);
-	Tick_HandleKnifeAttack(DeltaSeconds);
-	Tick_HandleHidden(DeltaSeconds);
+	Tick_HandleResourceInteraction();
+	Tick_HandleKnifeAttack();
 #pragma endregion Server
 
-	CheckObstaclesBetweenCamera();
+}
+
+void ACompetitivePlayerCharacter::AddOverlappingTumbleWeed(ATumbleWeed* const TumbleWeed)
+{
+	FAIL_IF_NOT_SERVER();
+		
+#pragma region Server
+	if (!OverlappingTumbleWeeds.Contains(TumbleWeed))
+	{
+		OverlappingTumbleWeeds.Add(TumbleWeed);
+	}
+
+	RefreshInBushStatus();
+#pragma endregion Server
+}
+
+void ACompetitivePlayerCharacter::RemoveOverlappingTumbleWeed(ATumbleWeed* const TumbleWeed)
+{
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
+	if (OverlappingTumbleWeeds.Contains(TumbleWeed))
+	{
+		OverlappingTumbleWeeds.Remove(TumbleWeed);
+	}
+
+	RefreshInBushStatus();
+#pragma endregion Server
+}
+	
+bool ACompetitivePlayerCharacter::IsSharesTumbleWeedWith(ACompetitivePlayerCharacter* const Other)
+{
+	return Algo::AnyOf(OverlappingTumbleWeeds,
+		[&](const auto MyTumbleWeed) { return Other->OverlappingTumbleWeeds.Contains(MyTumbleWeed); });
+}
+
+void ACompetitivePlayerCharacter::SetExposedInTumbleWeed(const bool bShouldExposed)
+{
+	FAIL_IF_NOT_SERVER();
+
+#pragma region Server
+	bExposedInBush = bShouldExposed;
+	RefreshInBushStatus();
+#pragma endregion Server
 }
 
 void ACompetitivePlayerCharacter::Destroyed()
@@ -229,6 +267,8 @@ void ACompetitivePlayerCharacter::Destroyed()
 		{
 			EquippedKnife->Destroy();
 		}
+
+		SetActorHiddenInGame(false);
 	}
 
 	Super::Destroyed();
@@ -913,6 +953,16 @@ void ACompetitivePlayerCharacter::OnRep_SpawnedPickAxe()
 	EquipPickAxe();
 }
 
+void ACompetitivePlayerCharacter::OnRep_bExposedInBush()
+{
+	RefreshInBushStatus();
+}
+
+void ACompetitivePlayerCharacter::OnRep_OverlappingTumbleWeeds()
+{
+	RefreshInBushStatus();
+}
+
 void ACompetitivePlayerCharacter::OnTeamChanged(const ETeam Team)
 {
 	SetTeamMaterial(Team);
@@ -941,7 +991,18 @@ void ACompetitivePlayerCharacter::RefreshAnimInstance()
 	AnimInstance->IsRockLauncherEquipped = IsValid(EquippedGun) && EquippedGun->IsA(RocketLauncherClass);
 }
 
-void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float DeltaSeconds)
+void ACompetitivePlayerCharacter::RefreshInBushStatus()
+{
+	if (bExposedInBush || OverlappingTumbleWeeds.IsEmpty())
+	{
+		SetActorHiddenInGame(false);
+		return;
+	}
+	
+	SetActorHiddenInGame(!IsSameTeamWithLocalPlayer());
+}
+
+void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction()
 {
 	if (IsDead() || LastInteractTime == 0.0f)
 	{
@@ -986,7 +1047,7 @@ void ACompetitivePlayerCharacter::Tick_HandleResourceInteraction(const float Del
 	}
 }
 
-void ACompetitivePlayerCharacter::Tick_HandleKnifeAttack(const float DeltaSeconds)
+void ACompetitivePlayerCharacter::Tick_HandleKnifeAttack()
 {
 	if (IsDead())
 	{
@@ -1023,7 +1084,7 @@ void ACompetitivePlayerCharacter::Tick_HandleKnifeAttack(const float DeltaSecond
 	}
 }
 
-void ACompetitivePlayerCharacter::Tick_HandleHidden(const float DeltaSeconds)
+void ACompetitivePlayerCharacter::Tick_HandleInBush()
 {
 	const float CurrentTime = GetWorld()->GetTimeSeconds();
 	const bool bIsInteracting = LastInteractTime != 0.0f && CurrentTime < LastInteractTime + InteractTimeRequired;
@@ -1106,4 +1167,20 @@ void ACompetitivePlayerCharacter::CheckObstaclesBetweenCamera()
     }
     
     PreviousTranslucentObstacles = CurrentTranslucentObstacles;
+}
+
+bool ACompetitivePlayerCharacter::IsSameTeamWithLocalPlayer() const
+{
+	if (IsLocallyControlled())
+	{
+		return true;
+	}
+
+	ACompetitivePlayerController* const LocalPlayerController = Cast<ACompetitivePlayerController>(GEngine->GetFirstLocalPlayerController(GetWorld()));
+	if (IsValid(LocalPlayerController) && LocalPlayerController->GetTeamComponent()->GetTeam() == TeamComponent->GetTeam())
+	{
+		return true;
+	}
+
+	return false;
 }

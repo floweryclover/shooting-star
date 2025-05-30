@@ -8,6 +8,7 @@
 #include "ResourceGenerator.h"
 #include "ResourceActor.h"
 #include "FenceData.h"
+#include "TumbleWeed.h"
 #include "MapInstancedMeshActor.h"
 #include "MapGeneratorComponent.generated.h"
 
@@ -19,9 +20,6 @@ class SHOOTINGSTAR_API UResourceGenerator;
 class SHOOTINGSTAR_API UDecorationGenerator;
 
 DECLARE_LOG_CATEGORY_EXTERN(MapGenerator, Log, All);
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FActorBeginOverlapOnTumbleWeed, AActor*, OverlappedActor, AActor*, OtherActor);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FActorEndOverlapOnTumbleWeed, AActor*, OverlappedActor, AActor*, OtherActor);
 
 /**
  * @brief 맵을 생성하는 컴포넌트입니다.
@@ -43,10 +41,7 @@ public:
 	UMapGeneratorComponent();
 
 	UPROPERTY(BlueprintAssignable)
-	FActorBeginOverlapOnTumbleWeed OnActorBeginOverlapOnTumbleWeed;
-	
-	UPROPERTY(BlueprintAssignable)
-	FActorEndOverlapOnTumbleWeed OnActorEndOverlapOnTumbleWeed;
+	FTumbleWeedOverlapChanged OnTumbleWeedOverlapChanged;
 	
 	// Getter functions for Generators
 	FORCEINLINE int32 GetNumObstacles() const { return numObstacles; }
@@ -167,10 +162,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map Data")
 	TArray<uint8> mapCoordinate;
 
-	// Translucent Material
-	UPROPERTY(EditAnywhere, Category = "Translucent Material")
-	UMaterialInterface* TranslucentMaterial;
-
 	// Resource Settings
 	UPROPERTY(EditAnywhere, Category = "Resource Settings")
 	TSubclassOf<class AResourceActor> ResourceActorClass;
@@ -225,10 +216,7 @@ public:
 
 private:
 	UFUNCTION()
-	void OnActorBeginOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
-	
-	UFUNCTION()
-	void OnActorEndOverlapOnTumbleWeedHandler(AActor* OverlappedActor, AActor* OtherActor);
+	void OnTumbleWeedOverlapChangedHandler(ATumbleWeed* TumbleWeed, const TArray<ACompetitivePlayerCharacter*>& OverlappingCharacters);
 
 	FVector CalculateExtent(const FVector& Location, const UStaticMesh* ObjectMesh, EObjectMask ObjectType) const;
 };
