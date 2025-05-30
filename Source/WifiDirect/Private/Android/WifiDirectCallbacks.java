@@ -15,6 +15,12 @@ public class WifiDirectCallbacks {
         nativeOnConnectionFailedFunction(deviceName, deviceMacAddress);
     }
 
+    public static native void nativeOnConnectionSucceededFunction();
+    
+    public static void onConnectionSucceeded() {
+        nativeOnConnectionSucceededFunction();
+    }
+
     public static native void nativeOnRefreshGroupFunction(boolean isGroupFormed, boolean isGroupOwner, String groupOwnerIpAddress);
 
     public static void onRefreshGroup(boolean isGroupFormed, boolean isGroupOwner, String groupOwnerIpAddress) {

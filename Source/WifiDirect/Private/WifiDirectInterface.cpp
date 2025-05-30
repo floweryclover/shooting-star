@@ -226,6 +226,10 @@ void UWifiDirectInterface::OnServiceFound(const FString& DeviceName, const FStri
 
 void UWifiDirectInterface::OnConnectionFailedCallback(const FString& DeviceName, const FString& DeviceMacAddress)
 {
+	if (!bIsConnecting)
+	{
+		return;
+	}
 	bIsConnecting = false;
 	for (int i = ShootingStarPeers.Num() - 1; i >= 0; --i)
 	{
@@ -276,6 +280,14 @@ extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCal
 	FFunctionGraphTask::CreateAndDispatchWhenReady([DeviceName, DeviceMacAddress]()
 		{
 			UWifiDirectInterface::GetWifiDirectInterface()->OnConnectionFailedCallback(DeviceName, DeviceMacAddress);
+		}, TStatId(), nullptr, ENamedThreads::GameThread);
+}
+
+extern "C" JNIEXPORT void JNICALL Java_com_shootingstar_wifidirect_WifiDirectCallbacks_nativeOnConnectionSucceededFunction(JNIEnv * Env, jclass Clazz)
+{
+	FFunctionGraphTask::CreateAndDispatchWhenReady([]()
+		{
+			UWifiDirectInterface::GetWifiDirectInterface()->ConnectingElapsed = 0.0f;
 		}, TStatId(), nullptr, ENamedThreads::GameThread);
 }
 
