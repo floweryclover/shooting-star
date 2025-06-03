@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "ProjectileBase.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Rocket_Projectile.generated.h"
 
 /**
@@ -20,6 +22,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Effects")
+	UNiagaraSystem* ImpactNiagaraEffect;
 
 private:
 

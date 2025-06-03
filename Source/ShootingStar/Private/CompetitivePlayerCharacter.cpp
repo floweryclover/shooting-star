@@ -694,6 +694,36 @@ void ACompetitivePlayerCharacter::DashEnd()
 #pragma endregion Server
 }
 
+void ACompetitivePlayerCharacter::AttachNiagaraEffect(UNiagaraSystem* NiagaraAsset)
+{
+	if (!NiagaraAsset)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("NiagaraAsset is null"));
+		return;
+	}
+
+	// 기존 Niagara 이펙트 제거
+	if (AttachedNiagaraEffect)
+	{
+		AttachedNiagaraEffect->Deactivate();
+		AttachedNiagaraEffect->DestroyComponent();
+		AttachedNiagaraEffect = nullptr;
+	}
+
+	// 새로운 NiagaraComponent 생성
+	UNiagaraComponent* NiagaraComp = NewObject<UNiagaraComponent>(this, UNiagaraComponent::StaticClass());
+	if (NiagaraComp)
+	{
+		NiagaraComp->SetupAttachment(GetMesh(), FName("Bip001-Pelvis"));
+		NiagaraComp->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
+		NiagaraComp->RegisterComponent();
+		NiagaraComp->SetAsset(NiagaraAsset);
+		NiagaraComp->Activate(true);
+
+		AttachedNiagaraEffect = NiagaraComp;
+	}
+}
+
 void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData)
 {
 	FAIL_IF_NOT_SERVER();
@@ -705,6 +735,7 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 	Health = FMath::Min(Health, MaxHealth);
 	IncreasedDamage = 1;
 	DamageTypeClass = UBullet_DamageType::StaticClass();
+	UNiagaraSystem* NiagaraAsset = nullptr;
 	OnRep_CurrentWeapon();
 
 	FString WeaponNameStr = CurrentWeapon.WeaponName.ToString();
@@ -729,18 +760,22 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 					GetCharacterMovement()->MaxWalkSpeed *= FMath::Pow(1.1f, UsedCount);
 					UE_LOG(LogTemp, Log, TEXT("Wood used, speed increased by 10%% per count. New MaxWalkSpeed: %f"),
 					       GetCharacterMovement()->MaxWalkSpeed);
+					NiagaraAsset = NS_Wood;
 					break;
 				case EResourceType::Stone:
 					MaxHealth *= FMath::Pow(1.1f, UsedCount);
 					Health *= FMath::Pow(1.1f, UsedCount);
 					UE_LOG(LogTemp, Log, TEXT("Stone used, defense increased by 10%% per count. New defense: %f"),
 					       Health);
+					NiagaraAsset = NS_Stone;
 					break;
 				case EResourceType::Iron:
 					IncreasedDamage *= FMath::Pow(1.2f, UsedCount);
+					NiagaraAsset = NS_Iron;
 					break;
 				case EResourceType::Uranium:
 					DamageTypeClass = UDoT_DamageType::StaticClass();
+					NiagaraAsset = NS_Uranium;
 					break;
 				default:
 					break;
@@ -748,6 +783,7 @@ void ACompetitivePlayerCharacter::SetWeaponData(const FWeaponData& NewWeaponData
 			}
 		}
 	}
+	AttachNiagaraEffect(NiagaraAsset);
 	if (WeaponNameStr == TEXT("AK"))
 	{
 		WeaponChange();

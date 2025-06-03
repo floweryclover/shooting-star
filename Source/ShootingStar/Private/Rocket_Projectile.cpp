@@ -41,6 +41,10 @@ void ARocket_Projectile::OnOverlapBegin_Body(UPrimitiveComponent* OverlappedComp
 	{
 		return;
 	}
+	if (ImpactNiagaraEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ImpactNiagaraEffect, SweepResult.ImpactPoint, FRotator::ZeroRotator);
+	}
 
 	UE_LOG(LogTemp, Warning, TEXT("ProjectileHit"));
 }

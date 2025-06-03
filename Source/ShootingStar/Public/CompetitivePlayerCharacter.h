@@ -7,6 +7,8 @@
 #include "GameFramework/Character.h"
 #include "WeaponData.h"
 #include "ShootingStar/ShootingStar.h"
+#include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
 #include "CompetitivePlayerCharacter.generated.h"
 
 class UInventoryComponent;
@@ -256,6 +258,21 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void SetWeaponData(const FWeaponData& NewWeaponData);
 
+	// VFX 관련
+	void AttachNiagaraEffect(UNiagaraSystem* NiagaraAsset);
+	UPROPERTY()
+	UNiagaraComponent* AttachedNiagaraEffect;
+	UPROPERTY(EditDefaultsOnly, Category = "VFX")
+	UNiagaraSystem* NS_Wood;
+
+	UPROPERTY(EditDefaultsOnly, Category = "VFX")
+	UNiagaraSystem* NS_Stone;
+
+	UPROPERTY(EditDefaultsOnly, Category = "VFX")
+	UNiagaraSystem* NS_Iron;
+
+	UPROPERTY(EditDefaultsOnly, Category = "VFX")
+	UNiagaraSystem* NS_Uranium;
 	//
 	// 전투 관련
 	//
