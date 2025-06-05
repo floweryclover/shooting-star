@@ -110,7 +110,7 @@ void ACompetitivePlayerController::BeginPlay()
 void ACompetitivePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	LookMouse();
 	if (!IsLocalController())
 	{
 		return;
