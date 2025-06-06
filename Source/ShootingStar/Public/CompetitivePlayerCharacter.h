@@ -259,6 +259,7 @@ protected:
 	void SetWeaponData(const FWeaponData& NewWeaponData);
 
 	// VFX 관련
+	UFUNCTION(Reliable, NetMulticast)
 	void AttachNiagaraEffect(UNiagaraSystem* NiagaraAsset);
 	UPROPERTY()
 	UNiagaraComponent* AttachedNiagaraEffect;

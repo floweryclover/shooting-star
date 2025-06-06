@@ -694,7 +694,7 @@ void ACompetitivePlayerCharacter::DashEnd()
 #pragma endregion Server
 }
 
-void ACompetitivePlayerCharacter::AttachNiagaraEffect(UNiagaraSystem* NiagaraAsset)
+void ACompetitivePlayerCharacter::AttachNiagaraEffect_Implementation(UNiagaraSystem* NiagaraAsset)
 {
 	if (!NiagaraAsset)
 	{
