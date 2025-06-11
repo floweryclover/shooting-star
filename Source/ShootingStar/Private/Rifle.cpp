@@ -55,6 +55,8 @@ AGun* ARifle::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 
 bool ARifle::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
+	Super::ProjectileFire(loc, rot, bulletRot);
+
 	if (GetIsReload())
 	{
 		return false;

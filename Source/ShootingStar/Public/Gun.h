@@ -85,6 +85,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	float Damage = 10;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* ShootSound;
 
 	WEAPONLEVER GetWeaponeLever() { return WeaponeLever; }; void SetWeaponeLever(WEAPONLEVER set) { WeaponeLever = set; };
 	WEAPONTYPE GetWeaponType() { return WeaponType; }; void SetWeaponType(WEAPONTYPE set) { WeaponType = set; };
@@ -111,4 +113,7 @@ public:
 	virtual void PlayReloadMontage();
 	virtual void StopReloadMontage();
 
+private:
+	UPROPERTY()
+	FVector OriginLocation;
 };

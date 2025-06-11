@@ -53,6 +53,8 @@ AGun* AShotgun::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 
 bool AShotgun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
+	Super::ProjectileFire(loc, rot, bulletRot);
+
 	if (GetIsReload())
 	{
 		return false;

@@ -29,6 +29,12 @@ ARocketLauncher::ARocketLauncher()
 	WeaponType = WEAPONTYPE::ROCKETLAUNCHER;
 	for (int i = 0; i < WeaponeLeverCheck.Num(); i++) WeaponeLeverCheck[i] = true;
 
+	static ConstructorHelpers::FObjectFinder<USoundWave> SoundWaveAsset(TEXT("SoundWave'/Game/Audios/SFX/WeaponSounds/Explosion_Large_1-1.Explosion_Large_1-1'"));
+	if (SoundWaveAsset.Succeeded())
+	{
+		ShootSound = SoundWaveAsset.Object;
+	}
+
 }
 void ARocketLauncher::BeginPlay()
 {
@@ -52,6 +58,8 @@ AGun* ARocketLauncher::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 
 bool ARocketLauncher::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
+	Super::ProjectileFire(loc, rot, bulletRot);
+
 	if (GetIsReload())
 	{
 		return false;

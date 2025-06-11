@@ -23,6 +23,11 @@ AGun::AGun()
     WeaponeLever = WEAPONLEVER::SINGLEFIRE;
     WeaponeLeverCheck.Init(false, 3);
 
+    static ConstructorHelpers::FObjectFinder<USoundWave> SoundWaveAsset(TEXT("SoundWave'/Game/Audios/SFX/WeaponSounds/Gunshot.Gunshot'"));
+    if (SoundWaveAsset.Succeeded())
+    {
+        ShootSound = SoundWaveAsset.Object;
+    }
 }
 
 // Called when the game starts or when spawned
@@ -51,6 +56,14 @@ AGun* AGun::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 
 bool AGun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
+    OriginLocation = GetActorLocation();
+    if (!GetIsReload()) {
+        UGameplayStatics::PlaySoundAtLocation(
+            GetWorld(),
+            ShootSound,
+            OriginLocation
+        );
+    }
 	return false;
 }
 void AGun::PlayFireMontage()
