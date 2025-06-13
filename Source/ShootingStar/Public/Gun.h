@@ -114,6 +114,6 @@ public:
 	virtual void StopReloadMontage();
 
 private:
-	UPROPERTY()
-	FVector OriginLocation;
+	UFUNCTION(Reliable, NetMulticast)
+	void PlaySound();
 };

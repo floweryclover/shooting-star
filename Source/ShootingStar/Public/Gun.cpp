@@ -34,7 +34,6 @@ AGun::AGun()
 void AGun::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -56,15 +55,8 @@ AGun* AGun::SpawnToHand(APawn* owner, FVector loc, FRotator rot)
 
 bool AGun::ProjectileFire(FVector loc, FRotator rot, FRotator bulletRot)
 {
-    OriginLocation = GetActorLocation();
-    if (!GetIsReload()) {
-        UGameplayStatics::PlaySoundAtLocation(
-            GetWorld(),
-            ShootSound,
-            OriginLocation
-        );
-    }
-	return false;
+    PlaySound();
+	return true;
 }
 void AGun::PlayFireMontage()
 {
@@ -81,6 +73,18 @@ void AGun::PlayReloadMontage()
 void AGun::StopReloadMontage()
 {
 }
+
+void AGun::PlaySound_Implementation()
+{
+	if (!GetIsReload()) {
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			ShootSound,
+			GetActorLocation()
+		);
+	}
+}
+
 //
 // void AGun::PullTrigger()
 // {
