@@ -324,7 +324,7 @@ void ACompetitivePlayerController::Dash_Implementation()
 		return;
 	}
 	ACompetitivePlayerCharacter* CompetitiveCharacter = Cast<ACompetitivePlayerCharacter>(GetCharacter());
-	CompetitiveCharacter->DashStart();
+	CompetitiveCharacter->Dash();
 #pragma endregion Server
 }
 

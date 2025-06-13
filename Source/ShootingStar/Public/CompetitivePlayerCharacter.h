@@ -45,6 +45,11 @@ public:
 	// 근접 무기 공격 쿨타임.
 	constexpr static float KnifeCoolTime = 1.0f;
 
+	// 대시 쿨타임.
+	constexpr static float DashCoolTime = 2.0f;
+	// 대시 시간.
+	constexpr static float DashTime = 0.1f;
+
 	// 자원 캡슐 트레이스 상수들.
 	constexpr static float RadiusCapsule = 60.0f;
 	constexpr static float HalfHeightCapsule = 20.0f;
@@ -87,7 +92,7 @@ public:
 	
 	FORCEINLINE bool IsDead() const { return Health == 0; }
 
-	void DashStart();
+	void Dash();
 	void EquipGun(AGun* Equip);
 	void EquipKnife(AKnife* Equip);
 	void EquipRocketLauncher();
@@ -239,8 +244,7 @@ protected:
 	// 대쉬 관련
 	//
 
-	FTimerHandle DashTimer;
-	void DashEnd();
+	float DashElapsedTime = 0.0f;
 
 	//
 	// 무기 관련
@@ -388,6 +392,8 @@ private:
 	void Tick_HandleKnifeAttack();
 
 	void Tick_HandleInBush();
+
+	void Tick_Dash(float DeltaSeconds);
 
 	bool CapsuleTraceResource(FHitResult& OutHitResult);
 

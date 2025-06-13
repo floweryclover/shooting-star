@@ -186,7 +186,8 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 	{
 		CheckObstaclesBetweenCamera();
 	}
-	
+
+	// Tick_HandleInBush()는 클라이언트에서도 호출.
 	Tick_HandleInBush();
 	
 	// NameTagActorComponent는 리플리케이트되지 않으므로, 자체적으로 숨김
@@ -203,6 +204,7 @@ void ACompetitivePlayerCharacter::Tick(const float DeltaSeconds)
 	}
 	Tick_HandleResourceInteraction();
 	Tick_HandleKnifeAttack();
+	Tick_Dash(DeltaSeconds);
 #pragma endregion Server
 
 }
@@ -658,11 +660,22 @@ void ACompetitivePlayerCharacter::DestroyCharacter()
 #pragma endregion Server
 }
 
-void ACompetitivePlayerCharacter::DashStart()
+void ACompetitivePlayerCharacter::Dash()
 {
 	FAIL_IF_NOT_SERVER();
 
 #pragma region Server
+	if (IsValid(EquippedGun))
+	{
+		return;
+	}
+	
+	if (DashElapsedTime > 0.0f)
+	{
+		return;
+	}
+	DashElapsedTime = 0.001f;
+	
 	FVector Velocity = GetVelocity();
 
 	FVector DashDirection = FVector(Velocity.X, Velocity.Y, 0.f);
@@ -680,17 +693,6 @@ void ACompetitivePlayerCharacter::DashStart()
 	// AnimInstance->PlayDashMontage();
 	GetCharacterMovement()->BrakingFrictionFactor = 0.f;
 	LaunchCharacter(DashDirection * 5000.f, true, true);
-	GetWorldTimerManager().SetTimer(DashTimer, this, &ACompetitivePlayerCharacter::DashEnd, 0.1f, false);
-#pragma endregion Server
-}
-
-void ACompetitivePlayerCharacter::DashEnd()
-{
-	FAIL_IF_NOT_SERVER();
-
-#pragma region Server
-	GetCharacterMovement()->StopMovementImmediately();
-	GetCharacterMovement()->BrakingFrictionFactor = 2.f;
 #pragma endregion Server
 }
 
@@ -1137,6 +1139,29 @@ void ACompetitivePlayerCharacter::Tick_HandleInBush()
 	if (IsValid(SpawnedPickAxe))
 	{
 		SpawnedPickAxe->SetActorHiddenInGame(bIsCharacterHidden);
+	}
+}
+
+void ACompetitivePlayerCharacter::Tick_Dash(const float DeltaSeconds)
+{
+	if (DashElapsedTime == 0.0f)
+	{
+		return;
+	}
+	DashElapsedTime += DeltaSeconds;
+
+	if (DashElapsedTime > DashCoolTime)
+	{
+		DashElapsedTime = 0.0f;
+		return;
+	}
+	
+	const bool bIsFirstTickAfterDashDone = DashElapsedTime > DashTime && DashElapsedTime - DeltaSeconds < DashTime;
+
+	if (bIsFirstTickAfterDashDone)
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->BrakingFrictionFactor = 2.f;
 	}
 }
 
