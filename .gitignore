@@ -3,6 +3,17 @@
 .vscode
 *.code-workspace
 
+# 애셋들(애매한것 전부 포함)
+Content/Audios
+Content/Basic_VFX
+Content/Cursor
+Content/Fonts
+Content/FX
+Content/Location_Western
+Content/lowpoly-mine-Assets
+Content/Toon_Soldiers_UE5
+Content/TopDown
+
 # 이하는 github의 UnrealEngine 템플릿 자동 생성 내용입니다.
 
 # Visual Studio 2015 user specific files
